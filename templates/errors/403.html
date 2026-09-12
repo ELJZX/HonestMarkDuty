@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Ошибка 403{% endblock %}
+{% block content %}
+<div class="card text-center">
+  <div class="stat-value">403</div>
+  <h2>Доступ запрещён</h2>
+  <p class="muted">Недостаточно прав для просмотра этой страницы.</p>
+  <a class="btn" href="{% url 'analytics:dashboard' %}">На дашборд</a>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Смены{% endblock %}
+{% block breadcrumb %}Смены{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-primary btn-sm" href="{% url 'shifts:shift_open' %}">Открыть смену</a>
+{% endblock %}
+{% block content %}
+
+{% if open_shift %}
+<div class="card" style="border-color: var(--ok)">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Смена открыта</div>
+      <div class="card-sub">{% firstof open_shift.opened_by.full_name open_shift.opened_by.username "—" %} · {{ open_shift.opened_at|date:"d.m.Y H:i" }} · {{ open_shift.get_kind_display }}</div>
+    </div>
+    <div class="flex gap-1">
+      <a class="btn btn-sm" href="{% url 'shifts:shift_detail' open_shift.pk %}">Открыть</a>
+      <a class="btn btn-sm btn-primary" href="{% url 'shifts:shift_close' open_shift.pk %}">Сдать смену</a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">История смен</div>
+    <form method="get" class="flex gap-1">
+      <select class="field-input field-select" name="status" data-auto-submit style="width:auto">
+        <option value="">Все статусы</option>
+        <option value="open" {% if current.status == 'open' %}selected{% endif %}>Открытые</option>
+        <option value="closed" {% if current.status == 'closed' %}selected{% endif %}>Закрытые</option>
+      </select>
+    </form>
+  </div>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Дата</th><th>Тип</th><th>Цех</th><th>Принял</th><th>Сдал</th><th>Длительность</th><th>Статус</th><th></th></tr></thead>
+      <tbody>
+        {% for s in shifts %}
+        <tr>
+          <td class="primary mono">{{ s.date|date:"d.m.Y" }}</td>
+          <td>{{ s.get_kind_display }}</td>
+          <td>{{ s.workshop|default:"—" }}</td>
+          <td>{% firstof s.opened_by.full_name s.opened_by.username "—" %}</td>
+          <td>{% firstof s.closed_by.full_name s.closed_by.username "—" %}</td>
+          <td class="mono">{{ s.duration }}</td>
+          <td>{% if s.is_open %}<span class="badge badge-ok">открыта</span>{% else %}<span class="badge badge-muted">закрыта</span>{% endif %}</td>
+          <td class="actions"><a class="btn btn-sm" href="{% url 'shifts:shift_detail' s.pk %}">Открыть</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="empty">Смен ещё не было</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% load static %}<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Вход · {{ PROJECT_NAME }}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="brand-mark">HMD</div>
+      <div>
+        <div class="brand-name">{{ PROJECT_NAME }}</div>
+        <div class="brand-tag">Сменный контур · Честный знак</div>
+      </div>
+    </div>
+
+    {% if form.errors %}
+      <div class="message error mb-2">Неверный логин или пароль.</div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-row">
+        <label for="{{ form.username.id_for_label }}">Логин</label>
+        {{ form.username }}
+      </div>
+      <div class="form-row">
+        <label for="{{ form.password.id_for_label }}">Пароль</label>
+        {{ form.password }}
+      </div>
+      <button class="btn btn-primary" type="submit" style="width:100%;justify-content:center">Войти в систему</button>
+    </form>
+    <div class="login-note">Доступ выдаёт администратор сменного контура.</div>
+  </div>
+</div>
+</body>
+</html>

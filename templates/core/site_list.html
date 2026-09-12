@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Площадки{% endblock %}
+{% block breadcrumb %}Площадки{% endblock %}
+{% block topbar_actions %}
+  {% if user.is_admin %}<a class="btn btn-primary btn-sm" href="{% url 'core:site_create' %}">+ Площадка</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header"><div class="card-title">Производственные площадки</div></div>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Название</th><th>Адрес</th><th>Ответственный</th><th>Оборудование</th><th>Статус</th><th></th></tr></thead>
+      <tbody>
+        {% for s in sites %}
+        <tr>
+          <td class="primary">{{ s.name }}</td>
+          <td>{{ s.address|default:"—" }}</td>
+          <td>{{ s.responsible|default:"—" }}</td>
+          <td class="mono">{{ s.equipment.count }}</td>
+          <td>{% if s.is_active %}<span class="badge badge-ok">активна</span>{% else %}<span class="badge badge-muted">архив</span>{% endif %}</td>
+          <td class="actions">
+            {% if user.is_admin %}
+              <a class="btn btn-sm" href="{% url 'core:site_update' s.pk %}">Изменить</a>
+              <a class="btn btn-sm btn-danger" href="{% url 'core:site_delete' s.pk %}">Удалить</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="empty">Площадки не добавлены</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

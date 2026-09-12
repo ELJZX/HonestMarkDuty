@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Полки{% endblock %}
+{% block breadcrumb %}Склад / Полки{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-primary btn-sm" href="{% url 'inventory:location_create' %}">+ Место хранения</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header"><div class="card-title">Места хранения</div></div>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Название</th><th>Код полки</th><th>Цех</th><th>Позиций</th><th>Описание</th><th></th></tr></thead>
+      <tbody>
+        {% for loc in locations %}
+        <tr>
+          <td class="primary">{{ loc.name }}</td>
+          <td class="mono">{{ loc.shelf_code|default:"—" }}</td>
+          <td>{{ loc.workshop|default:"—" }}</td>
+          <td class="mono">{{ loc.items.count }}</td>
+          <td>{{ loc.description|default:"—" }}</td>
+          <td class="actions"><a class="btn btn-sm" href="{% url 'inventory:location_update' loc.pk %}">Изменить</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="empty">Полки не добавлены</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

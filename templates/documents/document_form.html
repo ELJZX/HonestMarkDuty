@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block breadcrumb %}Документы / {{ title }}{% endblock %}
+{% block content %}
+<div class="grid grid-side">
+  <div class="card">
+    <div class="card-header"><div class="card-title">{{ title }}</div></div>
+    <form method="get" class="filters mb-2">
+      <div class="form-row" style="min-width:260px"><label>Шаблон</label>
+        <select class="field-input field-select" name="template" data-auto-submit>
+          <option value="">— выберите шаблон —</option>
+          {% for t in form.template.field.queryset %}
+            <option value="{{ t.pk }}" {% if form.template.value|stringformat:'s' == t.pk|stringformat:'s' %}selected{% endif %}>{{ t.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-row" style="min-width:220px"><label>Цех (автозаполнение)</label>
+        <select class="field-input field-select" name="workshop" data-auto-submit>
+          <option value="">— выберите цех —</option>
+          {% for w in form.workshop.field.queryset %}
+            <option value="{{ w.pk }}" {% if form.workshop.value|stringformat:'s' == w.pk|stringformat:'s' %}selected{% endif %}>{{ w.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button class="btn" type="submit">Загрузить поля</button>
+    </form>
+
+    <form method="post">
+      {% csrf_token %}
+      {{ form.template }}
+      <div class="grid grid-2">
+        <div class="form-row"><label>Цех</label>{{ form.workshop }}{{ form.workshop.errors }}</div>
+        <div class="form-row"><label>Номер</label>{{ form.number }}{{ form.number.errors }}</div>
+        <div class="form-row"><label>Дата</label>{{ form.doc_date }}{{ form.doc_date.errors }}</div>
+        <div class="form-row"><label>Статус</label>{{ form.status }}{{ form.status.errors }}</div>
+      </div>
+
+      {% if form.dynamic_fields %}
+        <div class="card-sub mb-1">Поля шаблона</div>
+        {% for field in form.dynamic_fields %}
+          <div class="form-row">
+            <label>{{ field.label }}</label>
+            {{ field }}
+            {{ field.errors }}
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="message info">Выберите шаблон, чтобы система автоматически подставила поля цеха.</div>
+      {% endif %}
+
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Сформировать документ</button>
+        <a class="btn btn-ghost" href="{% url 'documents:document_list' %}">Отмена</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Предпросмотр</div></div>
+    {% if preview_title or preview_body %}
+      <div class="mono mb-1" style="font-size:.85rem">{{ preview_title }}</div>
+      <div class="preview">{{ preview_body }}</div>
+    {% else %}
+      <div class="preview dim">Выберите шаблон и цех — здесь появится предварительный текст с автозаполнением.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

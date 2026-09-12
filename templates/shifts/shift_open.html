@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Открытие смены{% endblock %}
+{% block breadcrumb %}Смены / Приём смены{% endblock %}
+{% block content %}
+<div class="card" style="max-width:640px">
+  <div class="card-header"><div class="card-title">Приём смены</div></div>
+  <p class="muted">Зафиксируйте начало рабочего дня. После открытия смены все новые обращения будут к ней привязаны.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "partials/form_fields.html" %}
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Открыть смену</button>
+      <a class="btn btn-ghost" href="{% url 'shifts:shift_list' %}">Отмена</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

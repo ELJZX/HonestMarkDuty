@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Цеха{% endblock %}
+{% block breadcrumb %}Цеха{% endblock %}
+{% block topbar_actions %}
+  {% if user.is_admin %}<a class="btn btn-primary btn-sm" href="{% url 'core:workshop_create' %}">+ Цех</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header"><div class="card-title">Производственные цеха</div></div>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Название</th><th>Код</th><th>Площадка</th><th>Начальник цеха</th><th>Телефон</th><th>Статус</th><th></th></tr></thead>
+      <tbody>
+        {% for w in workshops %}
+        <tr>
+          <td class="primary">{{ w.name }}</td>
+          <td class="mono">{{ w.code }}</td>
+          <td>{{ w.site|default:"—" }}</td>
+          <td>{{ w.chief|default:"—" }}</td>
+          <td class="mono">{{ w.phone|default:"—" }}</td>
+          <td>{% if w.is_active %}<span class="badge badge-ok">активен</span>{% else %}<span class="badge badge-muted">архив</span>{% endif %}</td>
+          <td class="actions">
+            {% if user.is_admin %}
+              <a class="btn btn-sm" href="{% url 'core:workshop_update' w.pk %}">Изменить</a>
+              <a class="btn btn-sm btn-danger" href="{% url 'core:workshop_delete' w.pk %}">Удалить</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="empty">Цеха не добавлены</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

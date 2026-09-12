@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Ошибка 404{% endblock %}
+{% block content %}
+<div class="card text-center">
+  <div class="stat-value">404</div>
+  <h2>Страница не найдена</h2>
+  <p class="muted">Возможно, объект был удалён или ссылка неверна.</p>
+  <a class="btn" href="{% url 'analytics:dashboard' %}">На дашборд</a>
+</div>
+{% endblock %}

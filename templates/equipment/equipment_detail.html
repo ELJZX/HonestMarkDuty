@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}{{ equipment.name }}{% endblock %}
+{% block breadcrumb %}Оборудование / {{ equipment.name }}{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-sm" href="{% url 'equipment:equipment_update' equipment.pk %}">Изменить</a>
+{% endblock %}
+{% block content %}
+<div class="grid grid-side">
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">{{ equipment.name }}</div>
+        <span class="badge {{ equipment.status_badge }}">{{ equipment.get_status_display }}</span>
+      </div>
+      <dl class="detail-grid">
+        <dt>Инвентарный №</dt><dd class="mono">{{ equipment.inventory_number }}</dd>
+        <dt>Категория</dt><dd>{{ equipment.category|default:"—" }}</dd>
+        <dt>Площадка</dt><dd>{{ equipment.site|default:"—" }}</dd>
+        <dt>Цех</dt><dd>{{ equipment.workshop|default:"—" }}</dd>
+        <dt>Производитель</dt><dd>{{ equipment.manufacturer|default:"—" }}</dd>
+        <dt>Модель</dt><dd>{{ equipment.model_name|default:"—" }}</dd>
+        <dt>Серийный №</dt><dd class="mono">{{ equipment.serial_number|default:"—" }}</dd>
+        <dt>Введено в экспл.</dt><dd>{{ equipment.commissioned_at|date:"d.m.Y"|default:"—" }}</dd>
+        <dt>Критичность</dt><dd>{{ equipment.get_criticality_display }}</dd>
+        <dt>Последнее ТО</dt><dd>{{ equipment.last_maintenance_at|date:"d.m.Y"|default:"—" }}</dd>
+        <dt>Следующее ТО</dt><dd>{{ equipment.next_maintenance_at|date:"d.m.Y"|default:"—" }} {% if equipment.is_maintenance_overdue %}<span class="badge badge-danger">просрочено</span>{% endif %}</dd>
+        <dt>Ответственный</dt><dd>{{ equipment.responsible.full_name|default:"—" }}</dd>
+        <dt>Примечания</dt><dd>{{ equipment.notes|default:"—"|linebreaksbr }}</dd>
+      </dl>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">История состояний</div></div>
+      <ul class="timeline">
+        {% for log in status_logs %}
+        <li>
+          <div class="tl-time">{{ log.created_at|date:"d.m.Y H:i" }} · {{ log.changed_by.full_name|default:"система" }}</div>
+          <div class="tl-body"><span class="badge badge-muted">{{ log.get_status_display }}</span> {{ log.comment }}</div>
+        </li>
+        {% empty %}
+        <li><div class="tl-body dim">Изменений не было</div></li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Работы по оборудованию</div></div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Дата</th><th>Вид</th><th>Описание</th><th>Исполнитель</th><th>Стоимость</th></tr></thead>
+          <tbody>
+            {% for r in maintenance_records %}
+            <tr>
+              <td class="mono nowrap">{{ r.performed_at|date:"d.m.Y" }}</td>
+              <td>{{ r.get_kind_display }}</td>
+              <td>{{ r.description|truncatechars:80 }}</td>
+              <td>{{ r.performer|default:"—" }}</td>
+              <td class="mono">{{ r.cost|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="empty">Работ не зарегистрировано</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% if journal_entries %}
+    <div class="card">
+      <div class="card-header"><div class="card-title">Связанные обращения</div></div>
+      <ul class="timeline">
+        {% for e in journal_entries %}
+        <li>
+          <div class="tl-time">{{ e.received_at|date:"d.m.Y H:i" }} · {{ e.get_status_display }}</div>
+          <div class="tl-body"><a href="{% url 'journal:entry_detail' e.pk %}">{{ e.problem|truncatechars:80 }}</a></div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Изменить состояние</div></div>
+      <form method="post" action="{% url 'equipment:status_change' equipment.pk %}">
+        {% csrf_token %}
+        {% include "partials/form_fields.html" with form=status_form %}
+        <div class="form-actions"><button class="btn btn-primary" type="submit">Сохранить состояние</button></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Добавить работы</div></div>
+      <form method="post" action="{% url 'equipment:maintenance_create' equipment.pk %}">
+        {% csrf_token %}
+        {% include "partials/form_fields.html" with form=maintenance_form %}
+        <div class="form-actions"><button class="btn btn-primary" type="submit">Добавить</button></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <a class="btn btn-sm" href="{% url 'core:audit_list' %}?q={{ equipment.pk }}">История изменений</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

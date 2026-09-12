@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Категории оборудования{% endblock %}
+{% block breadcrumb %}Оборудование / категории{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-primary btn-sm" href="{% url 'equipment:category_create' %}">+ Категория</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header"><div class="card-title">Категории оборудования</div></div>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Название</th><th>Описание</th><th>Единиц</th><th></th></tr></thead>
+      <tbody>
+        {% for c in categories %}
+        <tr>
+          <td class="primary">{{ c.name }}</td>
+          <td>{{ c.description|default:"—" }}</td>
+          <td class="mono">{{ c.equipment.count }}</td>
+          <td class="actions"><a class="btn btn-sm" href="{% url 'equipment:category_update' c.pk %}">Изменить</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="empty">Категории не добавлены</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

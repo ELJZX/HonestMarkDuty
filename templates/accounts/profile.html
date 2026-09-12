@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Профиль{% endblock %}
+{% block breadcrumb %}Профиль{% endblock %}
+{% block content %}
+<div class="grid grid-side">
+  <div class="card">
+    <div class="card-header"><div class="card-title">Личные данные</div></div>
+    <form method="post">
+      {% csrf_token %}
+      {% include "partials/form_fields.html" %}
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Сохранить</button>
+      </div>
+    </form>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">Учётная запись</div></div>
+    <dl class="detail-grid">
+      <dt>Логин</dt><dd class="mono">{{ user.username }}</dd>
+      <dt>Роль</dt><dd>{{ user.get_role_display }}</dd>
+      <dt>Цех</dt><dd>{{ user.workshop|default:"—" }}</dd>
+      <dt>Должность</dt><dd>{{ user.position|default:"—" }}</dd>
+      <dt>Телефон</dt><dd>{{ user.phone|default:"—" }}</dd>
+      <dt>Последний вход</dt><dd class="mono">{{ user.last_login|date:"d.m.Y H:i"|default:"—" }}</dd>
+    </dl>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+from django.contrib import admin
+
+from inventory.models import (
+    InventoryItem,
+    InventoryMovement,
+    ItemCategory,
+    StorageLocation,
+)
+
+
+@admin.register(StorageLocation)
+class StorageLocationAdmin(admin.ModelAdmin):
+    list_display = ("name", "shelf_code", "workshop", "description")
+    list_filter = ("workshop",)
+    search_fields = ("name", "shelf_code")
+
+
+@admin.register(ItemCategory)
+class ItemCategoryAdmin(admin.ModelAdmin):
+    list_display = ("name", "kind")
+    list_filter = ("kind",)
+
+
+class InventoryMovementInline(admin.TabularInline):
+    model = InventoryMovement
+    extra = 0
+    readonly_fields = ("created_at", "created_by")
+
+
+@admin.register(InventoryItem)
+class InventoryItemAdmin(admin.ModelAdmin):
+    list_display = ("name", "kind", "location", "quantity", "unit", "condition", "wear_percent")
+    list_filter = ("kind", "condition", "location", "is_active")
+    search_fields = ("name", "inventory_number", "serial_number")
+    inlines = (InventoryMovementInline,)
+
+
+@admin.register(InventoryMovement)
+class InventoryMovementAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "item", "movement_type", "quantity", "created_by")
+    list_filter = ("movement_type",)

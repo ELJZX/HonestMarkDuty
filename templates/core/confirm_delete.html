@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Удаление{% endblock %}
+{% block breadcrumb %}Удаление{% endblock %}
+{% block content %}
+<div class="card" style="max-width:560px">
+  <div class="card-header"><div class="card-title">Подтверждение удаления</div></div>
+  <p>Вы действительно хотите удалить объект <strong>{{ object }}</strong>? Действие нельзя отменить и оно будет зафиксировано в аудите.</p>
+  <form method="post" data-confirm="Удалить «{{ object }}»?">
+    {% csrf_token %}
+    <div class="form-actions">
+      <button class="btn btn-danger" type="submit">Удалить</button>
+      <a class="btn btn-ghost" href="javascript:history.back()">Отмена</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

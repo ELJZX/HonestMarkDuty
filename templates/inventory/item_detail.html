@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ item.name }}{% endblock %}
+{% block breadcrumb %}Склад / {{ item.name }}{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-sm" href="{% url 'inventory:item_update' item.pk %}">Изменить</a>
+{% endblock %}
+{% block content %}
+<div class="grid grid-side">
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">{{ item.name }}</div>
+        <span class="badge {{ item.condition_badge }}">{{ item.get_condition_display }}</span>
+      </div>
+      <dl class="detail-grid">
+        <dt>Тип</dt><dd>{{ item.get_kind_display }}</dd>
+        <dt>Категория</dt><dd>{{ item.category|default:"—" }}</dd>
+        <dt>Место хранения</dt><dd>{{ item.location|default:"—" }}</dd>
+        <dt>Инвентарный номер</dt><dd class="mono">{{ item.inventory_number|default:"—" }}</dd>
+        <dt>Серийный номер</dt><dd class="mono">{{ item.serial_number|default:"—" }}</dd>
+        <dt>Количество</dt><dd class="mono">{{ item.quantity }} {{ item.unit }} {% if item.is_low_stock %}<span class="badge badge-danger">ниже минимума {{ item.min_quantity }}</span>{% endif %}</dd>
+        <dt>Износ</dt><dd class="mono">{{ item.wear_percent }}%</dd>
+        <dt>Произведено</dt><dd>{{ item.manufactured_at|date:"d.m.Y"|default:"—" }}</dd>
+        <dt>Проверка</dt><dd>{{ item.last_verified_at|date:"d.m.Y"|default:"—" }}</dd>
+        <dt>Примечания</dt><dd>{{ item.notes|default:"—"|linebreaksbr }}</dd>
+      </dl>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">История движений</div></div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Время</th><th>Операция</th><th>Кол-во</th><th>Сотрудник</th><th>Комментарий</th></tr></thead>
+          <tbody>
+            {% for m in movements %}
+            <tr>
+              <td class="mono nowrap">{{ m.created_at|date:"d.m.Y H:i" }}</td>
+              <td><span class="badge {% if m.movement_type == 'in' %}badge-ok{% elif m.movement_type == 'correction' %}badge-info{% else %}badge-warn{% endif %}">{{ m.get_movement_type_display }}</span></td>
+              <td class="mono">{{ m.quantity }}</td>
+              <td>{% firstof m.created_by.full_name m.created_by.username "—" %}</td>
+              <td>{{ m.comment|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="empty">Движений не было</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Движение по складу</div></div>
+      <form method="post" action="{% url 'inventory:movement_create' item.pk %}">
+        {% csrf_token %}
+        {% include "partials/form_fields.html" with form=movement_form %}
+        <div class="form-actions"><button class="btn btn-primary" type="submit">Применить</button></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Кто менял</div></div>
+      <p class="dim" style="font-size:.78rem">Последние изменения фиксируются автоматически.</p>
+      <a class="btn btn-sm" href="{% url 'core:audit_list' %}?q={{ item.pk }}">Открыть аудит</a>
+    </div>
+
+    <div class="card">
+      <form method="post" action="{% url 'inventory:item_delete' item.pk %}" data-confirm="Удалить позицию «{{ item.name }}»?">
+        {% csrf_token %}
+        <button class="btn btn-danger" type="submit">Удалить позицию</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

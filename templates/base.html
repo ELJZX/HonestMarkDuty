@@ -1,0 +1,135 @@
+{% load static %}<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ PROJECT_NAME }}{% endblock %} · {{ PROJECT_NAME }}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">HMD</div>
+      <div>
+        <div class="brand-name">{{ PROJECT_NAME }}</div>
+        <div class="brand-tag">Честный знак</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section">
+        <a class="nav-item {% if request.resolver_match.namespace == 'analytics' %}active{% endif %}" href="{% url 'analytics:dashboard' %}">
+          <span class="ico">◈</span> Дашборд
+        </a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Сменная работа</div>
+        <a class="nav-item {% if request.resolver_match.namespace == 'shifts' %}active{% endif %}" href="{% url 'shifts:shift_list' %}">
+          <span class="ico">◷</span> Смены
+        </a>
+        <a class="nav-item {% if request.resolver_match.namespace == 'journal' %}active{% endif %}" href="{% url 'journal:entry_list' %}">
+          <span class="ico">▤</span> Сменный журнал
+        </a>
+        <a class="nav-item {% if request.resolver_match.namespace == 'journal' and request.resolver_match.url_name == 'export_list' %}active{% endif %}" href="{% url 'journal:export_list' %}">
+          <span class="ico">⇩</span> Архив Excel
+        </a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Учёт</div>
+        <a class="nav-item {% if request.resolver_match.namespace == 'inventory' %}active{% endif %}" href="{% url 'inventory:item_list' %}">
+          <span class="ico">▦</span> Склад
+        </a>
+        <a class="nav-item" href="{% url 'inventory:location_list' %}">
+          <span class="ico">⌗</span> Полки
+        </a>
+        <a class="nav-item {% if request.resolver_match.namespace == 'equipment' %}active{% endif %}" href="{% url 'equipment:equipment_list' %}">
+          <span class="ico">⌘</span> Оборудование
+        </a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Документы</div>
+        <a class="nav-item {% if request.resolver_match.namespace == 'documents' and request.resolver_match.url_name != 'template_list' %}active{% endif %}" href="{% url 'documents:document_list' %}">
+          <span class="ico">▧</span> Документы
+        </a>
+        <a class="nav-item {% if request.resolver_match.url_name == 'template_list' %}active{% endif %}" href="{% url 'documents:template_list' %}">
+          <span class="ico">▨</span> Шаблоны
+        </a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Аналитика и контроль</div>
+        <a class="nav-item {% if request.resolver_match.url_name == 'statistics' %}active{% endif %}" href="{% url 'analytics:statistics' %}">
+          <span class="ico">∿</span> Статистика
+        </a>
+        <a class="nav-item {% if request.resolver_match.namespace == 'core' and request.resolver_match.url_name == 'audit_list' %}active{% endif %}" href="{% url 'core:audit_list' %}">
+          <span class="ico">◎</span> Аудит изменений
+        </a>
+      </div>
+
+      {% if user.is_admin %}
+      <div class="nav-section">
+        <div class="nav-label">Администрирование</div>
+        <a class="nav-item {% if request.resolver_match.url_name == 'user_list' %}active{% endif %}" href="{% url 'accounts:user_list' %}">
+          <span class="ico">◇</span> Пользователи
+        </a>
+        <a class="nav-item {% if request.resolver_match.url_name == 'workshop_list' %}active{% endif %}" href="{% url 'core:workshop_list' %}">
+          <span class="ico">⌂</span> Цеха
+        </a>
+        <a class="nav-item {% if request.resolver_match.url_name == 'site_list' %}active{% endif %}" href="{% url 'core:site_list' %}">
+          <span class="ico">⌖</span> Площадки
+        </a>
+        <a class="nav-item" href="/admin/">
+          <span class="ico">⚙</span> Django admin
+        </a>
+      </div>
+      {% endif %}
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="mono" style="font-size:.76rem">{{ user.full_name|default:user.username }}</div>
+          <div class="dim" style="font-size:.68rem">{{ user.get_role_display }}</div>
+        </div>
+        <form method="post" action="{% url 'accounts:logout' %}">
+          {% csrf_token %}
+          <button class="btn btn-sm btn-ghost" type="submit" title="Выйти">Выход</button>
+        </form>
+      </div>
+    </div>
+  </aside>
+
+  <div class="overlay" id="overlay"></div>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="flex items-center gap-2">
+        <button class="burger" id="burger" type="button">☰</button>
+        <div class="topbar-title">
+          <a href="{% url 'analytics:dashboard' %}">HMD</a>
+          <span class="crumb">/ {% block breadcrumb %}{{ PROJECT_NAME }}{% endblock %}</span>
+        </div>
+      </div>
+      <div class="topbar-user">
+        {% block topbar_actions %}{% endblock %}
+        <a class="mono" style="font-size:.76rem" href="{% url 'accounts:profile' %}">{{ user.full_name|default:user.username }}</a>
+        <div class="avatar">{{ user.username|slice:":1"|upper }}</div>
+      </div>
+    </header>
+
+    <main class="content">
+      {% include "partials/messages.html" %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+<script src="{% static 'js/app.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
