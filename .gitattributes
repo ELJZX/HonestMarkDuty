@@ -1,0 +1,17 @@
+# Нормализация переводов строк
+* text=auto eol=lf
+
+# Shell-скрипты и Dockerfile — строго LF (иначе контейнер сломается)
+*.sh text eol=lf
+Dockerfile text eol=lf
+entrypoint.sh text eol=lf
+
+# Бинарные файлы
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.xlsx binary
+*.docx binary
+*.pdf binary
