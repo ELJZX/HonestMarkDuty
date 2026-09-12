@@ -27,7 +27,7 @@ html, body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
-  font-size: 17px;
+  font-size: 18px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
@@ -91,7 +91,7 @@ code, .mono { font-family: var(--font-mono); }
 .nav-group > summary::-webkit-details-marker { display: none; }
 .nav-group > summary::after {
   content: "▸";
-  font-size: .85rem;
+  font-size: 1.05rem;
   color: var(--dim);
   transition: transform .15s ease;
 }
@@ -102,33 +102,28 @@ code, .mono { font-family: var(--font-mono); }
 
 .nav-label {
   font-family: var(--font-mono);
-  font-size: .78rem;
+  font-size: 1.05rem;
   text-transform: uppercase;
-  letter-spacing: .12em;
+  letter-spacing: .1em;
   color: var(--dim);
-  padding: 9px 12px;
+  padding: 13px 14px;
 }
 .nav a.nav-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 12px;
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 14px;
   border-radius: var(--radius);
   color: var(--muted);
-  font-size: 1.05rem;
+  font-size: 1.25rem;
   transition: background .12s, color .12s;
 }
 .nav a.nav-item:hover { background: var(--surface-2); color: var(--text); }
 .nav a.nav-item.active { background: var(--surface-3); color: var(--accent); }
-.nav a.nav-item .ico { width: 20px; text-align: center; opacity: .85; font-size: 1rem; }
-
-.sidebar-foot { padding: 16px 18px; border-top: 1px solid var(--border); }
-.side-user-block { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.side-user { font-size: 1rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.side-version { font-family: var(--font-mono); font-size: .76rem; letter-spacing: .04em; }
+.nav a.nav-item .ico { width: 24px; text-align: center; opacity: .85; font-size: 1.15rem; }
 
 .main { flex: 1; margin-left: var(--sidebar); min-width: 0; display: flex; flex-direction: column; }
 
 .topbar {
-  height: 72px;
+  height: 84px;
   border-bottom: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 30px;
@@ -137,9 +132,14 @@ code, .mono { font-family: var(--font-mono); }
   backdrop-filter: blur(8px);
   z-index: 30;
 }
-.topbar-title { font-family: var(--font-mono); font-size: 1.05rem; letter-spacing: .03em; }
+.topbar-title { font-family: var(--font-mono); font-size: 1.1rem; letter-spacing: .03em; }
 .topbar-title .crumb { color: var(--dim); }
-.topbar-user { display: flex; align-items: center; gap: 14px; font-size: 1rem; }
+.topbar-user { display: flex; align-items: center; gap: 16px; font-size: 1rem; }
+.topbar-actions { display: flex; align-items: center; gap: 10px; }
+.account-link { font-size: 1.02rem; }
+.account-link:hover { color: var(--accent); }
+.topbar-logout { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.topbar-version { font-size: .78rem; color: var(--dim); letter-spacing: .04em; }
 .avatar {
   width: 38px; height: 38px; border-radius: 50%;
   background: var(--surface-3); border: 1px solid var(--border-strong);

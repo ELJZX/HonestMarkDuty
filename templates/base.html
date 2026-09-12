@@ -92,23 +92,6 @@
       </details>
       {% endif %}
     </nav>
-
-    <div class="sidebar-foot">
-      <div class="flex items-center justify-between">
-        <div class="side-user-block">
-          {% if user.is_admin %}
-            <a class="side-user mono" href="/admin/" title="Панель Django admin">{{ user.username }}</a>
-          {% else %}
-            <span class="side-user mono">{{ user.username }}</span>
-          {% endif %}
-          <span class="side-version dim">v{{ APP_VERSION }}</span>
-        </div>
-        <form method="post" action="{% url 'accounts:logout' %}">
-          {% csrf_token %}
-          <button class="btn btn-sm btn-ghost" type="submit" title="Выйти">Выход</button>
-        </form>
-      </div>
-    </div>
   </aside>
 
   <div class="overlay" id="overlay"></div>
@@ -123,13 +106,20 @@
         </div>
       </div>
       <div class="topbar-user">
-        {% block topbar_actions %}{% endblock %}
+        <div class="topbar-actions">{% block topbar_actions %}{% endblock %}</div>
         {% if user.is_admin %}
-          <a class="mono" href="/admin/" title="Панель Django admin">{{ user.username }}</a>
+          <a class="account-link mono" href="/admin/" title="Панель Django admin">{{ user.username }}</a>
         {% else %}
-          <span class="mono">{{ user.username }}</span>
+          <span class="account-link mono">{{ user.username }}</span>
         {% endif %}
         <div class="avatar">{{ user.username|slice:":1"|upper }}</div>
+        <div class="topbar-logout">
+          <form method="post" action="{% url 'accounts:logout' %}">
+            {% csrf_token %}
+            <button class="btn btn-sm" type="submit">Выход</button>
+          </form>
+          <span class="topbar-version mono">v{{ APP_VERSION }}</span>
+        </div>
       </div>
     </header>
 
