@@ -18,7 +18,6 @@ from equipment.forms import (
     MaintenanceRecordForm,
 )
 from equipment.models import (
-    Criticality,
     Equipment,
     EquipmentCategory,
     EquipmentStatus,

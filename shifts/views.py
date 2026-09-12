@@ -9,7 +9,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView, V
 
 from core.mixins import EditorRequiredMixin
 from shifts.forms import ShiftCheckForm, ShiftCloseForm, ShiftOpenForm
-from shifts.models import Shift, ShiftCheck
+from shifts.models import Shift
 
 
 class ShiftListView(LoginRequiredMixin, ListView):

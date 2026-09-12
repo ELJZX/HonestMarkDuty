@@ -60,10 +60,3 @@ class UserUpdateForm(StyledModelForm):
             "workshop",
             "is_active",
         )
-
-
-class ProfileForm(StyledModelForm):
-    class Meta:
-        model = User
-        fields = ("last_name", "first_name", "patronymic", "email", "phone", "position")
-        labels = {"email": "Электронная почта"}

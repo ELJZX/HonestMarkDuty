@@ -17,7 +17,7 @@
       <dt>Номер</dt><dd class="mono">{{ document.number|default:"—" }}</dd>
       <dt>Дата</dt><dd class="mono">{{ document.doc_date|date:"d.m.Y" }}</dd>
       <dt>Цех</dt><dd>{{ document.workshop|default:"—" }}</dd>
-      <dt>Автор</dt><dd>{{ document.created_by.full_name|default:document.created_by.username|default:"—" }}</dd>
+      <dt>Автор</dt><dd>{% firstof document.created_by.full_name document.created_by.username "—" %}</dd>
     </dl>
     <div class="card-sub mb-1">Текст документа</div>
     <div class="preview" style="color:var(--text)">{{ document.body }}</div>

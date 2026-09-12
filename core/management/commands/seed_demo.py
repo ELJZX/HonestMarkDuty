@@ -41,8 +41,6 @@ class Command(BaseCommand):
         admin, created = User.objects.get_or_create(
             username="admin",
             defaults={
-                "last_name": "Администратор",
-                "first_name": "Системный",
                 "role": User.Role.ADMIN,
                 "position": "Администратор сменного контура",
                 "is_staff": True,
@@ -52,7 +50,11 @@ class Command(BaseCommand):
         )
         if created:
             admin.set_password("admin12345")
-            admin.save()
+        # Отображаем администратора строго как логин учётной записи
+        if admin.last_name or admin.first_name:
+            admin.last_name = ""
+            admin.first_name = ""
+        admin.save()
 
         specialists = []
         for username, last, first, patronymic in [

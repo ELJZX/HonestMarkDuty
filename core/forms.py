@@ -5,20 +5,6 @@ from django import forms
 from core.models import ProductionSite, Workshop
 
 
-class WorkshopForm(forms.ModelForm):
-    class Meta:
-        model = Workshop
-        fields = ("name", "code", "site", "chief", "chief_position", "phone", "description", "is_active")
-        widgets = {"description": forms.Textarea(attrs={"rows": 3})}
-
-
-class ProductionSiteForm(forms.ModelForm):
-    class Meta:
-        model = ProductionSite
-        fields = ("name", "address", "responsible", "description", "is_active")
-        widgets = {"description": forms.Textarea(attrs={"rows": 3})}
-
-
 class StyledFormMixin:
     """Единообразное оформление полей ввода для любой формы."""
 
@@ -50,3 +36,17 @@ class StyledModelForm(StyledFormMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._style_fields()
+
+
+class WorkshopForm(StyledModelForm):
+    class Meta:
+        model = Workshop
+        fields = ("name", "code", "site", "chief", "chief_position", "phone", "description", "is_active")
+        widgets = {"description": forms.Textarea(attrs={"rows": 3})}
+
+
+class ProductionSiteForm(StyledModelForm):
+    class Meta:
+        model = ProductionSite
+        fields = ("name", "address", "responsible", "description", "is_active")
+        widgets = {"description": forms.Textarea(attrs={"rows": 3})}

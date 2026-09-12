@@ -191,12 +191,21 @@ class DocumentPrintView(LoginRequiredMixin, DetailView):
 
 
 class DocumentDownloadView(LoginRequiredMixin, View):
+    DOCX_CONTENT_TYPE = (
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+
     def get(self, request, pk):
         document = get_object_or_404(Document, pk=pk)
         if not document.file:
             document.file.save(f"document_{document.pk}.docx", build_docx(document), save=True)
         filename = f"{document.template.doc_type}_{document.number or document.pk}.docx".replace(" ", "_")
-        return FileResponse(document.file.open("rb"), as_attachment=True, filename=filename)
+        return FileResponse(
+            document.file.open("rb"),
+            as_attachment=True,
+            filename=filename,
+            content_type=self.DOCX_CONTENT_TYPE,
+        )
 
 
 class DocumentRegenerateView(EditorRequiredMixin, View):

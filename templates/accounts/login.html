@@ -10,11 +10,10 @@
 <div class="login-wrap">
   <div class="login-card">
     <div class="login-brand">
-      <div class="brand-mark">HMD</div>
-      <div>
-        <div class="brand-name">{{ PROJECT_NAME }}</div>
-        <div class="brand-tag">Сменный контур · Честный знак</div>
-      </div>
+      <span class="brand-text">
+        <span class="brand-name">{{ PROJECT_NAME }}</span>
+        <span class="brand-tag">{{ PROJECT_TAGLINE }}</span>
+      </span>
     </div>
 
     {% if form.errors %}
@@ -34,6 +33,7 @@
       <button class="btn btn-primary" type="submit" style="width:100%;justify-content:center">Войти в систему</button>
     </form>
     <div class="login-note">Доступ выдаёт администратор сменного контура.</div>
+    <div class="login-note dim">Версия {{ APP_VERSION }}</div>
   </div>
 </div>
 </body>

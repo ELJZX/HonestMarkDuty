@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, ListView, UpdateView, View
-from django.shortcuts import render
+from django.views.generic import CreateView, ListView, UpdateView
 
-from accounts.forms import LoginForm, ProfileForm, UserCreateForm, UserUpdateForm
+from accounts.forms import LoginForm, UserCreateForm, UserUpdateForm
 from accounts.models import User
 from core.mixins import AdminRequiredMixin
 
@@ -20,20 +18,6 @@ class AppLoginView(LoginView):
 
 class AppLogoutView(LogoutView):
     next_page = reverse_lazy("accounts:login")
-
-
-class ProfileView(LoginRequiredMixin, UpdateView):
-    model = User
-    form_class = ProfileForm
-    template_name = "accounts/profile.html"
-    success_url = reverse_lazy("accounts:profile")
-
-    def get_object(self, queryset=None):
-        return self.request.user
-
-    def form_valid(self, form):
-        messages.success(self.request, "Профиль обновлён.")
-        return super().form_valid(form)
 
 
 class UserListView(AdminRequiredMixin, ListView):

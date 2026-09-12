@@ -9,7 +9,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
-from journal.models import JournalEntry, JournalExport
+from journal.models import JournalExport
 
 HEADERS = [
     ("№", 6),
