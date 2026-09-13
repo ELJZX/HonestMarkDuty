@@ -1,7 +1,10 @@
 {% if messages %}
-<div class="messages">
+<div class="toast-stack" id="toast-stack">
   {% for message in messages %}
-    <div class="message {{ message.tags }}">{{ message }}</div>
+    <div class="toast {{ message.tags }}">
+      <span class="toast-text">{{ message }}</span>
+      <button class="toast-close" type="button" aria-label="Закрыть">×</button>
+    </div>
   {% endfor %}
 </div>
 {% endif %}

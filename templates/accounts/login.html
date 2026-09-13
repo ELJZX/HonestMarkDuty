@@ -11,12 +11,14 @@
 <div class="login-wrap">
   <div class="login-card">
     <div class="login-brand">
-      <img class="brand-logo" src="{% static 'img/logo1.svg' %}" alt="{{ PROJECT_NAME }}">
+      <span class="brand-logos">
+        <img class="brand-logo" src="{% static 'img/logo1.svg' %}" alt="{{ PROJECT_NAME }}">
+        <img class="brand-logo brand-logo-sm" src="{% static 'img/logo2.svg' %}" alt="">
+      </span>
       <span class="brand-text">
         <span class="brand-name">{{ PROJECT_NAME }}</span>
         <span class="brand-tag">{{ PROJECT_TAGLINE }}</span>
       </span>
-      <img class="brand-logo brand-logo-invert" src="{% static 'img/logo2.svg' %}" alt="">
     </div>
 
     {% if form.errors %}

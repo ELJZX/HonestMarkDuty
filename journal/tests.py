@@ -111,7 +111,7 @@ class JournalViewTests(TestCase):
             reverse("journal:entry_create"),
             {
                 "occurred_at": timezone.now().strftime("%Y-%m-%dT%H:%M"),
-                "equipment_line": "Serac",
+                "equipment_line": "Serac New",
                 "action_task": "Новая запись",
                 "solution": "решение",
                 "downtime": "",

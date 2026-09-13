@@ -77,8 +77,9 @@ code, .mono { font-family: var(--font-mono); }
   transition: background .12s;
 }
 .brand:hover { background: var(--surface-2); }
-.brand-logo { width: 38px; height: 38px; object-fit: contain; flex: 0 0 auto; }
-.brand-logo-invert { filter: invert(1); width: 30px; height: 30px; }
+.brand-logos { display: flex; flex-direction: column; align-items: center; gap: 5px; flex: 0 0 auto; }
+.brand-logo { width: 48px; height: auto; object-fit: contain; display: block; }
+.brand-logo-sm { width: 40px; }
 .brand-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
 .brand-name { font-family: var(--font-mono); font-size: 1.15rem; letter-spacing: .04em; }
 .brand-tag { font-size: .82rem; color: var(--dim); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .06em; }
@@ -221,6 +222,7 @@ table.data .primary { font-weight: 500; }
   padding: 10px 17px; border-radius: var(--radius);
   border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text);
   cursor: pointer; transition: background .12s, border-color .12s, opacity .12s;
+  white-space: nowrap;
 }
 .btn:hover { background: var(--surface-3); border-color: #454545; color: var(--accent); }
 .btn-primary { background: var(--accent); color: #0a0a0a; border-color: var(--accent); }
@@ -252,7 +254,8 @@ label { display: block; font-family: var(--font-mono); font-size: .82rem; text-t
 /* ---------- Filters ---------- */
 .filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 20px; }
 .filters .form-row { margin: 0; min-width: 180px; }
-.filters .field-input { padding: 10px 14px; font-size: 1rem; }
+.filters .field-input { height: 48px; padding: 0 14px; font-size: 1rem; }
+.filters .btn { height: 48px; padding: 0 14px; font-size: 1rem; min-width: 180px; justify-content: center; }
 
 /* ---------- Messages ---------- */
 .messages { margin-bottom: 20px; display: grid; gap: 10px; }
@@ -334,14 +337,92 @@ label { display: block; font-family: var(--font-mono); font-size: .82rem; text-t
 .pagination .current { background: var(--surface-3); color: var(--accent); border-color: var(--border-strong); }
 
 /* ---------- Сменный журнал ---------- */
-.journal-table td.j-date,
-.journal-table td.j-spec {
+.journal-table { table-layout: fixed; font-size: .88rem; min-width: 780px; }
+.journal-table th,
+.journal-table td { padding: 7px 9px; word-break: break-word; }
+table.data.journal-table th { white-space: normal; word-break: normal; vertical-align: bottom; }
+.journal-table td.j-date-first,
+.journal-table td.j-spec-first {
   background: #fff3b0;
   color: #111;
-  text-align: center;
-  vertical-align: middle;
   font-weight: 600;
+  vertical-align: middle;
 }
+.row-actions { display: flex; flex-direction: column; gap: 4px; }
+.btn-xs { padding: 3px 8px; font-size: .72rem; }
+
+/* ---------- Архив Excel (журнал + чеклисты) ---------- */
+.grid-archive {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: repeat(auto-fit, minmax(430px, 1fr));
+}
+.archive-table { font-size: .82rem; min-width: 420px; }
+.archive-table th,
+.archive-table td { padding: 6px 8px; vertical-align: middle; }
+.archive-table th { font-size: .7rem; white-space: nowrap; }
+.archive-table td { overflow-wrap: anywhere; }
+
+/* ---------- Всплывающие уведомления ---------- */
+.toast-stack {
+  position: fixed; top: 100px; right: 20px; z-index: 200;
+  display: flex; flex-direction: column; gap: 10px;
+  max-width: min(460px, calc(100vw - 40px));
+}
+.toast {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: var(--surface); border: 1px solid var(--border-strong);
+  border-left-width: 4px; border-radius: var(--radius);
+  padding: 12px 14px; font-family: var(--font-mono); font-size: .88rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+  animation: toast-in .2s ease;
+}
+.toast.success { border-left-color: var(--ok); }
+.toast.error { border-left-color: var(--danger); }
+.toast.warning { border-left-color: var(--warn); }
+.toast.info { border-left-color: var(--info); }
+.toast.hide { opacity: 0; transform: translateX(16px); transition: opacity .25s, transform .25s; }
+.toast-text { flex: 1; }
+.toast-close {
+  background: none; border: none; color: var(--dim);
+  font-size: 1.25rem; line-height: 1; cursor: pointer; padding: 0 2px;
+}
+.toast-close:hover { color: var(--accent); }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- Модальное окно подтверждения ---------- */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, .65);
+  z-index: 210; display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-overlay[hidden] { display: none; }
+.modal {
+  background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 26px; width: 100%; max-width: 460px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .6);
+}
+.modal-text { font-family: var(--font-mono); font-size: 1rem; margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 10px; }
+@media print { .toast-stack, .modal-overlay { display: none !important; } }
+
+/* ---------- Открытая смена в шапке ---------- */
+.topbar-shift {
+  display: flex; align-items: center; gap: 10px;
+  border: 1px solid rgba(101, 217, 138, .5);
+  background: rgba(101, 217, 138, .08);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+}
+.topbar-shift-info { display: flex; flex-direction: column; line-height: 1.15; }
+.topbar-shift-title {
+  font-family: var(--font-mono); font-size: .78rem; color: var(--ok);
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.topbar-shift-meta { font-family: var(--font-mono); font-size: .72rem; color: var(--muted); }
+@media (max-width: 900px) { .topbar-shift-info { display: none; } }
 
 /* ---------- Чеклист оборудования ---------- */
 .checklist-matrix th,

@@ -77,7 +77,7 @@ class Shift(AuditedModel):
         ordering = ("-date", "-opened_at")
 
     def __str__(self) -> str:
-        return f"Смена {self.date:%d.%m.%Y} ({self.get_kind_display()})"
+        return f"Смена {self.date:%d.%m.%Y}"
 
     @property
     def is_open(self) -> bool:
@@ -87,6 +87,14 @@ class Shift(AuditedModel):
     def duration(self):
         end = self.closed_at or timezone.now()
         return end - self.opened_at
+
+    @property
+    def duration_display(self) -> str:
+        """Длительность в формате чч:мм:сс (без микросекунд)."""
+        total = int(self.duration.total_seconds())
+        hours, remainder = divmod(total, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
 
 class ShiftCheck(AuditedModel):

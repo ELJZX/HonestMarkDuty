@@ -5,9 +5,8 @@
 <div class="card" style="max-width:680px">
   <div class="card-header"><div class="card-title">Сдача смены · {{ object.date|date:"d.m.Y" }}</div></div>
   <div class="message info mb-2">При сдаче смены журнал обращений автоматически выгрузится в Excel ({{ journal_count }} записей) и сохранится в архиве.</div>
-  <form method="post">
+  <form method="post" data-confirm-modal="Вы точно хотите сдать смену?">
     {% csrf_token %}
-    {% include "partials/form_fields.html" %}
     <div class="form-actions">
       <button class="btn btn-primary" type="submit">Сдать смену и выгрузить Excel</button>
       <a class="btn btn-ghost" href="{% url 'shifts:shift_detail' object.pk %}">Отмена</a>

@@ -16,7 +16,7 @@
 
   <form method="get" class="filters">
     <div class="form-row"><label>Поиск</label>
-      <input class="field-input" name="q" value="{{ current.q }}" placeholder="действие, решение, оборудование">
+      <input class="field-input" name="q" value="{{ current.q }}">
     </div>
     <div class="form-row"><label>Специалист</label>
       <select class="field-input field-select" name="specialist">
@@ -31,6 +31,18 @@
 
   <div class="table-wrap">
     <table class="data journal-table">
+      <colgroup>
+        <col style="width:6%">
+        <col style="width:10%">
+        <col style="width:5%">
+        <col style="width:11%">
+        <col style="width:7%">
+        <col style="width:20%">
+        <col style="width:19%">
+        <col style="width:7%">
+        <col style="width:7%">
+        <col style="width:8%">
+      </colgroup>
       <thead>
         <tr>
           <th>Дата</th>
@@ -50,8 +62,11 @@
           {% for row in group.rows %}
           <tr>
             {% if forloop.first %}
-              <td class="j-date" rowspan="{{ group.span }}">{{ group.date|date:"d.m.Y" }}</td>
-              <td class="j-spec" rowspan="{{ group.span }}">{{ group.specialist }}</td>
+              <td class="j-date-first">{{ group.date|date:"d.m" }}<br>{{ group.date|date:"Y" }}</td>
+              <td class="j-spec-first">{{ group.specialist }}</td>
+            {% else %}
+              <td></td>
+              <td></td>
             {% endif %}
             <td class="mono nowrap">{{ row.entry_time|time:"H:i" }}</td>
             <td>{{ row.equipment_line|default:"" }}</td>
@@ -60,9 +75,11 @@
             <td>{{ row.solution|linebreaksbr }}</td>
             <td>{{ row.print_head|default:"" }}</td>
             <td class="mono">{{ row.mileage|default_if_none:"" }}</td>
-            <td class="actions">
-              <a class="btn btn-sm" href="{% url 'journal:entry_update' row.pk %}">Изменить</a>
-              <a class="btn btn-sm btn-danger" href="{% url 'journal:entry_delete' row.pk %}">Удалить</a>
+            <td>
+              <div class="row-actions">
+                <a class="btn btn-xs" href="{% url 'journal:entry_update' row.pk %}">Изменить</a>
+                <a class="btn btn-xs btn-danger" href="{% url 'journal:entry_delete' row.pk %}">Удалить</a>
+              </div>
             </td>
           </tr>
           {% endfor %}

@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ PROJECT_NAME }}{% endblock %} · {{ PROJECT_NAME }}</title>
+  <meta name="csrf-token" content="{{ csrf_token }}">
   <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
   <link rel="alternate icon" href="{% static 'img/logo2.svg' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
@@ -13,12 +14,14 @@
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <a class="brand" href="{% url 'analytics:dashboard' %}" title="На дашборд">
-      <img class="brand-logo" src="{% static 'img/logo1.svg' %}" alt="{{ PROJECT_NAME }}">
+      <span class="brand-logos">
+        <img class="brand-logo" src="{% static 'img/logo1.svg' %}" alt="{{ PROJECT_NAME }}">
+        <img class="brand-logo brand-logo-sm" src="{% static 'img/logo2.svg' %}" alt="">
+      </span>
       <span class="brand-text">
         <span class="brand-name">{{ PROJECT_NAME }}</span>
         <span class="brand-tag">{{ PROJECT_TAGLINE }}</span>
       </span>
-      <img class="brand-logo brand-logo-invert" src="{% static 'img/logo2.svg' %}" alt="">
     </a>
 
     <nav class="nav">
@@ -134,6 +137,16 @@
       {% include "partials/messages.html" %}
       {% block content %}{% endblock %}
     </main>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirm-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-text" id="confirm-modal-text">Вы точно хотите сдать смену?</div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" type="button" id="confirm-modal-yes">Да</button>
+      <button class="btn btn-ghost" type="button" id="confirm-modal-no">Нет</button>
+    </div>
   </div>
 </div>
 

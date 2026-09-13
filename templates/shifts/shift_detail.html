@@ -2,128 +2,51 @@
 {% block title %}{{ shift }}{% endblock %}
 {% block breadcrumb %}Смены / {{ shift.date|date:"d.m.Y" }}{% endblock %}
 {% block topbar_actions %}
-  {% if shift.is_open %}<a class="btn btn-sm btn-primary" href="{% url 'shifts:shift_close' shift.pk %}">Сдать смену</a>{% endif %}
+  {% if shift.is_open %}
+    <button class="btn btn-sm btn-primary" type="button"
+            data-action-url="{% url 'shifts:shift_close_ajax' shift.pk %}"
+            data-action-modal="Вы точно хотите сдать смену?">Сдать смену</button>
+  {% endif %}
 {% endblock %}
 {% block content %}
-<div class="grid grid-side">
-  <div>
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">{{ shift }}</div>
-        {% if shift.is_open %}<span class="badge badge-ok">открыта</span>{% else %}<span class="badge badge-muted">закрыта</span>{% endif %}
-      </div>
-      <dl class="detail-grid">
-        <dt>Дата / тип</dt><dd>{{ shift.date|date:"d.m.Y" }} · {{ shift.get_kind_display }}</dd>
-        <dt>Цех</dt><dd>{{ shift.workshop|default:"—" }}</dd>
-        <dt>Принял</dt><dd>{% firstof shift.opened_by.full_name shift.opened_by.username "—" %} · {{ shift.opened_at|date:"d.m.Y H:i" }}</dd>
-        <dt>Сдал</dt><dd>{% firstof shift.closed_by.full_name shift.closed_by.username "—" %}{% if shift.closed_at %} · {{ shift.closed_at|date:"d.m.Y H:i" }}{% endif %}</dd>
-        <dt>Передал</dt><dd>{{ shift.handover_to.full_name|default:"—" }}</dd>
-        <dt>Длительность</dt><dd class="mono">{{ shift.duration }}</dd>
-        <dt>При приёме</dt><dd>{{ shift.opening_notes|default:"—"|linebreaksbr }}</dd>
-        <dt>Состояние оборудования</dt><dd>{{ shift.equipment_condition|default:"—"|linebreaksbr }}</dd>
-        <dt>Состояние склада</dt><dd>{{ shift.inventory_notes|default:"—"|linebreaksbr }}</dd>
-        <dt>При сдаче</dt><dd>{{ shift.closing_notes|default:"—"|linebreaksbr }}</dd>
-      </dl>
-    </div>
-
-    <div class="card">
-      <div class="card-header"><div class="card-title">Записи журнала за смену</div></div>
-      <div class="table-wrap">
-        <table class="data">
-          <thead><tr><th>Время</th><th>Оборудование / Линия</th><th>Действие / Задача</th><th>Решение</th></tr></thead>
-          <tbody>
-            {% for e in shift.journal_entries.all %}
-            <tr>
-              <td class="mono nowrap">{{ e.entry_time|time:"H:i" }}</td>
-              <td>{{ e.equipment_line|default:"—" }}</td>
-              <td>{{ e.action_task|truncatechars:60 }}</td>
-              <td>{{ e.solution|default:"—"|truncatechars:60 }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="4" class="empty">Записей не было</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header"><div class="card-title">Проверка склада при смене</div></div>
-      <div class="table-wrap">
-        <table class="data">
-          <thead><tr><th>Позиция</th><th>Состояние</th><th>Износ</th><th>Комментарий</th></tr></thead>
-          <tbody>
-            {% for c in shift.checks.all %}
-            <tr>
-              <td>{{ c.item }}</td>
-              <td>{% if c.condition %}<span class="badge badge-muted">{{ c.get_condition_display }}</span>{% else %}—{% endif %}</td>
-              <td class="mono">{{ c.wear_percent }}%</td>
-              <td>{{ c.comment|default:"—" }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="4" class="empty">Проверок не было</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% if shift.is_open %}
-      <form method="post" action="{% url 'shifts:check_create' shift.pk %}" class="filters mt-2">
-        {% csrf_token %}
-        <div class="form-row"><label>Позиция</label>{{ check_form.item }}</div>
-        <div class="form-row"><label>Состояние</label>{{ check_form.condition }}</div>
-        <div class="form-row"><label>Износ, %</label>{{ check_form.wear_percent }}</div>
-        <div class="form-row" style="min-width:220px"><label>Комментарий</label>{{ check_form.comment }}</div>
-        <button class="btn" type="submit">Добавить проверку</button>
-      </form>
-      {% endif %}
-    </div>
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">{{ shift }}</div>
+    {% if shift.is_open %}<span class="badge badge-ok">открыта</span>{% else %}<span class="badge badge-muted">закрыта</span>{% endif %}
   </div>
+  <dl class="detail-grid">
+    <dt>Дата</dt><dd>{{ shift.date|date:"d.m.Y" }}</dd>
+    <dt>Принял</dt><dd>{% firstof shift.opened_by.full_name shift.opened_by.username "—" %} · {{ shift.opened_at|date:"d.m.Y H:i" }}</dd>
+    <dt>Сдал</dt><dd>{% firstof shift.closed_by.full_name shift.closed_by.username "—" %}{% if shift.closed_at %} · {{ shift.closed_at|date:"d.m.Y H:i" }}{% endif %}</dd>
+    <dt>Длительность</dt>
+    <dd class="mono">
+      {% if shift.is_open %}
+        <span id="shift-timer" data-start="{{ shift.opened_at|date:'c' }}">{{ shift.duration_display }}</span>
+      {% else %}
+        {{ shift.duration_display }}
+      {% endif %}
+    </dd>
+  </dl>
+</div>
 
-  <div>
-    <div class="card">
-      <div class="card-header"><div class="card-title">Выгрузки Excel</div></div>
-      <ul class="timeline">
-        {% for exp in shift.exports.all %}
-        <li>
-          <div class="tl-body"><a href="{{ exp.file.url }}">Скачать</a></div>
-          <div class="tl-time">{{ exp.created_at|date:"d.m.Y H:i" }} · {{ exp.entries_count }} записей</div>
-        </li>
+<div class="card">
+  <div class="card-header"><div class="card-title">Записи журнала за смену</div></div>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Время</th><th>Оборудование / Линия</th><th>Действие / Задача</th><th>Решение</th></tr></thead>
+      <tbody>
+        {% for e in shift.journal_entries.all %}
+        <tr>
+          <td class="mono nowrap">{{ e.entry_time|time:"H:i" }}</td>
+          <td>{{ e.equipment_line|default:"—" }}</td>
+          <td>{{ e.action_task|truncatechars:60 }}</td>
+          <td>{{ e.solution|default:"—"|truncatechars:60 }}</td>
+        </tr>
         {% empty %}
-        <li><div class="tl-body dim">При сдаче смены файл появится автоматически</div></li>
+        <tr><td colspan="4" class="empty">Записей не было</td></tr>
         {% endfor %}
-      </ul>
-    </div>
-
-    <div class="card">
-      <div class="card-header"><div class="card-title">Чеклисты оборудования</div></div>
-      <ul class="timeline">
-        {% for c in shift.checklists.all %}
-        <li>
-          <div class="tl-body">
-            <a href="{% url 'checklists:checklist_detail' c.pk %}">{{ c.date|date:"d.m.Y" }}</a>
-            {% if c.file %} · <a href="{{ c.file.url }}">XLSX</a>{% endif %}
-          </div>
-          <div class="tl-time">{{ c.get_status_display }} · критичных: {{ c.critical_count }}</div>
-        </li>
-        {% empty %}
-        <li><div class="tl-body dim">Чеклисты не заполнялись</div></li>
-        {% endfor %}
-      </ul>
-    </div>
-
-    <div class="card">
-      <div class="card-header"><div class="card-title">Движения по складу</div></div>
-      <ul class="timeline">
-        {% for m in shift.inventory_movements.all %}
-        <li>
-          <div class="tl-body"><a href="{% url 'inventory:item_detail' m.item.pk %}">{{ m.item.name }}</a></div>
-          <div class="tl-time">{{ m.get_movement_type_display }} · {{ m.quantity }}</div>
-        </li>
-        {% empty %}
-        <li><div class="tl-body dim">Движений не было</div></li>
-        {% endfor %}
-      </ul>
-    </div>
+      </tbody>
+    </table>
   </div>
 </div>
 {% endblock %}

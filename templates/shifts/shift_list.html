@@ -2,53 +2,52 @@
 {% block title %}Смены{% endblock %}
 {% block breadcrumb %}Смены{% endblock %}
 {% block topbar_actions %}
-  <a class="btn btn-primary btn-sm" href="{% url 'shifts:shift_open' %}">Открыть смену</a>
+  {% if open_shift %}
+    <div class="topbar-shift">
+      <div class="topbar-shift-info">
+        <span class="topbar-shift-title">Смена открыта</span>
+        <span class="topbar-shift-meta">{% firstof open_shift.opened_by.username "—" %} · {{ open_shift.opened_at|date:"d.m.Y H:i" }}</span>
+      </div>
+      <a class="btn btn-xs" href="{% url 'shifts:shift_detail' open_shift.pk %}">Просмотр</a>
+      <button class="btn btn-xs btn-primary" type="button"
+              data-action-url="{% url 'shifts:shift_close_ajax' open_shift.pk %}"
+              data-action-modal="Вы точно хотите сдать смену?">Сдать смену</button>
+    </div>
+  {% else %}
+    <button class="btn btn-primary btn-sm" type="button"
+            data-action-url="{% url 'shifts:shift_open_ajax' %}"
+            data-action-modal="После открытия смены все новые обращения будут к ней привязаны."
+            data-yes-label="Открыть смену">Открыть смену</button>
+  {% endif %}
 {% endblock %}
 {% block content %}
-
-{% if open_shift %}
-<div class="card" style="border-color: var(--ok)">
-  <div class="card-header">
-    <div>
-      <div class="card-title">Смена открыта</div>
-      <div class="card-sub">{% firstof open_shift.opened_by.full_name open_shift.opened_by.username "—" %} · {{ open_shift.opened_at|date:"d.m.Y H:i" }} · {{ open_shift.get_kind_display }}</div>
-    </div>
-    <div class="flex gap-1">
-      <a class="btn btn-sm" href="{% url 'shifts:shift_detail' open_shift.pk %}">Открыть</a>
-      <a class="btn btn-sm btn-primary" href="{% url 'shifts:shift_close' open_shift.pk %}">Сдать смену</a>
-    </div>
-  </div>
-</div>
-{% endif %}
-
 <div class="card">
   <div class="card-header">
     <div class="card-title">История смен</div>
-    <form method="get" class="flex gap-1">
-      <select class="field-input field-select" name="status" data-auto-submit style="width:auto">
-        <option value="">Все статусы</option>
-        <option value="open" {% if current.status == 'open' %}selected{% endif %}>Открытые</option>
-        <option value="closed" {% if current.status == 'closed' %}selected{% endif %}>Закрытые</option>
-      </select>
-    </form>
   </div>
+
+  <form method="get" class="filters">
+    <div class="form-row"><label>Дата</label>
+      <input class="field-input" type="date" name="date" value="{{ current.date }}">
+    </div>
+    <button class="btn" type="submit">Применить</button>
+    {% if current.date %}<a class="btn btn-ghost" href="{% url 'shifts:shift_list' %}" style="min-width:auto">Сбросить</a>{% endif %}
+  </form>
   <div class="table-wrap">
     <table class="data">
-      <thead><tr><th>Дата</th><th>Тип</th><th>Цех</th><th>Принял</th><th>Сдал</th><th>Длительность</th><th>Статус</th><th></th></tr></thead>
+      <thead><tr><th>Дата</th><th>Принял</th><th>Сдал</th><th>Длительность</th><th>Статус</th><th></th></tr></thead>
       <tbody>
         {% for s in shifts %}
         <tr>
           <td class="primary mono">{{ s.date|date:"d.m.Y" }}</td>
-          <td>{{ s.get_kind_display }}</td>
-          <td>{{ s.workshop|default:"—" }}</td>
           <td>{% firstof s.opened_by.full_name s.opened_by.username "—" %}</td>
           <td>{% firstof s.closed_by.full_name s.closed_by.username "—" %}</td>
-          <td class="mono">{{ s.duration }}</td>
+          <td class="mono">{{ s.duration_display }}</td>
           <td>{% if s.is_open %}<span class="badge badge-ok">открыта</span>{% else %}<span class="badge badge-muted">закрыта</span>{% endif %}</td>
-          <td class="actions"><a class="btn btn-sm" href="{% url 'shifts:shift_detail' s.pk %}">Открыть</a></td>
+          <td class="actions"><a class="btn btn-sm" href="{% url 'shifts:shift_detail' s.pk %}">Просмотр</a></td>
         </tr>
         {% empty %}
-        <tr><td colspan="8" class="empty">Смен ещё не было</td></tr>
+        <tr><td colspan="6" class="empty">Смен ещё не было</td></tr>
         {% endfor %}
       </tbody>
     </table>

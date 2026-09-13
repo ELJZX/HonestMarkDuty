@@ -80,6 +80,16 @@ class JournalEntryCreateView(EditorRequiredMixin, CreateView):
     template_name = "journal/entry_form.html"
     extra_context = {"title": "Новая запись журнала", "back_url": "journal:entry_list"}
 
+    def get_initial(self):
+        initial = super().get_initial()
+        shift = (
+            Shift.objects.open().filter(opened_by=self.request.user).first()
+            or Shift.objects.open().first()
+        )
+        if shift and shift.opened_by_id:
+            initial["specialist"] = shift.opened_by_id
+        return initial
+
     def form_valid(self, form):
         form.instance.created_by = self.request.user
         form.instance.entry_type = JournalEntry.EntryType.WORK
@@ -126,6 +136,18 @@ class JournalExportListView(LoginRequiredMixin, ListView):
     template_name = "journal/export_list.html"
     context_object_name = "exports"
     paginate_by = 30
+
+    def get_context_data(self, **kwargs):
+        from checklists.models import EquipmentChecklist
+
+        ctx = super().get_context_data(**kwargs)
+        ctx["checklist_exports"] = (
+            EquipmentChecklist.objects.exclude(file="")
+            .select_related("workshop", "performed_by")
+            .order_by("-date", "-created_at")[:30]
+        )
+        ctx["checklists_total"] = EquipmentChecklist.objects.count()
+        return ctx
 
 
 class JournalExportCreateView(EditorRequiredMixin, View):

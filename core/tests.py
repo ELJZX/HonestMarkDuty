@@ -12,12 +12,12 @@ from core.views import server_error
 
 class VersionTests(TestCase):
     def test_version_value(self):
-        self.assertEqual(get_version(), "0.0.4")
+        self.assertEqual(get_version(), "0.0.5")
 
     def test_context_processor_has_version_and_tagline(self):
         request = RequestFactory().get("/")
         context = project_context(request)
-        self.assertEqual(context["APP_VERSION"], "0.0.4")
+        self.assertEqual(context["APP_VERSION"], "0.0.5")
         self.assertEqual(context["PROJECT_TAGLINE"], "Честное выполнение обязанностей")
         self.assertEqual(context["PROJECT_NAME"], "HonestMarkDuty")
 
