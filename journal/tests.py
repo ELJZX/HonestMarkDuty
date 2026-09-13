@@ -3,84 +3,89 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import User
-from journal.exports import build_workbook, export_entries_to_excel, export_shift_to_excel
+from journal.exports import build_workbook, export_full_journal, group_entries
 from journal.forms import JournalEntryForm
 from journal.models import JournalEntry, JournalExport
 from shifts.models import Shift
 
 
 class JournalEntryModelTests(TestCase):
-    def test_done_sets_resolved_at(self):
-        entry = JournalEntry.objects.create(
-            source_location="Линия", problem="P", status=JournalEntry.Status.DONE
-        )
-        self.assertIsNotNone(entry.resolved_at)
+    def test_specialist_taken_from_shift(self):
+        user = User.objects.create_user(username="u", password="x", last_name="Иванов")
+        shift = Shift.objects.create(opened_by=user)
+        entry = JournalEntry.objects.create(shift=shift, action_task="тест")
+        self.assertEqual(entry.specialist, user)
+        self.assertEqual(entry.specialist_name, "Иванов")
 
-    def test_reopen_clears_resolved_at(self):
-        entry = JournalEntry.objects.create(
-            source_location="Линия", problem="P", status=JournalEntry.Status.DONE
-        )
-        entry.status = JournalEntry.Status.IN_PROGRESS
-        entry.save()
-        self.assertIsNone(entry.resolved_at)
+    def test_specialist_name_fallback(self):
+        entry = JournalEntry.objects.create(action_task="тест", specialist=None)
+        self.assertEqual(entry.specialist_name, "—")
 
-    def test_badges(self):
-        entry = JournalEntry.objects.create(
-            source_location="Л", problem="P",
-            status=JournalEntry.Status.NEW, priority=JournalEntry.Priority.CRITICAL,
+    def test_marker_flag(self):
+        marker = JournalEntry.objects.create(
+            action_task="Смену принял +", entry_type=JournalEntry.EntryType.SHIFT_START
         )
-        self.assertEqual(entry.status_badge, "badge-info")
-        self.assertEqual(entry.priority_badge, "badge-danger")
+        work = JournalEntry.objects.create(action_task="работа")
+        self.assertTrue(marker.is_marker)
+        self.assertFalse(work.is_marker)
 
-    def test_response_time_positive(self):
-        entry = JournalEntry.objects.create(source_location="Л", problem="P")
-        self.assertGreaterEqual(entry.response_time.total_seconds(), 0)
+    def test_entry_date_and_time(self):
+        moment = timezone.now()
+        entry = JournalEntry.objects.create(action_task="a", occurred_at=moment)
+        local = timezone.localtime(moment)
+        self.assertEqual(entry.entry_date, local.date())
+        self.assertEqual(entry.entry_time.hour, local.hour)
 
     def test_str(self):
-        entry = JournalEntry.objects.create(source_location="Линия розлива", problem="P")
-        self.assertIn("Линия розлива", str(entry))
+        entry = JournalEntry.objects.create(action_task="Проверка печати")
+        self.assertIn("Проверка печати", str(entry))
 
 
 class JournalExportTests(TestCase):
-    def setUp(self):
-        self.shift = Shift.objects.create()
+    def test_empty_journal_returns_none(self):
+        self.assertIsNone(export_full_journal())
 
-    def test_export_empty_shift_returns_none(self):
-        self.assertIsNone(export_shift_to_excel(self.shift, None))
+    def test_full_export_is_singleton(self):
+        JournalEntry.objects.create(action_task="A")
+        first = export_full_journal()
+        self.assertTrue(first.is_full)
+        JournalEntry.objects.create(action_task="B")
+        second = export_full_journal()
+        self.assertEqual(JournalExport.objects.filter(is_full=True).count(), 1)
+        self.assertEqual(second.pk, first.pk)
+        self.assertEqual(second.entries_count, 2)
 
-    def test_export_shift_creates_file(self):
-        JournalEntry.objects.create(
-            shift=self.shift, source_location="Цех", problem="П", solution="Р",
-            status=JournalEntry.Status.DONE,
+    def test_group_entries_splits_by_shift(self):
+        user = User.objects.create_user(username="u", password="x")
+        shift = Shift.objects.create(opened_by=user)
+        JournalEntry.objects.create(shift=shift, action_task="a")
+        JournalEntry.objects.create(shift=shift, action_task="b")
+        JournalEntry.objects.create(action_task="c")
+        groups = group_entries(list(JournalEntry.objects.order_by("occurred_at")))
+        self.assertEqual(len(groups), 2)
+
+    def test_build_workbook_title(self):
+        entries = [JournalEntry.objects.create(action_task="a")]
+        workbook = build_workbook(entries)
+        self.assertEqual(
+            workbook.active["A1"].value,
+            "Сменный журнал специалистов по цифровой маркировке",
         )
-        export = export_shift_to_excel(self.shift, None)
-        self.assertIsInstance(export, JournalExport)
-        self.assertEqual(export.entries_count, 1)
-        self.assertTrue(export.file.name.endswith(".xlsx"))
-
-    def test_export_entries_to_excel(self):
-        JournalEntry.objects.create(source_location="Цех", problem="П")
-        export = export_entries_to_excel(JournalEntry.objects.all(), None)
-        self.assertTrue(export.file.name.endswith(".xlsx"))
-
-    def test_build_workbook_has_sheet(self):
-        entries = [JournalEntry.objects.create(source_location="Цех", problem="П")]
-        workbook = build_workbook(entries, "Заголовок")
-        self.assertEqual(workbook.active.title, "Сменный журнал")
 
 
 class JournalFormTests(TestCase):
-    def test_entry_form_valid(self):
+    def test_form_valid(self):
         form = JournalEntryForm(
             data={
-                "received_at": timezone.now().strftime("%Y-%m-%dT%H:%M"),
-                "source_location": "Линия",
-                "problem": "Проблема",
-                "status": JournalEntry.Status.NEW,
-                "priority": JournalEntry.Priority.NORMAL,
+                "occurred_at": timezone.now().strftime("%Y-%m-%dT%H:%M"),
+                "equipment_line": "AVE",
+                "action_task": "Проверка",
+                "solution": "",
+                "downtime": "",
+                "print_head": "",
             }
         )
-        self.assertTrue(form.is_valid())
+        self.assertTrue(form.is_valid(), form.errors)
 
 
 class JournalViewTests(TestCase):
@@ -92,37 +97,29 @@ class JournalViewTests(TestCase):
             username="spec", password="x", role=User.Role.SPECIALIST
         )
         self.shift = Shift.objects.create(opened_by=self.specialist)
-        self.entry = JournalEntry.objects.create(
-            source_location="Линия розлива",
-            problem="Не читается код",
-            priority=JournalEntry.Priority.HIGH,
-        )
+        self.entry = JournalEntry.objects.create(shift=self.shift, action_task="Проверка печати")
 
     def test_list_renders_and_filters(self):
         self.client.force_login(self.specialist)
         self.assertEqual(self.client.get(reverse("journal:entry_list")).status_code, 200)
-        response = self.client.get(reverse("journal:entry_list"), {"q": "код", "priority": "high"})
-        self.assertContains(response, "Не читается код")
+        response = self.client.get(reverse("journal:entry_list"), {"q": "печати"})
+        self.assertContains(response, "Проверка печати")
 
-    def test_detail_renders(self):
-        self.client.force_login(self.specialist)
-        response = self.client.get(reverse("journal:entry_detail", args=[self.entry.pk]))
-        self.assertContains(response, "Не читается код")
-
-    def test_create_entry_binds_shift_and_author(self):
+    def test_create_entry(self):
         self.client.force_login(self.specialist)
         response = self.client.post(
             reverse("journal:entry_create"),
             {
-                "received_at": timezone.now().strftime("%Y-%m-%dT%H:%M"),
-                "source_location": "Склад",
-                "problem": "Новая проблема",
-                "status": JournalEntry.Status.NEW,
-                "priority": JournalEntry.Priority.NORMAL,
+                "occurred_at": timezone.now().strftime("%Y-%m-%dT%H:%M"),
+                "equipment_line": "Serac",
+                "action_task": "Новая запись",
+                "solution": "решение",
+                "downtime": "",
+                "print_head": "",
             },
         )
         self.assertEqual(response.status_code, 302)
-        created = JournalEntry.objects.get(problem="Новая проблема")
+        created = JournalEntry.objects.get(action_task="Новая запись")
         self.assertEqual(created.created_by, self.specialist)
         self.assertEqual(created.shift, self.shift)
 
@@ -131,23 +128,27 @@ class JournalViewTests(TestCase):
         response = self.client.post(
             reverse("journal:entry_update", args=[self.entry.pk]),
             {
-                "received_at": timezone.now().strftime("%Y-%m-%dT%H:%M"),
-                "source_location": "Линия",
-                "problem": "Обновлена",
-                "status": JournalEntry.Status.DONE,
-                "priority": JournalEntry.Priority.HIGH,
+                "occurred_at": timezone.now().strftime("%Y-%m-%dT%H:%M"),
+                "equipment_line": "AVE",
+                "action_task": "Обновлено",
+                "solution": "",
+                "downtime": "",
+                "print_head": "",
             },
         )
         self.assertEqual(response.status_code, 302)
         self.entry.refresh_from_db()
-        self.assertEqual(self.entry.status, JournalEntry.Status.DONE)
+        self.assertEqual(self.entry.action_task, "Обновлено")
 
-    def test_manual_export_view(self):
+    def test_delete_entry(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(reverse("journal:entry_delete", args=[self.entry.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(JournalEntry.objects.filter(pk=self.entry.pk).exists())
+
+    def test_export_create_and_list(self):
         self.client.force_login(self.specialist)
         response = self.client.get(reverse("journal:export_create"))
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(JournalExport.objects.exists())
-
-    def test_export_list_renders(self):
-        self.client.force_login(self.specialist)
+        self.assertTrue(JournalExport.objects.filter(is_full=True).exists())
         self.assertEqual(self.client.get(reverse("journal:export_list")).status_code, 200)

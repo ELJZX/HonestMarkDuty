@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ PROJECT_NAME }}{% endblock %} · {{ PROJECT_NAME }}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+  <link rel="alternate icon" href="{% static 'img/logo2.svg' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   {% block extra_css %}{% endblock %}
 </head>
@@ -11,14 +13,16 @@
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <a class="brand" href="{% url 'analytics:dashboard' %}" title="На дашборд">
+      <img class="brand-logo" src="{% static 'img/logo1.svg' %}" alt="{{ PROJECT_NAME }}">
       <span class="brand-text">
         <span class="brand-name">{{ PROJECT_NAME }}</span>
         <span class="brand-tag">{{ PROJECT_TAGLINE }}</span>
       </span>
+      <img class="brand-logo brand-logo-invert" src="{% static 'img/logo2.svg' %}" alt="">
     </a>
 
     <nav class="nav">
-      <details class="nav-group" {% if request.resolver_match.namespace == 'shifts' or request.resolver_match.namespace == 'journal' %}open{% endif %}>
+      <details class="nav-group" {% if request.resolver_match.namespace == 'shifts' or request.resolver_match.namespace == 'journal' or request.resolver_match.namespace == 'checklists' %}open{% endif %}>
         <summary class="nav-label">Сменная работа</summary>
         <div class="nav-items">
           <a class="nav-item {% if request.resolver_match.namespace == 'shifts' %}active{% endif %}" href="{% url 'shifts:shift_list' %}">
@@ -26,6 +30,9 @@
           </a>
           <a class="nav-item {% if request.resolver_match.namespace == 'journal' and request.resolver_match.url_name != 'export_list' %}active{% endif %}" href="{% url 'journal:entry_list' %}">
             <span class="ico">▤</span> Сменный журнал
+          </a>
+          <a class="nav-item {% if request.resolver_match.namespace == 'checklists' %}active{% endif %}" href="{% url 'checklists:checklist_list' %}">
+            <span class="ico">▣</span> Чеклист оборудования
           </a>
           <a class="nav-item {% if request.resolver_match.url_name == 'export_list' %}active{% endif %}" href="{% url 'journal:export_list' %}">
             <span class="ico">⇩</span> Архив Excel

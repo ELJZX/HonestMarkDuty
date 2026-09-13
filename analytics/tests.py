@@ -19,17 +19,12 @@ class AnalyticsViewTests(TestCase):
         self.item = InventoryItem.objects.create(name="Сканер", quantity=0, min_quantity=1, wear_percent=50)
         Equipment.objects.create(name="Упаковщик", inventory_number="EQ-1", status=EquipmentStatus.OPERATIONAL)
         self.shift = Shift.objects.create(opened_by=self.specialist, workshop=self.workshop)
-        JournalEntry.objects.create(
-            shift=self.shift, workshop=self.workshop, source_location="Линия", problem="П"
-        )
-        template = DocumentTemplate.objects.create(
-            name="Шаблон", title_template="Т", body="B"
-        )
+        JournalEntry.objects.create(shift=self.shift, action_task="Проверка печати", specialist=self.specialist)
+        template = DocumentTemplate.objects.create(name="Шаблон", title_template="Т", body="B")
         Document.objects.create(template=template, workshop=self.workshop, title="Док", number="1")
 
     def test_dashboard_requires_login(self):
-        response = self.client.get(reverse("analytics:dashboard"))
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.client.get(reverse("analytics:dashboard")).status_code, 302)
 
     def test_dashboard_renders_with_kpi(self):
         self.client.force_login(self.specialist)
@@ -39,7 +34,7 @@ class AnalyticsViewTests(TestCase):
         self.assertEqual(kpi["items"], 1)
         self.assertEqual(kpi["low_stock"], 1)
         self.assertEqual(kpi["equipment"], 1)
-        self.assertEqual(kpi["open_journal"], 1)
+        self.assertEqual(kpi["journal"], 1)
         self.assertEqual(kpi["documents"], 1)
         self.assertIn("journal_series_values", response.context)
 
@@ -48,4 +43,5 @@ class AnalyticsViewTests(TestCase):
         response = self.client.get(reverse("analytics:statistics"))
         self.assertEqual(response.status_code, 200)
         self.assertIn("status_rows", response.context)
+        self.assertIn("entry_rows", response.context)
         self.assertIn("workshop_rows", response.context)

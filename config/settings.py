@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "inventory",
     "shifts",
     "journal",
+    "checklists",
     "documents",
     "equipment",
     "analytics",

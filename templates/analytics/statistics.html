@@ -3,8 +3,8 @@
 {% block breadcrumb %}Статистика{% endblock %}
 {% block content %}
 <div class="grid grid-3 mb-3">
-  <div class="stat"><div class="stat-label">Обращений за 30 дней</div><div class="stat-value">{{ journal_total }}</div></div>
-  <div class="stat ok"><div class="stat-label">Решено</div><div class="stat-value">{{ journal_done }}</div></div>
+  <div class="stat"><div class="stat-label">Записей журнала за 30 дней</div><div class="stat-value">{{ journal_total }}</div></div>
+  <div class="stat ok"><div class="stat-label">Чеклистов оборудования</div><div class="stat-value">{{ checklists_total }}</div></div>
   <div class="stat"><div class="stat-label">Смен за 30 дней</div><div class="stat-value">{{ shifts_total }}</div></div>
 </div>
 
@@ -17,9 +17,9 @@
     </table></div>
   </div>
   <div class="card">
-    <div class="card-header"><div class="card-title">Обращения по статусам</div></div>
+    <div class="card-header"><div class="card-title">Записи журнала по типам</div></div>
     <div class="table-wrap"><table class="data">
-      <thead><tr><th>Статус</th><th>Кол-во</th></tr></thead>
+      <thead><tr><th>Тип</th><th>Кол-во</th></tr></thead>
       <tbody>{% for row in entry_rows %}<tr><td>{{ row.label }}</td><td class="mono">{{ row.count }}</td></tr>{% endfor %}</tbody>
     </table></div>
   </div>
@@ -36,10 +36,10 @@
   <div class="card-header"><div class="card-title">Сводка по цехам</div></div>
   <div class="table-wrap">
     <table class="data">
-      <thead><tr><th>Цех</th><th>Обращения</th><th>Оборудование</th><th>Смены</th></tr></thead>
+      <thead><tr><th>Цех</th><th>Чеклисты</th><th>Оборудование</th><th>Смены</th></tr></thead>
       <tbody>
         {% for w in workshop_rows %}
-        <tr><td class="primary">{{ w.name }}</td><td class="mono">{{ w.journal_count }}</td><td class="mono">{{ w.equipment_count }}</td><td class="mono">{{ w.shifts_count }}</td></tr>
+        <tr><td class="primary">{{ w.name }}</td><td class="mono">{{ w.checklists_count }}</td><td class="mono">{{ w.equipment_count }}</td><td class="mono">{{ w.shifts_count }}</td></tr>
         {% empty %}<tr><td colspan="4" class="empty">Нет данных</td></tr>{% endfor %}
       </tbody>
     </table>

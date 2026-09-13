@@ -10,31 +10,27 @@ class JournalEntryForm(StyledModelForm):
     class Meta:
         model = JournalEntry
         fields = (
-            "received_at",
-            "source_location",
-            "workshop",
-            "reported_by",
-            "problem",
+            "occurred_at",
+            "specialist",
+            "equipment_line",
+            "downtime",
+            "action_task",
             "solution",
-            "status",
-            "priority",
-            "assigned_to",
-            "equipment",
+            "print_head",
+            "mileage",
         )
         widgets = {
-            "received_at": forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
-            "problem": forms.Textarea(attrs={"rows": 4}),
-            "solution": forms.Textarea(attrs={"rows": 4}),
+            "occurred_at": forms.DateTimeInput(
+                attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"
+            ),
+            "action_task": forms.Textarea(attrs={"rows": 3}),
+            "solution": forms.Textarea(attrs={"rows": 3}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["received_at"].input_formats = ["%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M", "%Y-%m-%d"]
-
-
-class JournalFilterForm(forms.Form):
-    q = forms.CharField(
-        label="Поиск",
-        required=False,
-        widget=forms.TextInput(attrs={"class": "field-input", "placeholder": "Проблема, место, автор..."}),
-    )
+        self.fields["occurred_at"].input_formats = [
+            "%Y-%m-%dT%H:%M",
+            "%Y-%m-%d %H:%M",
+            "%Y-%m-%d",
+        ]

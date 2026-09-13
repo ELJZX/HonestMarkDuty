@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Чеклист оборудования{% endblock %}
+{% block breadcrumb %}Сменная работа / чеклист оборудования{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-primary btn-sm" href="{% url 'checklists:checklist_create' %}">+ Заполнить чеклист</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Чеклисты технического осмотра оборудования «Честный знак»</div>
+    <div class="card-sub">Файл формируется при сдаче смены и хранится в базе</div>
+  </div>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>Дата</th><th>Цех</th><th>Выполнил</th><th>Критичных</th><th>Статус</th><th>Файл</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for c in checklists %}
+        <tr>
+          <td class="mono nowrap">{{ c.date|date:"d.m.Y" }}</td>
+          <td>{{ c.workshop|default:"—" }}</td>
+          <td>{% firstof c.performed_by.full_name c.performed_by.username "—" %}</td>
+          <td class="mono">{% if c.critical_count %}<span class="badge badge-danger">{{ c.critical_count }}</span>{% else %}0{% endif %}</td>
+          <td><span class="badge {{ c.status_badge }}">{{ c.get_status_display }}</span></td>
+          <td>{% if c.file %}<a class="btn btn-sm" href="{{ c.file.url }}">Скачать</a>{% else %}<span class="dim">не сформирован</span>{% endif %}</td>
+          <td class="actions"><a class="btn btn-sm" href="{% url 'checklists:checklist_detail' c.pk %}">Открыть</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="empty">Чеклистов пока нет</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

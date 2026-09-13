@@ -1,27 +1,30 @@
 {% extends "base.html" %}
 {% block title %}Архив Excel{% endblock %}
-{% block breadcrumb %}Журнал / архив Excel{% endblock %}
+{% block breadcrumb %}Сменная работа / архив Excel{% endblock %}
 {% block topbar_actions %}
-  <a class="btn btn-primary btn-sm" href="{% url 'journal:export_create' %}">Выгрузить текущий журнал</a>
+  <a class="btn btn-primary btn-sm" href="{% url 'journal:export_create' %}">Обновить единый архив</a>
 {% endblock %}
 {% block content %}
 <div class="card">
-  <div class="card-header"><div class="card-title">Выгрузки сменного журнала</div></div>
+  <div class="card-header">
+    <div class="card-title">Единый Excel-архив сменного журнала</div>
+    <div class="card-sub">Файл формируется автоматически при сдаче смены и доступен для скачивания в любой момент</div>
+  </div>
   <div class="table-wrap">
     <table class="data">
-      <thead><tr><th>Создан</th><th>Смена</th><th>Записей</th><th>Период</th><th>Автор</th><th>Файл</th></tr></thead>
+      <thead><tr><th>Создан</th><th>Тип</th><th>Записей</th><th>Период</th><th>Автор</th><th>Файл</th></tr></thead>
       <tbody>
         {% for e in exports %}
         <tr>
           <td class="mono nowrap">{{ e.created_at|date:"d.m.Y H:i" }}</td>
-          <td>{% if e.shift %}<a href="{% url 'shifts:shift_detail' e.shift.pk %}">{{ e.shift }}</a>{% else %}ручная{% endif %}</td>
+          <td>{% if e.is_full %}<span class="badge badge-info">единый</span>{% else %}<span class="badge badge-muted">смена</span>{% endif %}</td>
           <td class="mono">{{ e.entries_count }}</td>
-          <td class="mono">{{ e.period_start|date:"d.m H:i"|default:"—" }} – {{ e.period_end|date:"d.m H:i"|default:"—" }}</td>
+          <td class="mono">{{ e.period_start|date:"d.m.Y"|default:"—" }} – {{ e.period_end|date:"d.m.Y"|default:"—" }}</td>
           <td>{% firstof e.created_by.full_name e.created_by.username "—" %}</td>
           <td><a class="btn btn-sm" href="{{ e.file.url }}">Скачать</a></td>
         </tr>
         {% empty %}
-        <tr><td colspan="6" class="empty">Выгрузок пока нет</td></tr>
+        <tr><td colspan="6" class="empty">Архив пока не сформирован</td></tr>
         {% endfor %}
       </tbody>
     </table>

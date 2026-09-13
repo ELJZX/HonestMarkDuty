@@ -64,20 +64,6 @@
         </table>
       </div>
     </div>
-
-    {% if journal_entries %}
-    <div class="card">
-      <div class="card-header"><div class="card-title">Связанные обращения</div></div>
-      <ul class="timeline">
-        {% for e in journal_entries %}
-        <li>
-          <div class="tl-time">{{ e.received_at|date:"d.m.Y H:i" }} · {{ e.get_status_display }}</div>
-          <div class="tl-body"><a href="{% url 'journal:entry_detail' e.pk %}">{{ e.problem|truncatechars:80 }}</a></div>
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-    {% endif %}
   </div>
 
   <div>

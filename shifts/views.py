@@ -3,11 +3,13 @@ from __future__ import annotations
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import CreateView, DetailView, ListView, UpdateView, View
 
 from core.mixins import EditorRequiredMixin
+from journal.exports import export_full_journal
+from journal.models import JournalEntry
 from shifts.forms import ShiftCheckForm, ShiftCloseForm, ShiftOpenForm
 from shifts.models import Shift
 
@@ -66,7 +68,16 @@ class ShiftOpenView(EditorRequiredMixin, CreateView):
         form.instance.opened_at = timezone.now()
         form.instance.status = Shift.Status.OPEN
         messages.success(self.request, "Смена открыта. Удачной работы!")
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        JournalEntry.objects.create(
+            shift=self.object,
+            entry_type=JournalEntry.EntryType.SHIFT_START,
+            occurred_at=self.object.opened_at,
+            specialist=self.request.user,
+            action_task="Смену принял +",
+            created_by=self.request.user,
+        )
+        return response
 
     def get_success_url(self):
         return reverse("shifts:shift_detail", args=[self.object.pk])
@@ -92,19 +103,38 @@ class ShiftCloseView(EditorRequiredMixin, UpdateView):
         shift.status = Shift.Status.CLOSED
         shift.save()
 
-        from journal.exports import export_shift_to_excel
+        JournalEntry.objects.create(
+            shift=shift,
+            entry_type=JournalEntry.EntryType.SHIFT_END,
+            occurred_at=shift.closed_at,
+            specialist=self.request.user,
+            action_task="Смену сдал",
+            created_by=self.request.user,
+        )
+
+        messages.success(self.request, "Смена сдана.")
 
         try:
-            export = export_shift_to_excel(shift, self.request.user)
+            export = export_full_journal(user=self.request.user, shift=shift)
             if export:
                 messages.success(
                     self.request,
-                    f"Смена сдана. Журнал выгружен в Excel: {export.file.name.split('/')[-1]}",
+                    f"Сменный журнал выгружен в единый Excel-архив ({export.entries_count} записей).",
                 )
-            else:
-                messages.success(self.request, "Смена сдана. Записей в журнале нет.")
         except Exception as exc:  # noqa: BLE001
-            messages.warning(self.request, f"Смена сдана, но выгрузка Excel не удалась: {exc}")
+            messages.warning(self.request, f"Журнал сдан, но выгрузка Excel не удалась: {exc}")
+
+        try:
+            from checklists.services import finalize_shift_checklists
+
+            generated = finalize_shift_checklists(shift, self.request.user)
+            if generated:
+                messages.success(
+                    self.request, f"Чеклист оборудования сформирован ({generated} файл(ов))."
+                )
+        except Exception as exc:  # noqa: BLE001
+            messages.warning(self.request, f"Чеклист оборудования не сформирован: {exc}")
+
         return redirect("shifts:shift_detail", pk=shift.pk)
 
 

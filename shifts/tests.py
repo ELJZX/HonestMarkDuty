@@ -46,7 +46,7 @@ class ShiftViewTests(TestCase):
         self.assertEqual(self.client.get(reverse("shifts:shift_list")).status_code, 200)
         self.assertEqual(self.client.get(reverse("shifts:shift_open")).status_code, 200)
 
-    def test_open_shift(self):
+    def test_open_shift_creates_marker(self):
         self.client.force_login(self.specialist)
         response = self.client.post(
             reverse("shifts:shift_open"),
@@ -54,8 +54,12 @@ class ShiftViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 302)
         shift = Shift.objects.open().first()
-        self.assertIsNotNone(shift)
         self.assertEqual(shift.opened_by, self.specialist)
+        self.assertTrue(
+            JournalEntry.objects.filter(
+                shift=shift, entry_type=JournalEntry.EntryType.SHIFT_START
+            ).exists()
+        )
 
     def test_open_shift_twice_redirects(self):
         self.client.force_login(self.specialist)
@@ -67,12 +71,9 @@ class ShiftViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Shift.objects.filter(opened_by=self.specialist).count(), 1)
 
-    def test_close_shift_exports_journal(self):
-        shift = Shift.objects.create(workshop=None, opened_by=self.specialist)
-        JournalEntry.objects.create(
-            shift=shift, source_location="Линия", problem="Тест",
-            solution="Готово", status=JournalEntry.Status.DONE,
-        )
+    def test_close_shift_creates_end_marker_and_export(self):
+        shift = Shift.objects.create(opened_by=self.specialist)
+        JournalEntry.objects.create(shift=shift, action_task="Работа за смену")
         self.client.force_login(self.specialist)
         response = self.client.post(
             reverse("shifts:shift_close", args=[shift.pk]),
@@ -81,9 +82,14 @@ class ShiftViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         shift.refresh_from_db()
         self.assertEqual(shift.status, Shift.Status.CLOSED)
-        self.assertTrue(JournalExport.objects.filter(shift=shift).exists())
+        self.assertTrue(
+            JournalEntry.objects.filter(
+                shift=shift, entry_type=JournalEntry.EntryType.SHIFT_END
+            ).exists()
+        )
+        self.assertTrue(JournalExport.objects.filter(is_full=True).exists())
 
-    def test_close_empty_shift(self):
+    def test_close_shift_without_entries_still_exports_marker(self):
         shift = Shift.objects.create(opened_by=self.specialist)
         self.client.force_login(self.specialist)
         response = self.client.post(
@@ -91,9 +97,7 @@ class ShiftViewTests(TestCase):
             {"equipment_condition": "", "inventory_notes": "", "closing_notes": "", "handover_to": ""},
         )
         self.assertEqual(response.status_code, 302)
-        shift.refresh_from_db()
-        self.assertEqual(shift.status, Shift.Status.CLOSED)
-        self.assertFalse(JournalExport.objects.filter(shift=shift).exists())
+        self.assertTrue(JournalExport.objects.filter(is_full=True).exists())
 
     def test_add_check(self):
         shift = Shift.objects.create(opened_by=self.specialist)

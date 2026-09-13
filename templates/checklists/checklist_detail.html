@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Чеклист от {{ checklist.date|date:"d.m.Y" }}{% endblock %}
+{% block breadcrumb %}Сменная работа / чеклист{% endblock %}
+{% block topbar_actions %}
+  {% if checklist.file %}<a class="btn btn-sm" href="{{ checklist.file.url }}">Скачать XLSX</a>{% endif %}
+  <a class="btn btn-sm" href="{% url 'checklists:checklist_update' checklist.pk %}">Изменить</a>
+  <form method="post" action="{% url 'checklists:checklist_generate' checklist.pk %}" style="display:inline">
+    {% csrf_token %}
+    <button class="btn btn-primary btn-sm" type="submit">Сформировать файл</button>
+  </form>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Чек лист технического осмотра оборудования «Честный знак»</div>
+    <span class="badge {{ checklist.status_badge }}">{{ checklist.get_status_display }}</span>
+  </div>
+  <dl class="detail-grid mb-2">
+    <dt>Дата</dt><dd class="mono">{{ checklist.date|date:"d.m.Y" }}</dd>
+    <dt>Цех</dt><dd>{{ checklist.workshop|default:"—" }}</dd>
+    <dt>Выполнил</dt><dd>{% firstof checklist.performed_by.full_name checklist.performed_by.username "—" %}</dd>
+    <dt>Смена</dt><dd>{% if checklist.shift %}<a href="{% url 'shifts:shift_detail' checklist.shift.pk %}">{{ checklist.shift }}</a>{% else %}—{% endif %}</dd>
+    <dt>Критичных оценок</dt><dd class="mono">{{ checklist.critical_count }}</dd>
+    <dt>Примечание</dt><dd>{{ checklist.note|default:"—"|linebreaksbr }}</dd>
+  </dl>
+</div>
+
+<div class="card">
+  <div class="card-header"><div class="card-title">Матрица проверок</div></div>
+  <div class="table-wrap">
+    <table class="data checklist-matrix">
+      <thead>
+        <tr>
+          <th rowspan="2">№</th>
+          <th rowspan="2" class="check-col">Проводимые работы и проверки</th>
+          {% for col in machine_columns %}<th colspan="{{ col.machines|length }}">{{ col.group.name }}</th>{% endfor %}
+        </tr>
+        <tr>
+          {% for m in all_machines %}<th class="machine-col">{{ m.name }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="mileage-row">
+          <td></td>
+          <td class="check-name">Пробег печатающей головки (км)</td>
+          {% for cell in mileage_cells %}<td class="mono text-center">{{ cell.value|default_if_none:"—" }}</td>{% endfor %}
+        </tr>
+        {% for row in rows %}
+        <tr>
+          <td class="mono">{{ forloop.counter }}</td>
+          <td class="check-name">{{ row.check.name }}</td>
+          {% for cell in row.cells %}
+            <td class="text-center">
+              {% if cell.score %}<span class="score score-{{ cell.score }}">{{ cell.score }}</span>{% else %}<span class="dim">—</span>{% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

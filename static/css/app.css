@@ -69,13 +69,17 @@ code, .mono { font-family: var(--font-mono); }
 }
 
 .brand {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   padding: 24px 22px 20px;
   border-bottom: 1px solid var(--border);
   transition: background .12s;
 }
 .brand:hover { background: var(--surface-2); }
-.brand-text { display: flex; flex-direction: column; gap: 4px; }
+.brand-logo { width: 38px; height: 38px; object-fit: contain; flex: 0 0 auto; }
+.brand-logo-invert { filter: invert(1); width: 30px; height: 30px; }
+.brand-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
 .brand-name { font-family: var(--font-mono); font-size: 1.15rem; letter-spacing: .04em; }
 .brand-tag { font-size: .82rem; color: var(--dim); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .06em; }
 
@@ -300,7 +304,7 @@ label { display: block; font-family: var(--font-mono); font-size: .82rem; text-t
 /* ---------- Login ---------- */
 .login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
 .login-card { width: 100%; max-width: 480px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 42px; }
-.login-brand { margin-bottom: 28px; }
+.login-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
 .login-note { font-family: var(--font-mono); font-size: .82rem; color: var(--dim); margin-top: 20px; }
 
 /* ---------- Preview ---------- */
@@ -328,3 +332,34 @@ label { display: block; font-family: var(--font-mono); font-size: .82rem; text-t
 .pagination { display: flex; gap: 8px; align-items: center; justify-content: center; margin-top: 22px; font-family: var(--font-mono); font-size: .92rem; }
 .pagination a, .pagination span { padding: 8px 14px; border: 1px solid var(--border); border-radius: 5px; color: var(--muted); }
 .pagination .current { background: var(--surface-3); color: var(--accent); border-color: var(--border-strong); }
+
+/* ---------- Сменный журнал ---------- */
+.journal-table td.j-date,
+.journal-table td.j-spec {
+  background: #fff3b0;
+  color: #111;
+  text-align: center;
+  vertical-align: middle;
+  font-weight: 600;
+}
+
+/* ---------- Чеклист оборудования ---------- */
+.checklist-matrix th,
+.checklist-matrix td { text-align: center; padding: 8px 10px; }
+.checklist-matrix .check-col,
+.checklist-matrix .check-name { text-align: left; min-width: 280px; }
+.checklist-matrix .machine-col { font-size: .74rem; }
+.score-input {
+  width: 54px; padding: 6px; text-align: center;
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: 5px;
+  font-family: var(--font-mono); font-size: 1rem;
+}
+.score {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 5px;
+  font-family: var(--font-mono); font-weight: 600;
+}
+.score-1 { background: #c0392b; color: #fff; }
+.score-2 { background: #e3b341; color: #111; }
+.score-3 { background: #27a25a; color: #fff; }

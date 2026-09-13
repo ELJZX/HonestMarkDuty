@@ -80,7 +80,6 @@ class EquipmentDetailView(LoginRequiredMixin, DetailView):
         ctx["maintenance_records"] = self.object.maintenance_records.select_related("created_by")
         ctx["status_form"] = EquipmentStatusLogForm(initial={"status": self.object.status})
         ctx["maintenance_form"] = MaintenanceRecordForm()
-        ctx["journal_entries"] = self.object.journal_entries.select_related("assigned_to")[:20]
         return ctx
 
 

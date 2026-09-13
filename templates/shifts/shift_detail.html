@@ -30,17 +30,17 @@
       <div class="card-header"><div class="card-title">Записи журнала за смену</div></div>
       <div class="table-wrap">
         <table class="data">
-          <thead><tr><th>Время</th><th>Место</th><th>Проблема</th><th>Статус</th></tr></thead>
+          <thead><tr><th>Время</th><th>Оборудование / Линия</th><th>Действие / Задача</th><th>Решение</th></tr></thead>
           <tbody>
             {% for e in shift.journal_entries.all %}
             <tr>
-              <td class="mono nowrap">{{ e.received_at|date:"H:i" }}</td>
-              <td>{{ e.source_location }}</td>
-              <td><a href="{% url 'journal:entry_detail' e.pk %}">{{ e.problem|truncatechars:60 }}</a></td>
-              <td><span class="badge {{ e.status_badge }}">{{ e.get_status_display }}</span></td>
+              <td class="mono nowrap">{{ e.entry_time|time:"H:i" }}</td>
+              <td>{{ e.equipment_line|default:"—" }}</td>
+              <td>{{ e.action_task|truncatechars:60 }}</td>
+              <td>{{ e.solution|default:"—"|truncatechars:60 }}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="4" class="empty">Обращений не было</td></tr>
+            <tr><td colspan="4" class="empty">Записей не было</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -90,6 +90,23 @@
         </li>
         {% empty %}
         <li><div class="tl-body dim">При сдаче смены файл появится автоматически</div></li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Чеклисты оборудования</div></div>
+      <ul class="timeline">
+        {% for c in shift.checklists.all %}
+        <li>
+          <div class="tl-body">
+            <a href="{% url 'checklists:checklist_detail' c.pk %}">{{ c.date|date:"d.m.Y" }}</a>
+            {% if c.file %} · <a href="{{ c.file.url }}">XLSX</a>{% endif %}
+          </div>
+          <div class="tl-time">{{ c.get_status_display }} · критичных: {{ c.critical_count }}</div>
+        </li>
+        {% empty %}
+        <li><div class="tl-body dim">Чеклисты не заполнялись</div></li>
         {% endfor %}
       </ul>
     </div>

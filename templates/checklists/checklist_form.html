@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block breadcrumb %}Сменная работа / {{ title }}{% endblock %}
+{% block content %}
+{% if form.non_field_errors %}<div class="message error mb-2">{{ form.non_field_errors }}</div>{% endif %}
+<form method="post">
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-header"><div class="card-title">{{ title }}</div></div>
+    <div class="grid grid-4">
+      <div class="form-row"><label>Дата</label>{{ form.date }}{{ form.date.errors }}</div>
+      <div class="form-row"><label>Цех</label>{{ form.workshop }}{{ form.workshop.errors }}</div>
+      <div class="form-row"><label>Выполнил</label>{{ form.performed_by }}{{ form.performed_by.errors }}</div>
+      <div class="form-row"><label>Примечание</label>{{ form.note }}{{ form.note.errors }}</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Матрица проверок</div>
+      <div class="card-sub">Оценка: 1 — неудовлетворительно, 2 — удовлетворительно, 3 — готово к работе</div>
+    </div>
+    <div class="table-wrap">
+      <table class="data checklist-matrix">
+        <thead>
+          <tr>
+            <th rowspan="2">№</th>
+            <th rowspan="2" class="check-col">Проводимые работы и проверки</th>
+            {% for col in machine_columns %}<th colspan="{{ col.machines|length }}">{{ col.group.name }}</th>{% endfor %}
+          </tr>
+          <tr>
+            {% for m in all_machines %}<th class="machine-col">{{ m.name }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="mileage-row">
+            <td></td>
+            <td class="check-name">Пробег печатающей головки (км)</td>
+            {% for cell in mileage_cells %}
+              <td><input class="score-input" type="number" step="0.1" min="0" name="mileage__{{ cell.machine.id }}" value="{{ cell.value|default_if_none:'' }}"></td>
+            {% endfor %}
+          </tr>
+          {% for row in rows %}
+          <tr>
+            <td class="mono">{{ forloop.counter }}</td>
+            <td class="check-name">{{ row.check.name }}</td>
+            {% for cell in row.cells %}
+              <td><input class="score-input" type="number" min="1" max="3" name="score__{{ cell.machine.id }}__{{ row.check.id }}" value="{{ cell.score|default_if_none:'' }}"></td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit" name="finalize" value="1">Сохранить и сформировать файл</button>
+      <button class="btn" type="submit">Сохранить черновик</button>
+      <a class="btn btn-ghost" href="{% url 'checklists:checklist_list' %}">Отмена</a>
+    </div>
+  </div>
+</form>
+{% endblock %}
