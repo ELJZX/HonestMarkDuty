@@ -3,12 +3,13 @@ from __future__ import annotations
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
+from django.utils.dateparse import parse_date
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView, View
 
 from core.mixins import EditorRequiredMixin
-from journal.exports import export_full_journal, group_entries
+from journal.exports import export_full_journal, group_entries, workbook_response
 from journal.forms import JournalEntryForm
 from journal.models import JournalEntry, JournalExport
 from shifts.models import Shift
@@ -53,6 +54,10 @@ def build_groups(
                 "span": len(rows),
                 "rows": rows,
                 "is_current": is_current,
+                "shift_id": first.shift_id,
+                "shift_closed": bool(
+                    first.shift and first.shift.status == Shift.Status.CLOSED
+                ),
             }
         )
     return groups
@@ -187,3 +192,49 @@ class JournalExportCreateView(EditorRequiredMixin, View):
                 request, f"Единый архив сформирован: {export.file.name.split('/')[-1]}"
             )
         return redirect("journal:export_list")
+
+
+class JournalShiftExportView(LoginRequiredMixin, View):
+    """Скачивание Excel-архива по конкретной смене.
+
+    Имя файла: smennyy_zhurnal_<дата смены>.xlsx
+    """
+
+    def get(self, request, pk):
+        shift = get_object_or_404(Shift, pk=pk)
+        entries = (
+            JournalEntry.objects.select_related("shift", "specialist", "shift__opened_by")
+            .filter(shift=shift)
+            .order_by("occurred_at", "id")
+        )
+        filename = f"smennyy_zhurnal_{shift.date:%d.%m.%Y}"
+        return workbook_response(entries, filename)
+
+
+class JournalPeriodExportView(LoginRequiredMixin, View):
+    """Формирование Excel-архива за выбранный период.
+
+    Имя файла: smennyy_zhurnal_<начало>_<конец>.xlsx
+    """
+
+    def get(self, request):
+        date_from = parse_date(request.GET.get("date_from", "") or "")
+        date_to = parse_date(request.GET.get("date_to", "") or "")
+        if not date_from or not date_to:
+            messages.warning(request, "Укажите начало и конец периода.")
+            return redirect("journal:export_list")
+        if date_from > date_to:
+            date_from, date_to = date_to, date_from
+        entries = (
+            JournalEntry.objects.select_related("shift", "specialist", "shift__opened_by")
+            .filter(
+                occurred_at__date__gte=date_from,
+                occurred_at__date__lte=date_to,
+            )
+            .order_by("occurred_at", "id")
+        )
+        if not entries.exists():
+            messages.warning(request, "За выбранный период записей нет.")
+            return redirect("journal:export_list")
+        filename = f"smennyy_zhurnal_{date_from:%d.%m.%Y}_{date_to:%d.%m.%Y}"
+        return workbook_response(entries, filename)

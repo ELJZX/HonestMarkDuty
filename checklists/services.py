@@ -3,6 +3,7 @@ from __future__ import annotations
 from decimal import Decimal, InvalidOperation
 
 from checklists.exports import save_checklist_file
+from checklists.markem_exports import save_markem_file
 from checklists.models import (
     ChecklistCheck,
     ChecklistGroup,
@@ -10,6 +11,10 @@ from checklists.models import (
     ChecklistResult,
     ChecklistStatus,
     EquipmentChecklist,
+    MarkemChecklist,
+    MarkemParameter,
+    MarkemPrinter,
+    MarkemValue,
 )
 
 
@@ -110,3 +115,57 @@ def finalize_shift_checklists(shift, user=None) -> int:
         checklist.save()
         count += 1
     return count
+
+
+# --- Чеклист принтеров Markem Image 9450 ----------------------------------
+
+
+def markem_matrix(checklist: MarkemChecklist | None) -> dict:
+    """Собирает структуру матрицы чеклиста Markem (принтеры × параметры)."""
+    printers = list(MarkemPrinter.objects.order_by("sort_order", "id"))
+    parameters = list(MarkemParameter.objects.order_by("sort_order", "id"))
+    values: dict[tuple[int, int], str] = {}
+    if checklist is not None:
+        values = {
+            (item.printer_id, item.parameter_id): item.value
+            for item in checklist.values.all()
+        }
+    rows = [
+        {
+            "parameter": parameter,
+            "cells": [
+                {"printer": printer, "value": values.get((printer.id, parameter.id), "")}
+                for printer in printers
+            ],
+        }
+        for parameter in parameters
+    ]
+    return {"printers": printers, "parameters": parameters, "rows": rows}
+
+
+def apply_markem_values(checklist: MarkemChecklist, data) -> None:
+    """Сохраняет значения параметров чеклиста Markem из POST-запроса."""
+    checklist.values.all().delete()
+    for key, value in data.items():
+        if not key.startswith("val__"):
+            continue
+        try:
+            _, printer_id, parameter_id = key.split("__")
+        except ValueError:
+            continue
+        text = str(value or "").strip()
+        if not text:
+            continue
+        MarkemValue.objects.create(
+            checklist=checklist,
+            printer_id=int(printer_id),
+            parameter_id=int(parameter_id),
+            value=text[:300],
+        )
+
+
+def finalize_markem_checklist(checklist: MarkemChecklist) -> MarkemChecklist:
+    save_markem_file(checklist)
+    checklist.status = ChecklistStatus.FINAL
+    checklist.save()
+    return checklist

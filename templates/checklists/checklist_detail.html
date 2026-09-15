@@ -1,13 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Чеклист от {{ checklist.date|date:"d.m.Y" }}{% endblock %}
-{% block breadcrumb %}Сменная работа / чеклист{% endblock %}
+{% block breadcrumb %}Сменная работа / Чеклисты / чеклист{% endblock %}
 {% block topbar_actions %}
   {% if checklist.file %}<a class="btn btn-sm" href="{{ checklist.file.url }}">Скачать XLSX</a>{% endif %}
-  <a class="btn btn-sm" href="{% url 'checklists:checklist_update' checklist.pk %}">Изменить</a>
-  <form method="post" action="{% url 'checklists:checklist_generate' checklist.pk %}" style="display:inline">
-    {% csrf_token %}
-    <button class="btn btn-primary btn-sm" type="submit">Сформировать файл</button>
-  </form>
+  {% if user.is_admin or checklist.status != "final" %}
+    <a class="btn btn-sm" href="{% url 'checklists:checklist_update' checklist.pk %}">Изменить</a>
+  {% endif %}
+  {% if user.is_admin %}
+    <form method="post" action="{% url 'checklists:checklist_generate' checklist.pk %}" style="display:inline">
+      {% csrf_token %}
+      <button class="btn btn-primary btn-sm" type="submit">Сформировать файл</button>
+    </form>
+  {% endif %}
 {% endblock %}
 {% block content %}
 <div class="card">
@@ -17,9 +21,7 @@
   </div>
   <dl class="detail-grid mb-2">
     <dt>Дата</dt><dd class="mono">{{ checklist.date|date:"d.m.Y" }}</dd>
-    <dt>Цех</dt><dd>{{ checklist.workshop|default:"—" }}</dd>
     <dt>Выполнил</dt><dd>{% firstof checklist.performed_by.full_name checklist.performed_by.username "—" %}</dd>
-    <dt>Смена</dt><dd>{% if checklist.shift %}<a href="{% url 'shifts:shift_detail' checklist.shift.pk %}">{{ checklist.shift }}</a>{% else %}—{% endif %}</dd>
     <dt>Критичных оценок</dt><dd class="mono">{{ checklist.critical_count }}</dd>
     <dt>Примечание</dt><dd>{{ checklist.note|default:"—"|linebreaksbr }}</dd>
   </dl>

@@ -1,3 +1,6 @@
+from pathlib import Path
+
+from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
@@ -11,13 +14,17 @@ from core.views import server_error
 
 
 class VersionTests(TestCase):
-    def test_version_value(self):
-        self.assertEqual(get_version(), "0.0.5")
+    def test_version_matches_file(self):
+        version_file = Path(settings.BASE_DIR) / "VERSION"
+        self.assertEqual(get_version(), version_file.read_text(encoding="utf-8").strip())
+
+    def test_version_format(self):
+        self.assertRegex(get_version(), r"^\d+\.\d+\.\d+$")
 
     def test_context_processor_has_version_and_tagline(self):
         request = RequestFactory().get("/")
         context = project_context(request)
-        self.assertEqual(context["APP_VERSION"], "0.0.5")
+        self.assertEqual(context["APP_VERSION"], get_version())
         self.assertEqual(context["PROJECT_TAGLINE"], "Честное выполнение обязанностей")
         self.assertEqual(context["PROJECT_NAME"], "HonestMarkDuty")
 

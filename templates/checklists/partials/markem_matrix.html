@@ -1,0 +1,25 @@
+{% if matrix %}
+<div class="table-wrap">
+  <table class="data checklist-matrix markem-matrix">
+    <thead>
+      <tr>
+        <th rowspan="2">№</th>
+        <th rowspan="2" class="check-col">Проводимые работы и проверка параметров</th>
+        {% for printer in matrix.printers %}<th class="machine-col">{{ forloop.counter }}</th>{% endfor %}
+      </tr>
+      <tr>
+        {% for printer in matrix.printers %}<th class="machine-col">{{ printer.name }}</th>{% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in matrix.rows %}
+      <tr>
+        <td class="mono">{{ forloop.counter }}</td>
+        <td class="check-name">{{ row.parameter.name }}</td>
+        {% for cell in row.cells %}<td class="text-center">{{ cell.value|default:"—" }}</td>{% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}

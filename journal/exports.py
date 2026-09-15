@@ -5,6 +5,7 @@ from collections import OrderedDict
 from io import BytesIO
 
 from django.core.files.base import ContentFile
+from django.http import HttpResponse
 from django.utils import timezone
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -122,6 +123,24 @@ def _to_content(workbook: Workbook, filename: str) -> ContentFile:
     buffer = BytesIO()
     workbook.save(buffer)
     return ContentFile(buffer.getvalue(), name=filename)
+
+
+XLSX_CONTENT_TYPE = (
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
+
+
+def workbook_response(entries, filename_base: str) -> HttpResponse:
+    """Отдаёт готовый к скачиванию xlsx за переданные записи.
+
+    Имя файла: <filename_base>.xlsx (например smennyy_zhurnal_15.09.2026).
+    """
+    workbook = build_workbook(list(entries))
+    buffer = BytesIO()
+    workbook.save(buffer)
+    response = HttpResponse(buffer.getvalue(), content_type=XLSX_CONTENT_TYPE)
+    response["Content-Disposition"] = f'attachment; filename="{filename_base}.xlsx"'
+    return response
 
 
 def export_full_journal(user=None, shift=None, entries=None) -> JournalExport | None:

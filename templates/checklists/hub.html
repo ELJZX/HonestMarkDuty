@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Чеклисты{% endblock %}
+{% block breadcrumb %}Сменная работа / Чеклисты{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Чеклисты</div>
+    <div class="card-sub">Выберите чеклист для заполнения</div>
+  </div>
+  <div class="checklist-catalog">
+    <a class="btn btn-sm" href="{% url 'checklists:checklist_list' %}">Чеклист осмотра оборудования «Честный знак»</a>
+    <a class="btn btn-sm" href="{% url 'checklists:markem' %}">Чек лист технического осмотра и обслуживания принтеров Markem Image 9450</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block breadcrumb %}Сменная работа / Чеклисты / Markem Image 9450{% endblock %}
+{% block content %}
+{% if form.non_field_errors %}<div class="message error mb-2">{{ form.non_field_errors }}</div>{% endif %}
+<form method="post">
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-header"><div class="card-title">{{ title }}</div></div>
+    <div class="grid grid-4">
+      <div class="form-row"><label>Дата</label>{{ form.date }}{{ form.date.errors }}</div>
+      <div class="form-row"><label>Выполнил</label>{{ form.performed_by }}{{ form.performed_by.errors }}</div>
+      <div class="form-row"><label>Проверил</label>{{ form.checked_by }}{{ form.checked_by.errors }}</div>
+      <div class="form-row"><label>Примечание</label>{{ form.note }}{{ form.note.errors }}</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Параметры принтеров</div>
+      <div class="card-sub">Заполните значения по каждому принтеру</div>
+    </div>
+    <div class="table-wrap">
+      <table class="data checklist-matrix markem-matrix">
+        <thead>
+          <tr>
+            <th rowspan="2">№</th>
+            <th rowspan="2" class="check-col">Проводимые работы и проверка параметров</th>
+            {% for printer in printers %}<th class="machine-col">{{ forloop.counter }}</th>{% endfor %}
+          </tr>
+          <tr>
+            {% for printer in printers %}<th class="machine-col">{{ printer.name }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td class="mono">{{ forloop.counter }}</td>
+            <td class="check-name">{{ row.parameter.name }}</td>
+            {% for cell in row.cells %}
+              <td><input class="markem-input" type="text" name="val__{{ cell.printer.id }}__{{ row.parameter.id }}" value="{{ cell.value }}"></td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit" name="finalize" value="1">Сохранить и сформировать файл</button>
+      <button class="btn" type="submit">Сохранить</button>
+      <a class="btn btn-ghost" href="{% url 'checklists:markem' %}">Отмена</a>
+    </div>
+  </div>
+</form>
+{% endblock %}

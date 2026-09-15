@@ -58,7 +58,7 @@ class ChecklistCheck(AuditedModel):
 
 
 class ChecklistStatus(models.TextChoices):
-    DRAFT = "draft", "Черновик"
+    DRAFT = "draft", "В работе"
     FINAL = "final", "Сформирован"
 
 
@@ -171,3 +171,125 @@ class ChecklistResult(AuditedModel):
 
     def __str__(self) -> str:
         return f"{self.machine} / {self.check_item}: {self.score}"
+
+
+class MarkemPrinter(AuditedModel):
+    """Принтер Markem Image (серийный номер) — колонка чеклиста Markem."""
+
+    name = models.CharField("Серийный номер", max_length=100, unique=True)
+    sort_order = models.PositiveIntegerField("Порядок", default=0)
+
+    class Meta:
+        verbose_name = "Принтер Markem"
+        verbose_name_plural = "Принтеры Markem"
+        ordering = ("sort_order", "id")
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class MarkemParameter(AuditedModel):
+    """Проверяемый параметр (строка) чеклиста Markem."""
+
+    name = models.CharField("Параметр", max_length=300, unique=True)
+    sort_order = models.PositiveIntegerField("Порядок", default=0)
+
+    class Meta:
+        verbose_name = "Параметр чеклиста Markem"
+        verbose_name_plural = "Параметры чеклиста Markem"
+        ordering = ("sort_order", "id")
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class MarkemChecklist(AuditedModel):
+    """Заполненный чек лист технического осмотра и обслуживания принтеров Markem Image 9450."""
+
+    date = models.DateField("Дата", default=timezone.localdate)
+    shift = models.ForeignKey(
+        "shifts.Shift",
+        verbose_name="Смена",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="markem_checklists",
+    )
+    performed_by = models.ForeignKey(
+        "accounts.User",
+        verbose_name="Выполнил",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="markem_performed",
+    )
+    checked_by = models.ForeignKey(
+        "accounts.User",
+        verbose_name="Проверил",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="markem_checked",
+    )
+    note = models.TextField("Примечание", blank=True)
+    status = models.CharField(
+        "Статус", max_length=10, choices=ChecklistStatus.choices, default=ChecklistStatus.DRAFT
+    )
+    file = models.FileField("Файл XLSX", upload_to="markem/%Y/%m/", blank=True)
+    created_by = models.ForeignKey(
+        "accounts.User",
+        verbose_name="Создал",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="markem_created",
+    )
+
+    class Meta:
+        verbose_name = "Чеклист Markem Image 9450"
+        verbose_name_plural = "Чеклисты Markem Image 9450"
+        ordering = ("-date", "-created_at")
+
+    def __str__(self) -> str:
+        return f"Чеклист Markem от {self.date:%d.%m.%Y}"
+
+    @property
+    def status_badge(self) -> str:
+        return "badge-ok" if self.status == ChecklistStatus.FINAL else "badge-muted"
+
+
+class MarkemValue(AuditedModel):
+    """Значение параметра по конкретному принтеру в чеклисте Markem."""
+
+    checklist = models.ForeignKey(
+        MarkemChecklist,
+        verbose_name="Чеклист",
+        on_delete=models.CASCADE,
+        related_name="values",
+    )
+    printer = models.ForeignKey(
+        MarkemPrinter,
+        verbose_name="Принтер",
+        on_delete=models.CASCADE,
+        related_name="values",
+    )
+    parameter = models.ForeignKey(
+        MarkemParameter,
+        verbose_name="Параметр",
+        on_delete=models.CASCADE,
+        related_name="values",
+    )
+    value = models.CharField("Значение", max_length=300, blank=True)
+
+    class Meta:
+        verbose_name = "Значение параметра Markem"
+        verbose_name_plural = "Значения параметров Markem"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("checklist", "printer", "parameter"),
+                name="unique_markem_cell",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.printer} / {self.parameter}: {self.value}"

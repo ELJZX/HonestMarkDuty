@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Чеклист осмотра оборудования «Честный знак»{% endblock %}
-{% block breadcrumb %}Сменная работа / Чеклисты / «Честный знак»{% endblock %}
+{% block title %}Markem Image 9450{% endblock %}
+{% block breadcrumb %}Сменная работа / Чеклисты / Markem Image 9450{% endblock %}
 {% block topbar_actions %}
-  <a class="btn btn-primary btn-sm" href="{% url 'checklists:checklist_create' %}">Создать новый чеклист</a>
+  <a class="btn btn-primary btn-sm" href="{% url 'checklists:markem_create' %}">Создать новый чеклист</a>
 {% endblock %}
 {% block content %}
 <div class="card card-current">
   <div class="card-header">
-    <div class="card-title">Текущий чеклист оборудования</div>
+    <div class="card-title">Текущий чек лист технического осмотра принтеров Markem Image 9450</div>
     {% if current_checklist %}
       <span class="badge {{ current_checklist.status_badge }}">{{ current_checklist.get_status_display }}</span>
     {% endif %}
@@ -16,17 +16,17 @@
     <dl class="detail-grid mb-2">
       <dt>Дата</dt><dd class="mono">{{ current_checklist.date|date:"d.m.Y" }}</dd>
       <dt>Выполнил</dt><dd>{% firstof current_checklist.performed_by.full_name current_checklist.performed_by.username "—" %}</dd>
-      <dt>Критичных оценок</dt><dd class="mono">{{ current_checklist.critical_count }}</dd>
+      <dt>Проверил</dt><dd>{% firstof current_checklist.checked_by.full_name current_checklist.checked_by.username "—" %}</dd>
       <dt>Примечание</dt><dd>{{ current_checklist.note|default:"—"|linebreaksbr }}</dd>
     </dl>
-    {% include "checklists/partials/matrix.html" with matrix=current_matrix %}
+    {% include "checklists/partials/markem_matrix.html" with matrix=current_matrix %}
     <div class="form-actions">
       {% if current_checklist.file %}<a class="btn btn-sm" href="{{ current_checklist.file.url }}">Скачать XLSX</a>{% endif %}
       {% if user.is_admin or current_checklist.status != "final" %}
-        <a class="btn btn-primary btn-sm" href="{% url 'checklists:checklist_update' current_checklist.pk %}">Редактировать чеклист</a>
+        <a class="btn btn-primary btn-sm" href="{% url 'checklists:markem_update' current_checklist.pk %}">Редактировать чеклист</a>
       {% endif %}
       {% if current_checklist.status != "final" %}
-        <form method="post" action="{% url 'checklists:checklist_close' current_checklist.pk %}" style="display:inline">
+        <form method="post" action="{% url 'checklists:markem_close' current_checklist.pk %}" style="display:inline">
           {% csrf_token %}
           <button class="btn btn-sm btn-danger" type="submit">Закрыть</button>
         </form>
@@ -52,7 +52,7 @@
         <tr>
           <td class="mono nowrap">{{ c.date|date:"d.m.Y" }}</td>
           <td>{% firstof c.performed_by.full_name c.performed_by.username "—" %}</td>
-          <td class="actions"><a class="btn btn-xs" href="{% url 'checklists:checklist_download' c.pk %}">Скачать чеклист</a></td>
+          <td class="actions"><a class="btn btn-xs" href="{% url 'checklists:markem_download' c.pk %}">Скачать чеклист</a></td>
         </tr>
         {% empty %}
         <tr><td colspan="3" class="empty">Архив пуст.</td></tr>

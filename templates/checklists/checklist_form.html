@@ -7,9 +7,8 @@
   {% csrf_token %}
   <div class="card">
     <div class="card-header"><div class="card-title">{{ title }}</div></div>
-    <div class="grid grid-4">
+    <div class="grid grid-3">
       <div class="form-row"><label>Дата</label>{{ form.date }}{{ form.date.errors }}</div>
-      <div class="form-row"><label>Цех</label>{{ form.workshop }}{{ form.workshop.errors }}</div>
       <div class="form-row"><label>Выполнил</label>{{ form.performed_by }}{{ form.performed_by.errors }}</div>
       <div class="form-row"><label>Примечание</label>{{ form.note }}{{ form.note.errors }}</div>
     </div>

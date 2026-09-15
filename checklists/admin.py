@@ -7,6 +7,10 @@ from checklists.models import (
     ChecklistMileage,
     ChecklistResult,
     EquipmentChecklist,
+    MarkemChecklist,
+    MarkemParameter,
+    MarkemPrinter,
+    MarkemValue,
 )
 
 
@@ -47,3 +51,26 @@ class EquipmentChecklistAdmin(admin.ModelAdmin):
     list_display = ("date", "workshop", "performed_by", "status", "shift")
     list_filter = ("status", "date", "workshop")
     inlines = (ChecklistMileageInline, ChecklistResultInline)
+
+
+@admin.register(MarkemPrinter)
+class MarkemPrinterAdmin(admin.ModelAdmin):
+    list_display = ("name", "sort_order")
+
+
+@admin.register(MarkemParameter)
+class MarkemParameterAdmin(admin.ModelAdmin):
+    list_display = ("name", "sort_order")
+
+
+class MarkemValueInline(admin.TabularInline):
+    model = MarkemValue
+    extra = 0
+
+
+@admin.register(MarkemChecklist)
+class MarkemChecklistAdmin(admin.ModelAdmin):
+    list_display = ("date", "performed_by", "checked_by", "status")
+    list_filter = ("status", "date")
+    inlines = (MarkemValueInline,)
+

@@ -34,8 +34,8 @@
           <a class="nav-item {% if request.resolver_match.namespace == 'journal' and request.resolver_match.url_name != 'export_list' %}active{% endif %}" href="{% url 'journal:entry_list' %}">
             <span class="ico">▤</span> Сменный журнал
           </a>
-          <a class="nav-item {% if request.resolver_match.namespace == 'checklists' %}active{% endif %}" href="{% url 'checklists:checklist_list' %}">
-            <span class="ico">▣</span> Чеклист оборудования
+          <a class="nav-item {% if request.resolver_match.namespace == 'checklists' %}active{% endif %}" href="{% url 'checklists:hub' %}">
+            <span class="ico">▣</span> Чеклисты
           </a>
           <a class="nav-item {% if request.resolver_match.url_name == 'export_list' %}active{% endif %}" href="{% url 'journal:export_list' %}">
             <span class="ico">⇩</span> Архив Excel

@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from accounts.models import User
 from checklists.exports import build_checklist_workbook, save_checklist_file
+from checklists.markem_exports import build_markem_workbook, save_markem_file
 from checklists.models import (
     ChecklistCheck,
     ChecklistGroup,
@@ -14,8 +15,19 @@ from checklists.models import (
     ChecklistResult,
     ChecklistStatus,
     EquipmentChecklist,
+    MarkemChecklist,
+    MarkemParameter,
+    MarkemPrinter,
+    MarkemValue,
 )
-from checklists.services import apply_matrix, build_matrix, finalize_checklist
+from checklists.services import (
+    apply_matrix,
+    apply_markem_values,
+    build_matrix,
+    finalize_checklist,
+    finalize_markem_checklist,
+    markem_matrix,
+)
 
 
 class ChecklistBaseTestCase(TestCase):
@@ -103,7 +115,7 @@ class ChecklistViewTests(ChecklistBaseTestCase):
         self.client.force_login(self.specialist)
         self.assertEqual(self.client.get(reverse("checklists:checklist_list")).status_code, 200)
 
-    def test_list_shows_current_and_previous(self):
+    def test_list_shows_current_and_archive(self):
         final = EquipmentChecklist.objects.create(
             date=timezone.localdate() - timedelta(days=1),
             performed_by=self.specialist,
@@ -113,12 +125,60 @@ class ChecklistViewTests(ChecklistBaseTestCase):
         self.client.force_login(self.specialist)
         response = self.client.get(reverse("checklists:checklist_list"))
         self.assertEqual(response.context["current_checklist"], self.checklist)
-        self.assertEqual(response.context["previous_checklist"], final)
+        self.assertIn(final, list(response.context["archive_checklists"]))
         self.assertContains(response, "Создать новый чеклист")
         self.assertContains(response, "Редактировать чеклист")
         self.assertContains(response, "Текущий чеклист")
-        self.assertContains(response, "Предыдущий (закрытый) чеклист")
-        self.assertContains(response, 'class="data checklist-matrix"', count=2)
+        self.assertContains(response, "Архив чеклистов")
+        self.assertContains(response, "Скачать чеклист")
+
+    def test_hub_lists_both_checklists(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("checklists:hub"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Честный знак")
+        self.assertContains(response, "Markem Image 9450")
+
+    def test_markem_page_renders(self):
+        self.client.force_login(self.specialist)
+        self.assertEqual(self.client.get(reverse("checklists:markem")).status_code, 200)
+
+    def test_close_moves_to_archive(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(
+            reverse("checklists:checklist_close", args=[self.checklist.pk])
+        )
+        self.assertEqual(response.status_code, 302)
+        self.checklist.refresh_from_db()
+        self.assertEqual(self.checklist.status, ChecklistStatus.FINAL)
+        self.assertTrue(self.checklist.file)
+
+    def test_closed_checklist_not_editable_by_specialist(self):
+        self.checklist.status = ChecklistStatus.FINAL
+        self.checklist.save()
+        self.client.force_login(self.specialist)
+        self.assertEqual(
+            self.client.get(
+                reverse("checklists:checklist_update", args=[self.checklist.pk])
+            ).status_code,
+            403,
+        )
+        self.client.force_login(self.admin)
+        self.assertEqual(
+            self.client.get(
+                reverse("checklists:checklist_update", args=[self.checklist.pk])
+            ).status_code,
+            200,
+        )
+
+    def test_download_generates_file(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("checklists:checklist_download", args=[self.checklist.pk])
+        )
+        self.assertEqual(response.status_code, 302)
+        self.checklist.refresh_from_db()
+        self.assertTrue(self.checklist.file)
 
     def test_detail_renders(self):
         self.client.force_login(self.specialist)
@@ -169,4 +229,159 @@ class ChecklistViewTests(ChecklistBaseTestCase):
         self.assertEqual(
             self.client.post(reverse("checklists:checklist_delete", args=[self.checklist.pk])).status_code,
             302,
+        )
+
+
+class MarkemBaseTestCase(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username="madmin", password="x", role=User.Role.ADMIN, is_superuser=True, is_staff=True
+        )
+        self.specialist = User.objects.create_user(
+            username="mspec", password="x", role=User.Role.SPECIALIST
+        )
+        self.printer = MarkemPrinter.objects.create(name="TEST-FR-0001", sort_order=999)
+        self.parameter = MarkemParameter.objects.create(name="Тестовый параметр", sort_order=999)
+        self.checklist = MarkemChecklist.objects.create(
+            date=timezone.localdate(), performed_by=self.specialist, created_by=self.specialist
+        )
+
+
+class MarkemServiceTests(MarkemBaseTestCase):
+    def test_defaults_seeded(self):
+        self.assertGreaterEqual(MarkemPrinter.objects.count(), 12)
+        self.assertGreaterEqual(MarkemParameter.objects.count(), 9)
+
+    def test_matrix_structure(self):
+        matrix = markem_matrix(self.checklist)
+        self.assertIn(self.printer, matrix["printers"])
+        self.assertIn(self.parameter, [row["parameter"] for row in matrix["rows"]])
+        parameters = matrix["rows"]
+        self.assertTrue(all(len(row["cells"]) == len(matrix["printers"]) for row in parameters))
+
+    def test_matrix_without_checklist(self):
+        matrix = markem_matrix(None)
+        self.assertIn(self.printer, matrix["printers"])
+
+    def test_apply_values(self):
+        apply_markem_values(
+            self.checklist, {f"val__{self.printer.id}__{self.parameter.id}": "  42  "}
+        )
+        value = MarkemValue.objects.get(checklist=self.checklist)
+        self.assertEqual(value.value, "42")
+
+    def test_apply_values_ignores_blank_and_bad_keys(self):
+        apply_markem_values(
+            self.checklist,
+            {
+                f"val__{self.printer.id}__{self.parameter.id}": "   ",
+                "unrelated": "x",
+            },
+        )
+        self.assertEqual(self.checklist.values.count(), 0)
+
+    def test_apply_values_replaces_existing(self):
+        MarkemValue.objects.create(
+            checklist=self.checklist, printer=self.printer, parameter=self.parameter, value="old"
+        )
+        apply_markem_values(
+            self.checklist, {f"val__{self.printer.id}__{self.parameter.id}": "new"}
+        )
+        self.assertEqual(self.checklist.values.count(), 1)
+        self.assertEqual(self.checklist.values.first().value, "new")
+
+    def test_finalize_creates_file(self):
+        apply_markem_values(
+            self.checklist, {f"val__{self.printer.id}__{self.parameter.id}": "15066"}
+        )
+        finalize_markem_checklist(self.checklist)
+        self.checklist.refresh_from_db()
+        self.assertEqual(self.checklist.status, ChecklistStatus.FINAL)
+        self.assertTrue(self.checklist.file)
+
+    def test_save_markem_file(self):
+        save_markem_file(self.checklist)
+        self.checklist.refresh_from_db()
+        self.assertTrue(self.checklist.file.name.endswith(".xlsx"))
+
+    def test_workbook_title(self):
+        workbook = build_markem_workbook(self.checklist)
+        self.assertIn("Markem Image 9450", workbook.active["A1"].value)
+
+
+class MarkemViewTests(MarkemBaseTestCase):
+    def test_list_requires_login(self):
+        self.assertEqual(self.client.get(reverse("checklists:markem")).status_code, 302)
+
+    def test_list_renders_with_current_and_archive(self):
+        final = MarkemChecklist.objects.create(
+            date=timezone.localdate() - timedelta(days=1),
+            performed_by=self.specialist,
+            created_by=self.specialist,
+            status=ChecklistStatus.FINAL,
+        )
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("checklists:markem"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["current_checklist"], self.checklist)
+        self.assertIn(final, list(response.context["archive_checklists"]))
+        self.assertContains(response, "Архив чеклистов")
+        self.assertContains(response, "Скачать чеклист")
+
+    def test_create_checklist(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(
+            reverse("checklists:markem_create"),
+            {
+                "date": timezone.localdate().isoformat(),
+                "performed_by": self.specialist.pk,
+                "note": "",
+                f"val__{self.printer.id}__{self.parameter.id}": "15066",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        created = MarkemChecklist.objects.latest("id")
+        self.assertEqual(created.values.count(), 1)
+        self.assertEqual(created.created_by, self.specialist)
+
+    def test_viewer_cannot_create(self):
+        viewer = User.objects.create_user(username="mv", password="x", role=User.Role.VIEWER)
+        self.client.force_login(viewer)
+        self.assertEqual(self.client.get(reverse("checklists:markem_create")).status_code, 403)
+
+    def test_close_moves_to_archive(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(
+            reverse("checklists:markem_close", args=[self.checklist.pk])
+        )
+        self.assertEqual(response.status_code, 302)
+        self.checklist.refresh_from_db()
+        self.assertEqual(self.checklist.status, ChecklistStatus.FINAL)
+        self.assertTrue(self.checklist.file)
+
+    def test_download_generates_file(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("checklists:markem_download", args=[self.checklist.pk])
+        )
+        self.assertEqual(response.status_code, 302)
+        self.checklist.refresh_from_db()
+        self.assertTrue(self.checklist.file)
+
+    def test_closed_not_editable_by_specialist(self):
+        self.checklist.status = ChecklistStatus.FINAL
+        self.checklist.save()
+        self.client.force_login(self.specialist)
+        self.assertEqual(
+            self.client.get(
+                reverse("checklists:markem_update", args=[self.checklist.pk])
+            ).status_code,
+            403,
+        )
+        self.client.force_login(self.admin)
+        self.assertEqual(
+            self.client.get(
+                reverse("checklists:markem_update", args=[self.checklist.pk])
+            ).status_code,
+            200,
         )

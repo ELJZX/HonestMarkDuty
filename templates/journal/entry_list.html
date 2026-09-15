@@ -2,7 +2,6 @@
 {% block title %}Сменный журнал{% endblock %}
 {% block breadcrumb %}Сменная работа / Сменный журнал{% endblock %}
 {% block topbar_actions %}
-  <a class="btn btn-sm" href="{% url 'journal:export_create' %}">Скачать Excel</a>
   <a class="btn btn-primary btn-sm" href="{% url 'journal:entry_create' %}">+ Добавить запись</a>
 {% endblock %}
 {% block content %}
@@ -32,16 +31,16 @@
   <div class="table-wrap">
     <table class="data journal-table">
       <colgroup>
-        <col style="width:6%">
-        <col style="width:10%">
+        <col style="width:7%">
+        <col style="width:12%">
         <col style="width:5%">
         <col style="width:11%">
-        <col style="width:7%">
-        <col style="width:20%">
-        <col style="width:19%">
-        <col style="width:7%">
-        <col style="width:7%">
-        <col style="width:8%">
+        <col style="width:6%">
+        <col style="width:16.5%">
+        <col style="width:16.5%">
+        <col style="width:6%">
+        <col style="width:6%">
+        <col style="width:14%">
       </colgroup>
       <thead>
         <tr>
@@ -60,13 +59,16 @@
       <tbody>
         {% for group in groups %}
           {% for row in group.rows %}
-          <tr>
+          <tr class="{% if forloop.first %}j-group-start{% endif %}{% if group.is_current %} j-current{% endif %}">
             {% if forloop.first %}
-              <td class="j-date-first{% if group.is_current %} j-current{% endif %}">{{ group.date|date:"d.m" }}<br>{{ group.date|date:"Y" }}</td>
-              <td class="j-spec-first{% if group.is_current %} j-current{% endif %}">{{ group.specialist }}{% if group.is_current %}<span class="j-current-tag">текущая смена</span>{% endif %}</td>
-            {% else %}
-              <td></td>
-              <td></td>
+              <td class="j-date" rowspan="{{ group.span }}">
+                <span class="j-day">{{ group.date|date:"d.m" }}</span>
+                <span class="j-year">{{ group.date|date:"Y" }}</span>
+              </td>
+              <td class="j-spec" rowspan="{{ group.span }}">
+                {{ group.specialist }}
+                {% if group.is_current %}<span class="j-current-tag">текущая смена</span>{% endif %}
+              </td>
             {% endif %}
             <td class="mono nowrap">{{ row.entry_time|time:"H:i" }}</td>
             <td>{{ row.equipment_line|default:"" }}</td>
@@ -83,6 +85,13 @@
             </td>
           </tr>
           {% endfor %}
+          {% if group.shift_closed %}
+          <tr class="j-export-row">
+            <td class="j-export-cell" colspan="2">
+              <a class="btn btn-xs" href="{% url 'journal:shift_export' group.shift_id %}">Скачать Excel ({{ group.date|date:"d.m.Y" }})</a>
+            </td>
+          </tr>
+          {% endif %}
         {% empty %}
           <tr><td colspan="10" class="empty">Записей нет. Нажмите «Добавить запись».</td></tr>
         {% endfor %}
