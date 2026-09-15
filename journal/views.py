@@ -36,16 +36,23 @@ def _filter_entries(request):
     return qs
 
 
-def build_groups(entries) -> list[dict]:
+def build_groups(
+    entries, *, current_shift_id=None, reverse_current=False
+) -> list[dict]:
     groups = []
     for chunk in group_entries(list(entries)):
         first = chunk[0]
+        is_current = current_shift_id is not None and first.shift_id == current_shift_id
+        rows = list(chunk)
+        if is_current and reverse_current:
+            rows = list(reversed(rows))
         groups.append(
             {
                 "date": first.entry_date,
                 "specialist": first.specialist_name,
-                "span": len(chunk),
-                "rows": chunk,
+                "span": len(rows),
+                "rows": rows,
+                "is_current": is_current,
             }
         )
     return groups
@@ -57,19 +64,37 @@ class JournalEntryListView(LoginRequiredMixin, ListView):
     context_object_name = "entries"
     paginate_by = 50
 
+    def _open_shift(self):
+        return Shift.objects.open().select_related("opened_by").first()
+
     def get_queryset(self):
-        return _filter_entries(self.request)
+        qs = _filter_entries(self.request)
+        open_shift = self._open_shift()
+        if open_shift is not None:
+            qs = qs.exclude(shift=open_shift)
+        return qs
 
     def get_context_data(self, **kwargs):
         from accounts.models import User
 
         ctx = super().get_context_data(**kwargs)
-        ctx["groups"] = build_groups(self.object_list)
+        open_shift = self._open_shift()
+        current_groups = []
+        if open_shift is not None:
+            current_entries = (
+                JournalEntry.objects.select_related("shift", "specialist", "created_by")
+                .filter(shift=open_shift)
+                .order_by("occurred_at", "id")
+            )
+            current_groups = build_groups(
+                current_entries, current_shift_id=open_shift.pk, reverse_current=True
+            )
+        ctx["groups"] = current_groups + build_groups(self.object_list)
         ctx["specialists"] = (
             User.objects.filter(journal_records__isnull=False).distinct().order_by("last_name")
         )
         ctx["current"] = self.request.GET
-        ctx["open_shift"] = Shift.objects.open().select_related("opened_by").first()
+        ctx["open_shift"] = open_shift
         ctx["total"] = JournalEntry.objects.count()
         return ctx
 

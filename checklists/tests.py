@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -100,6 +102,23 @@ class ChecklistViewTests(ChecklistBaseTestCase):
     def test_list_renders(self):
         self.client.force_login(self.specialist)
         self.assertEqual(self.client.get(reverse("checklists:checklist_list")).status_code, 200)
+
+    def test_list_shows_current_and_previous(self):
+        final = EquipmentChecklist.objects.create(
+            date=timezone.localdate() - timedelta(days=1),
+            performed_by=self.specialist,
+            created_by=self.specialist,
+            status=ChecklistStatus.FINAL,
+        )
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("checklists:checklist_list"))
+        self.assertEqual(response.context["current_checklist"], self.checklist)
+        self.assertEqual(response.context["previous_checklist"], final)
+        self.assertContains(response, "Создать новый чеклист")
+        self.assertContains(response, "Редактировать чеклист")
+        self.assertContains(response, "Текущий чеклист")
+        self.assertContains(response, "Предыдущий (закрытый) чеклист")
+        self.assertContains(response, 'class="data checklist-matrix"', count=2)
 
     def test_detail_renders(self):
         self.client.force_login(self.specialist)

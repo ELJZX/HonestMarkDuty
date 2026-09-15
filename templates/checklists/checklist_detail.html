@@ -27,37 +27,6 @@
 
 <div class="card">
   <div class="card-header"><div class="card-title">Матрица проверок</div></div>
-  <div class="table-wrap">
-    <table class="data checklist-matrix">
-      <thead>
-        <tr>
-          <th rowspan="2">№</th>
-          <th rowspan="2" class="check-col">Проводимые работы и проверки</th>
-          {% for col in machine_columns %}<th colspan="{{ col.machines|length }}">{{ col.group.name }}</th>{% endfor %}
-        </tr>
-        <tr>
-          {% for m in all_machines %}<th class="machine-col">{{ m.name }}</th>{% endfor %}
-        </tr>
-      </thead>
-      <tbody>
-        <tr class="mileage-row">
-          <td></td>
-          <td class="check-name">Пробег печатающей головки (км)</td>
-          {% for cell in mileage_cells %}<td class="mono text-center">{{ cell.value|default_if_none:"—" }}</td>{% endfor %}
-        </tr>
-        {% for row in rows %}
-        <tr>
-          <td class="mono">{{ forloop.counter }}</td>
-          <td class="check-name">{{ row.check.name }}</td>
-          {% for cell in row.cells %}
-            <td class="text-center">
-              {% if cell.score %}<span class="score score-{{ cell.score }}">{{ cell.score }}</span>{% else %}<span class="dim">—</span>{% endif %}
-            </td>
-          {% endfor %}
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  {% include "checklists/partials/matrix.html" with matrix=matrix %}
 </div>
 {% endblock %}

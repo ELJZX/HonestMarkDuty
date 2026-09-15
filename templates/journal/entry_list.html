@@ -62,8 +62,8 @@
           {% for row in group.rows %}
           <tr>
             {% if forloop.first %}
-              <td class="j-date-first">{{ group.date|date:"d.m" }}<br>{{ group.date|date:"Y" }}</td>
-              <td class="j-spec-first">{{ group.specialist }}</td>
+              <td class="j-date-first{% if group.is_current %} j-current{% endif %}">{{ group.date|date:"d.m" }}<br>{{ group.date|date:"Y" }}</td>
+              <td class="j-spec-first{% if group.is_current %} j-current{% endif %}">{{ group.specialist }}{% if group.is_current %}<span class="j-current-tag">текущая смена</span>{% endif %}</td>
             {% else %}
               <td></td>
               <td></td>

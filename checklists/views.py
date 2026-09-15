@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.views.generic import DeleteView, DetailView, ListView, View
 
 from checklists.forms import ChecklistForm
-from checklists.models import EquipmentChecklist
+from checklists.models import ChecklistStatus, EquipmentChecklist
 from checklists.services import apply_matrix, build_matrix, finalize_checklist
 from core.mixins import AdminRequiredMixin, EditorRequiredMixin
 from shifts.models import Shift
@@ -18,7 +18,54 @@ class ChecklistListView(LoginRequiredMixin, ListView):
     model = EquipmentChecklist
     template_name = "checklists/checklist_list.html"
     context_object_name = "checklists"
-    paginate_by = 25
+    paginate_by = None
+
+    def get_queryset(self):
+        return EquipmentChecklist.objects.select_related(
+            "workshop", "performed_by", "shift"
+        )
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        open_shift = Shift.objects.open().first()
+
+        current = None
+        if open_shift is not None:
+            current = (
+                self.get_queryset()
+                .filter(shift=open_shift)
+                .order_by("-created_at")
+                .first()
+            )
+        if current is None:
+            current = (
+                self.get_queryset()
+                .filter(status=ChecklistStatus.DRAFT)
+                .order_by("-date", "-created_at")
+                .first()
+            )
+        if current is None:
+            current = self.get_queryset().first()
+
+        previous = None
+        if current is not None:
+            previous = (
+                self.get_queryset()
+                .filter(status=ChecklistStatus.FINAL)
+                .exclude(pk=current.pk)
+                .first()
+            )
+            if previous is None:
+                previous = self.get_queryset().exclude(pk=current.pk).first()
+
+        ctx["open_shift"] = open_shift
+        ctx["current_checklist"] = current
+        ctx["previous_checklist"] = previous
+        if current is not None:
+            ctx["current_matrix"] = build_matrix(current)
+        if previous is not None:
+            ctx["previous_matrix"] = build_matrix(previous)
+        return ctx
 
 
 class ChecklistDetailView(LoginRequiredMixin, DetailView):
@@ -28,7 +75,9 @@ class ChecklistDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx.update(build_matrix(self.object))
+        matrix = build_matrix(self.object)
+        ctx.update(matrix)
+        ctx["matrix"] = matrix
         return ctx
 
 

@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -104,6 +106,38 @@ class JournalViewTests(TestCase):
         self.assertEqual(self.client.get(reverse("journal:entry_list")).status_code, 200)
         response = self.client.get(reverse("journal:entry_list"), {"q": "печати"})
         self.assertContains(response, "Проверка печати")
+
+    def test_current_shift_on_top_reversed_and_closed_ascending(self):
+        JournalEntry.objects.create(
+            shift=self.shift,
+            action_task="старое",
+            occurred_at=timezone.now() - timedelta(hours=2),
+        )
+        closed = Shift.objects.create(opened_by=self.specialist, status=Shift.Status.CLOSED)
+        JournalEntry.objects.create(
+            shift=closed,
+            action_task="ранняя",
+            occurred_at=timezone.now() - timedelta(days=1, hours=1),
+        )
+        JournalEntry.objects.create(
+            shift=closed,
+            action_task="поздняя",
+            occurred_at=timezone.now() - timedelta(days=1),
+        )
+
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("journal:entry_list"))
+        groups = response.context["groups"]
+
+        self.assertTrue(groups[0]["is_current"])
+        current_times = [row.occurred_at for row in groups[0]["rows"]]
+        self.assertEqual(current_times, sorted(current_times, reverse=True))
+
+        self.assertFalse(groups[-1]["is_current"])
+        closed_times = [row.occurred_at for row in groups[-1]["rows"]]
+        self.assertEqual(closed_times, sorted(closed_times))
+
+        self.assertContains(response, "j-current")
 
     def test_create_entry(self):
         self.client.force_login(self.specialist)

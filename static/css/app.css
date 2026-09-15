@@ -64,7 +64,7 @@ code, .mono { font-family: var(--font-mono); }
   top: 0; bottom: 0; left: 0;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
   z-index: 40;
 }
 
@@ -75,6 +75,7 @@ code, .mono { font-family: var(--font-mono); }
   padding: 24px 22px 20px;
   border-bottom: 1px solid var(--border);
   transition: background .12s;
+  flex: 0 0 auto;
 }
 .brand:hover { background: var(--surface-2); }
 .brand-logos { display: flex; flex-direction: column; align-items: center; gap: 5px; flex: 0 0 auto; }
@@ -84,7 +85,16 @@ code, .mono { font-family: var(--font-mono); }
 .brand-name { font-family: var(--font-mono); font-size: 1.15rem; letter-spacing: .04em; }
 .brand-tag { font-size: .82rem; color: var(--dim); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .06em; }
 
-.nav { padding: 16px 12px; flex: 1; }
+.nav {
+  padding: 16px 12px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.nav::-webkit-scrollbar { width: 0; height: 0; display: none; }
 
 .nav-group { margin-bottom: 6px; }
 .nav-group > summary {
@@ -168,6 +178,8 @@ code, .mono { font-family: var(--font-mono); }
 }
 .card-title { font-family: var(--font-mono); font-size: .95rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
 .card-sub { color: var(--dim); font-size: .95rem; }
+.card-current { border-left: 3px solid #27a25a; }
+.card-current .card-title { color: var(--text); }
 
 .grid { display: grid; gap: 22px; }
 .grid-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
@@ -347,6 +359,19 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
   color: #111;
   font-weight: 600;
   vertical-align: middle;
+}
+.journal-table td.j-current {
+  background: #b7f0c0;
+  color: #0b3d1a;
+}
+.j-current-tag {
+  display: block;
+  margin-top: 4px;
+  font-size: .68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #0b6b2a;
 }
 .row-actions { display: flex; flex-direction: column; gap: 4px; }
 .btn-xs { padding: 3px 8px; font-size: .72rem; }

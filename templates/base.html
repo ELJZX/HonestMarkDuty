@@ -73,7 +73,7 @@
         </div>
       </details>
 
-      <details class="nav-group" {% if request.resolver_match.namespace == 'analytics' or request.resolver_match.url_name == 'audit_list' %}open{% endif %}>
+      <details class="nav-group" {% if request.resolver_match.namespace == 'analytics' and request.resolver_match.url_name != 'dashboard' or request.resolver_match.url_name == 'audit_list' %}open{% endif %}>
         <summary class="nav-label">Аналитика и контроль</summary>
         <div class="nav-items">
           <a class="nav-item {% if request.resolver_match.url_name == 'statistics' %}active{% endif %}" href="{% url 'analytics:statistics' %}">
