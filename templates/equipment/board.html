@@ -10,40 +10,63 @@
 <div class="card">
   <div class="card-header">
     <div class="card-title">Список цехов</div>
-  </div>
-
-  <div class="workshop-board">
-    {% for w in workshops %}
-    <div class="workshop-card">
-      <div class="workshop-card-head">
-        <img class="workshop-card-thumb" src="{% static 'img/workshop.svg' %}" alt="{{ w.name }}">
-        <div class="workshop-card-name">{{ w.name }}</div>
-      </div>
-
-      <div class="workshop-card-stats">
-        <div>Линии: <b>{{ w.active_lines }}</b> из {{ w.total_lines }}</div>
-        <div>Оборудование: <b>{{ w.active_equipment }}</b> из {{ w.total_equipment }}</div>
-      </div>
-
-      <hr class="workshop-card-divider">
-
-      <div class="workshop-card-valid">
-        <div>В работе: <b>{{ w.operational_equipment }}</b></div>
-        <div>Готовность: <b>{{ w.ready_percent }}%</b></div>
-      </div>
-
-      <div class="workshop-card-actions">
-        <a class="btn workshop-card-btn" href="{% url 'equipment:workshop_lines' w.pk %}">Подробнее</a>
-        {% if user.is_admin %}
-        <a class="btn btn-sm icon-btn" href="{% url 'core:workshop_update' w.pk %}" title="Редактировать цех">✎</a>
-        <a class="btn btn-danger btn-sm icon-btn" href="{% url 'core:workshop_delete' w.pk %}" title="Удалить цех">✕</a>
-        {% endif %}
-      </div>
+    <div class="card-header-actions">
+      {% if user.can_edit %}
+      <button class="btn btn-sm" type="button" id="workshops-edit-toggle">Изменить</button>
+      <button class="btn btn-primary btn-sm workshops-edit-action" type="submit" form="workshop-reorder-form" hidden>Сохранить</button>
+      <button class="btn btn-ghost btn-sm workshops-edit-action" type="button" id="workshops-edit-cancel" hidden>Отмена</button>
+      {% endif %}
     </div>
-    {% empty %}
-    <div class="empty">Цеха не добавлены</div>
-    {% endfor %}
   </div>
+
+  <form method="post" action="{% url 'equipment:workshop_reorder' %}" id="workshop-reorder-form">
+    {% csrf_token %}
+    <input type="hidden" name="order" id="workshops-order" value="">
+    {% if user.can_edit %}
+    <p class="drag-hint" id="workshops-drag-hint" hidden>Перетащите карточки, чтобы изменить порядок, затем нажмите «Сохранить».</p>
+    {% endif %}
+    <div class="workshop-board" id="workshops-sortable" data-sortable
+         data-item=".workshop-card"
+         data-id-attr="workshopId"
+         data-form="workshop-reorder-form"
+         data-toggle="workshops-edit-toggle"
+         data-cancel="workshops-edit-cancel"
+         data-hint="workshops-drag-hint"
+         data-order="workshops-order"
+         data-actions=".workshops-edit-action">
+      {% for w in workshops %}
+      <div class="workshop-card" data-workshop-id="{{ w.pk }}" draggable="false">
+        <span class="drag-handle" title="Перетащите, чтобы изменить порядок">⠿</span>
+        <div class="workshop-card-head">
+          <img class="workshop-card-thumb" src="{% static 'img/workshop.svg' %}" alt="{{ w.name }}">
+          <div class="workshop-card-name">{{ w.name }}</div>
+        </div>
+
+        <div class="workshop-card-stats">
+          <div>Линии: <b>{{ w.active_lines }}</b> из {{ w.total_lines }}</div>
+          <div>Оборудование: <b>{{ w.active_equipment }}</b> из {{ w.total_equipment }}</div>
+        </div>
+
+        <hr class="workshop-card-divider">
+
+        <div class="workshop-card-valid">
+          <div>В работе: <b>{{ w.operational_equipment }}</b></div>
+          <div>Готовность: <b>{{ w.ready_percent }}%</b></div>
+        </div>
+
+        <div class="workshop-card-actions">
+          <a class="btn workshop-card-btn" href="{% url 'equipment:workshop_lines' w.pk %}">Подробнее</a>
+          {% if user.is_admin %}
+          <a class="btn btn-sm icon-btn" href="{% url 'core:workshop_update' w.pk %}" title="Редактировать цех">✎</a>
+          <a class="btn btn-danger btn-sm icon-btn" href="{% url 'core:workshop_delete' w.pk %}" title="Удалить цех">✕</a>
+          {% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <div class="empty">Цеха не добавлены</div>
+      {% endfor %}
+    </div>
+  </form>
 </div>
 
 {% if user.is_admin %}

@@ -92,21 +92,23 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  // Перетаскивание линий цеха (drag & drop) с сохранением порядка
-  (function () {
-    const list = document.getElementById("lines-sortable");
-    if (!list) return;
-    const form = document.getElementById("lines-reorder-form");
-    const toggle = document.getElementById("lines-edit-toggle");
-    const cancel = document.getElementById("lines-edit-cancel");
-    const hint = document.getElementById("lines-drag-hint");
-    const orderInput = document.getElementById("lines-order");
-    const editActions = document.querySelectorAll(".lines-edit-action");
+  // Перетаскивание карточек ([data-sortable]) с сохранением порядка
+  document.querySelectorAll("[data-sortable]").forEach(function (list) {
+    const form = document.getElementById(list.dataset.form);
+    const toggle = document.getElementById(list.dataset.toggle);
+    const cancel = document.getElementById(list.dataset.cancel);
+    const hint = document.getElementById(list.dataset.hint);
+    const orderInput = document.getElementById(list.dataset.order);
+    const itemSelector = list.dataset.item || ".line-card";
+    const idAttr = list.dataset.idAttr || "lineId";
+    const editActions = list.dataset.actions
+      ? document.querySelectorAll(list.dataset.actions)
+      : [];
     let editing = false;
     let dragged = null;
 
     function cards() {
-      return Array.prototype.slice.call(list.querySelectorAll(".line-card"));
+      return Array.prototype.slice.call(list.querySelectorAll(itemSelector));
     }
 
     function setEdit(on) {
@@ -125,11 +127,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     list.addEventListener("dragstart", function (e) {
       if (!editing) return;
-      const card = e.target.closest(".line-card");
+      const card = e.target.closest(itemSelector);
       if (!card) return;
       dragged = card;
       e.dataTransfer.effectAllowed = "move";
-      try { e.dataTransfer.setData("text/plain", card.dataset.lineId || ""); } catch (err) { /* ignore */ }
+      try { e.dataTransfer.setData("text/plain", card.dataset[idAttr] || ""); } catch (err) { /* ignore */ }
       // Прячем исходную карточку после того, как браузер снимет drag-image
       setTimeout(function () { card.classList.add("dragging"); }, 0);
     });
@@ -172,12 +174,12 @@ document.addEventListener("DOMContentLoaded", function () {
       form.addEventListener("submit", function () {
         if (orderInput) {
           orderInput.value = cards()
-            .map(function (c) { return c.dataset.lineId; })
+            .map(function (c) { return c.dataset[idAttr]; })
             .join(",");
         }
       });
     }
-  })();
+  });
 
   // Модальное окно подтверждения
   const modal = document.getElementById("confirm-modal");

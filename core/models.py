@@ -109,6 +109,7 @@ class Workshop(AuditedModel):
     )
     phone = models.CharField("Телефон", max_length=50, blank=True)
     description = models.TextField("Описание", blank=True)
+    sort_order = models.PositiveIntegerField("Порядок", default=0)
     is_active = models.BooleanField("Активен", default=True)
 
     class Meta:

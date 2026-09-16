@@ -30,7 +30,15 @@
     {% if user.can_edit %}
     <p class="drag-hint" id="lines-drag-hint" hidden>Перетащите карточки, чтобы изменить порядок, затем нажмите «Сохранить».</p>
     {% endif %}
-    <div class="line-list" id="lines-sortable">
+    <div class="line-list" id="lines-sortable" data-sortable
+         data-item=".line-card"
+         data-id-attr="lineId"
+         data-form="lines-reorder-form"
+         data-toggle="lines-edit-toggle"
+         data-cancel="lines-edit-cancel"
+         data-hint="lines-drag-hint"
+         data-order="lines-order"
+         data-actions=".lines-edit-action">
       {% for line in lines %}
       <div class="line-card" data-line-id="{{ line.pk }}" draggable="false">
         <span class="drag-handle" title="Перетащите, чтобы изменить порядок">⠿</span>

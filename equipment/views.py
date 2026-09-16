@@ -90,7 +90,7 @@ class EquipmentBoardView(LoginRequiredMixin, ListView):
                     distinct=True,
                 ),
             )
-            .order_by("name")
+            .order_by("sort_order", "name")
         )
 
     def get_context_data(self, **kwargs):
@@ -251,6 +251,26 @@ class ProductionLineDeleteView(AdminRequiredMixin, DeleteView):
 
     def get_success_url(self):
         return reverse("equipment:workshop_lines", args=[self.object.workshop_id])
+
+
+class WorkshopReorderView(EditorRequiredMixin, View):
+    """Сохранение порядка цехов на доске (drag & drop)."""
+
+    def post(self, request):
+        raw = request.POST.get("order", "")
+        ids = []
+        for chunk in raw.split(","):
+            chunk = chunk.strip()
+            if chunk.isdigit() and int(chunk) not in ids:
+                ids.append(int(chunk))
+        workshops = {w.pk: w for w in Workshop.objects.filter(pk__in=ids)}
+        for index, workshop_id in enumerate(ids):
+            workshop = workshops.get(workshop_id)
+            if workshop and workshop.sort_order != index:
+                workshop.sort_order = index
+                workshop.save(update_fields=["sort_order", "updated_at"])
+        messages.success(request, "Порядок цехов сохранён.")
+        return redirect("equipment:board")
 
 
 class ProductionLineReorderView(EditorRequiredMixin, View):

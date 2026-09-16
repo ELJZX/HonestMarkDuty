@@ -351,6 +351,29 @@ class EquipmentBoardTests(TestCase):
             403,
         )
 
+    def test_workshop_reorder(self):
+        other = Workshop.objects.create(name="Второй цех", code="ВЦ")
+        self.client.force_login(self.specialist)
+        response = self.client.post(
+            reverse("equipment:workshop_reorder"),
+            {"order": f"{other.pk},{self.workshop.pk}"},
+        )
+        self.assertEqual(response.status_code, 302)
+        other.refresh_from_db()
+        self.workshop.refresh_from_db()
+        self.assertEqual(other.sort_order, 0)
+        self.assertEqual(self.workshop.sort_order, 1)
+
+    def test_viewer_cannot_reorder_workshops(self):
+        viewer = User.objects.create_user(
+            username="board-viewer4", password="x", role=User.Role.VIEWER
+        )
+        self.client.force_login(viewer)
+        self.assertEqual(
+            self.client.post(reverse("equipment:workshop_reorder"), {"order": ""}).status_code,
+            403,
+        )
+
     def test_form_sets_workshop_from_line(self):
         form = EquipmentForm(
             data={
