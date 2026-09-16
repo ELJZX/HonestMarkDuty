@@ -284,6 +284,35 @@ class EquipmentBoardTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("equipment:line_equipment", args=[self.line.pk]))
 
+    def test_line_update_view(self):
+        self.client.force_login(self.specialist)
+        self.assertEqual(
+            self.client.get(reverse("equipment:line_update", args=[self.line.pk])).status_code,
+            200,
+        )
+        response = self.client.post(
+            reverse("equipment:line_update", args=[self.line.pk]),
+            {
+                "workshop": self.workshop.pk,
+                "name": "Линия №1-бис",
+                "sort_order": 0,
+                "is_active": "on",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.line.refresh_from_db()
+        self.assertEqual(self.line.name, "Линия №1-бис")
+
+    def test_viewer_cannot_edit_line(self):
+        viewer = User.objects.create_user(
+            username="board-viewer2", password="x", role=User.Role.VIEWER
+        )
+        self.client.force_login(viewer)
+        self.assertEqual(
+            self.client.get(reverse("equipment:line_update", args=[self.line.pk])).status_code,
+            403,
+        )
+
     def test_form_sets_workshop_from_line(self):
         form = EquipmentForm(
             data={

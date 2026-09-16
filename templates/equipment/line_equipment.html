@@ -33,7 +33,16 @@
         </span>
       </a>
       {% if user.is_admin %}
-      <a class="btn btn-danger btn-sm icon-btn equip-card-del" href="{% url 'equipment:equipment_delete' e.pk %}" title="Удалить оборудование">✕</a>
+      <div class="equip-card-actions">
+        {% if user.can_edit %}
+        <a class="btn btn-sm icon-btn" href="{% url 'equipment:equipment_update' e.pk %}" title="Редактировать оборудование">✎</a>
+        {% endif %}
+        <a class="btn btn-danger btn-sm icon-btn" href="{% url 'equipment:equipment_delete' e.pk %}" title="Удалить оборудование">✕</a>
+      </div>
+      {% elif user.can_edit %}
+      <div class="equip-card-actions">
+        <a class="btn btn-sm icon-btn" href="{% url 'equipment:equipment_update' e.pk %}" title="Редактировать оборудование">✎</a>
+      </div>
       {% endif %}
     </div>
     {% empty %}

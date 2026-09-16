@@ -35,7 +35,8 @@
       <div class="workshop-card-actions">
         <a class="btn workshop-card-btn" href="{% url 'equipment:workshop_lines' w.pk %}">Подробнее</a>
         {% if user.is_admin %}
-        <a class="btn btn-danger icon-btn" href="{% url 'core:workshop_delete' w.pk %}" title="Удалить цех">✕</a>
+        <a class="btn btn-sm icon-btn" href="{% url 'core:workshop_update' w.pk %}" title="Редактировать цех">✎</a>
+        <a class="btn btn-danger btn-sm icon-btn" href="{% url 'core:workshop_delete' w.pk %}" title="Удалить цех">✕</a>
         {% endif %}
       </div>
     </div>

@@ -28,6 +28,9 @@
         </span>
         <span class="line-card-meta">{{ line.equipment_total }} ед. →</span>
       </a>
+      {% if user.can_edit %}
+      <a class="btn btn-sm icon-btn" href="{% url 'equipment:line_update' line.pk %}" title="Редактировать линию">✎</a>
+      {% endif %}
       {% if user.is_admin %}
       <a class="btn btn-danger btn-sm icon-btn" href="{% url 'equipment:line_delete' line.pk %}" title="Удалить линию">✕</a>
       {% endif %}

@@ -699,10 +699,13 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
 .equip-card:hover { border-color: #454545; transform: translateY(-2px); }
 .equip-card-main {
   display: flex; flex-direction: column; gap: .44rem;
-  padding: 1.11rem 1.22rem; padding-right: 2.8rem;
+  padding: 1.11rem 1.22rem; padding-right: 4.9rem;
   color: inherit; text-decoration: none;
 }
-.equip-card-del { position: absolute; top: .6rem; right: .6rem; }
+.equip-card-actions {
+  position: absolute; top: .6rem; right: .6rem;
+  display: flex; gap: .35rem;
+}
 .equip-card-name { font-size: 1.15rem; font-weight: 500; }
 .equip-card-sub { font-family: var(--font-mono); font-size: .82rem; color: var(--dim); }
 .equip-card-foot {
