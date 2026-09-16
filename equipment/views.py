@@ -23,7 +23,6 @@ from equipment.models import (
     Equipment,
     EquipmentCategory,
     EquipmentStatus,
-    MaintenanceRecord,
 )
 
 

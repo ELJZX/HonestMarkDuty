@@ -1,17 +1,22 @@
+import tempfile
 from pathlib import Path
 from unittest import mock
 
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
+from django.core.management import call_command
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from accounts.models import User
+from checklists.models import EquipmentChecklist
 from config.version import get_version
 from core.audit import get_current_user, record_audit, serialize, set_current_user, snapshot
 from core.context_processors import project_context
 from core.models import AuditLog, ProductionSite, Workshop
 from core.views import server_error
+from documents.models import Document
+from journal.models import JournalEntry
 
 
 class VersionTests(TestCase):
@@ -208,3 +213,78 @@ class ErrorViewTests(TestCase):
         request.user = AnonymousUser()
         response = server_error(request)
         self.assertEqual(response.status_code, 500)
+
+
+class SettingsAndVersionEdgeTests(TestCase):
+    def test_load_dotenv_reads_values(self):
+        import os
+
+        from config.settings import _load_dotenv
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "env.test"
+            path.write_text(
+                '# комментарий\n\nDOTENV_TEST_VALUE=hello\nDOTENV_TEST_QUOTED="quoted value"\n',
+                encoding="utf-8",
+            )
+            os.environ.pop("DOTENV_TEST_VALUE", None)
+            os.environ.pop("DOTENV_TEST_QUOTED", None)
+            try:
+                _load_dotenv(path)
+                self.assertEqual(os.environ["DOTENV_TEST_VALUE"], "hello")
+                self.assertEqual(os.environ["DOTENV_TEST_QUOTED"], "quoted value")
+            finally:
+                os.environ.pop("DOTENV_TEST_VALUE", None)
+                os.environ.pop("DOTENV_TEST_QUOTED", None)
+
+    def test_load_dotenv_missing_file_is_noop(self):
+        from config.settings import _load_dotenv
+
+        _load_dotenv(Path("definitely-missing-env-file"))
+
+    def test_version_falls_back_when_file_missing(self):
+        import config.version as version_module
+
+        original = version_module._VERSION_FILE
+        version_module._VERSION_FILE = Path("definitely-missing-version-file")
+        try:
+            self.assertEqual(version_module.get_version(), version_module.__version__)
+        finally:
+            version_module._VERSION_FILE = original
+
+
+class AuditedSaveEdgeTests(TestCase):
+    def test_update_logged_when_previous_row_missing(self):
+        workshop = Workshop.objects.create(name="Цех", code="Ц")
+        Workshop.objects.filter(pk=workshop.pk).delete()
+        workshop._state.adding = False
+        workshop.chief = "Иванов"
+        workshop.save()
+        self.assertTrue(AuditLog.objects.filter(action=AuditLog.Action.UPDATE).exists())
+
+
+class SeedDemoCommandTests(TestCase):
+    def test_seed_demo_creates_data_and_is_repeatable(self):
+        call_command("seed_demo")
+        self.assertTrue(User.objects.filter(username="ivanov").exists())
+        self.assertTrue(Workshop.objects.filter(code="МЦ").exists())
+        self.assertTrue(JournalEntry.objects.exists())
+        self.assertTrue(EquipmentChecklist.objects.exists())
+        self.assertTrue(Document.objects.exists())
+
+        users = User.objects.count()
+        workshops = Workshop.objects.count()
+        documents = Document.objects.count()
+        call_command("seed_demo")
+        self.assertEqual(User.objects.count(), users)
+        self.assertEqual(Workshop.objects.count(), workshops)
+        self.assertEqual(Document.objects.count(), documents)
+
+    def test_seed_demo_clears_existing_admin_names(self):
+        User.objects.create_user(
+            username="admin", password="x", last_name="Старый", first_name="Имя"
+        )
+        call_command("seed_demo")
+        admin = User.objects.get(username="admin")
+        self.assertEqual(admin.last_name, "")
+        self.assertEqual(admin.first_name, "")

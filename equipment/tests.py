@@ -1,12 +1,15 @@
 from datetime import timedelta
+from io import StringIO
+from unittest import mock
 
 from django.core.management import call_command
+from django.db import IntegrityError
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import User
-from core.models import ProductionLine, Workshop
+from core.models import ProductionLine, ProductionSite, Workshop
 from equipment.forms import EquipmentForm
 from equipment.models import (
     Criticality,
@@ -444,3 +447,90 @@ class EquipmentBoardTests(TestCase):
         )
         self.assertTrue(form.is_valid(), form.errors)
         self.assertEqual(form.cleaned_data["workshop"], self.workshop)
+
+
+class EquipmentFilterAndEdgeTests(TestCase):
+    def setUp(self):
+        self.specialist = User.objects.create_user(
+            username="edge-spec", password="x", role=User.Role.SPECIALIST
+        )
+        self.site = ProductionSite.objects.create(name="Площадка")
+        self.workshop = Workshop.objects.create(name="Цех", code="Ц", site=self.site)
+        self.line = ProductionLine.objects.create(workshop=self.workshop, name="Линия", code="L")
+        self.category = EquipmentCategory.objects.create(name="Кат")
+        self.equipment = Equipment.objects.create(
+            name="Обор",
+            inventory_number="EQ-900",
+            site=self.site,
+            workshop=self.workshop,
+            line=self.line,
+            category=self.category,
+        )
+
+    def test_list_applies_all_filters(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("equipment:equipment_list"),
+            {
+                "site": self.site.pk,
+                "workshop": self.workshop.pk,
+                "status": self.equipment.status,
+                "category": self.category.pk,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "EQ-900")
+
+    def test_create_get_initial_from_line(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("equipment:equipment_create") + f"?line={self.line.pk}"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["form"].initial["line"], self.line.pk)
+        self.assertEqual(response.context["form"].initial["workshop"], self.workshop.pk)
+
+    def test_line_create_without_workshop_cancels_to_board(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("equipment:line_create"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["cancel_url"], reverse("equipment:board"))
+
+    def test_status_change_invalid_form_keeps_status(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(
+            reverse("equipment:status_change", args=[self.equipment.pk]),
+            {"status": "not-a-status"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.equipment.refresh_from_db()
+        self.assertNotEqual(self.equipment.status, "not-a-status")
+
+    def test_maintenance_create_invalid_form(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(
+            reverse("equipment:maintenance_create", args=[self.equipment.pk]), {}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.equipment.maintenance_records.count(), 0)
+
+
+class SeedStructureEdgeTests(TestCase):
+    def test_verbose_output(self):
+        out = StringIO()
+        call_command("seed_structure", stdout=out)
+        self.assertIn("Структура цехов и линий обновлена", out.getvalue())
+
+    def test_recovers_from_integrity_error(self):
+        original_save = Workshop.save
+        state = {"raised": False}
+
+        def flaky_save(self, *args, **kwargs):
+            if not kwargs.get("force_insert") and not state["raised"]:
+                state["raised"] = True
+                raise IntegrityError("duplicate code")
+            return original_save(self, *args, **kwargs)
+
+        with mock.patch.object(Workshop, "save", flaky_save):
+            call_command("seed_structure", verbosity=0)
+        self.assertTrue(Workshop.objects.filter(name="Цех №1", is_active=True).exists())

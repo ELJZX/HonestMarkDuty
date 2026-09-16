@@ -26,8 +26,11 @@ from checklists.services import (
     build_matrix,
     finalize_checklist,
     finalize_markem_checklist,
+    finalize_shift_checklists,
     markem_matrix,
 )
+from shifts.models import Shift
+from checklists.views import CurrentArchiveMixin
 
 
 class ChecklistBaseTestCase(TestCase):
@@ -374,6 +377,7 @@ class MarkemServiceTests(MarkemBaseTestCase):
             self.checklist,
             {
                 f"val__{self.printer.id}__{self.parameter.id}": "   ",
+                "val__broken": "1",
                 "unrelated": "x",
             },
         )
@@ -585,3 +589,121 @@ class MarkemViewTests(MarkemBaseTestCase):
         )
         self.assertRedirects(response, reverse("journal:export_list"))
         self.assertContains(response, "Укажите дату")
+
+
+class ChecklistServiceEdgeTests(ChecklistBaseTestCase):
+    def test_apply_matrix_ignores_malformed_entries(self):
+        apply_matrix(
+            self.checklist,
+            {
+                f"score__{self.machine.id}__{self.check.id}": "не число",
+                f"mileage__{self.machine.id}": "abc",
+                "score__malformed": "2",
+                f"score__{self.machine.id}__{self.check.id}__extra": "2",
+            },
+        )
+        self.assertEqual(self.checklist.results.count(), 0)
+        self.assertEqual(self.checklist.mileages.count(), 0)
+
+    def test_apply_matrix_ignores_out_of_range_score(self):
+        apply_matrix(
+            self.checklist, {f"score__{self.machine.id}__{self.check.id}": "9"}
+        )
+        self.assertEqual(self.checklist.results.count(), 0)
+
+    def test_finalize_shift_checklists(self):
+        shift = Shift.objects.create(opened_by=self.specialist)
+        draft = EquipmentChecklist.objects.create(
+            shift=shift,
+            date=timezone.localdate(),
+            performed_by=self.specialist,
+            created_by=self.specialist,
+            status=ChecklistStatus.DRAFT,
+        )
+        count = finalize_shift_checklists(shift)
+        self.assertEqual(count, 1)
+        draft.refresh_from_db()
+        self.assertEqual(draft.status, ChecklistStatus.FINAL)
+        self.assertTrue(draft.file)
+
+    def test_finalize_shift_checklists_skips_final(self):
+        shift = Shift.objects.create(opened_by=self.specialist)
+        EquipmentChecklist.objects.create(
+            shift=shift,
+            date=timezone.localdate(),
+            performed_by=self.specialist,
+            created_by=self.specialist,
+            status=ChecklistStatus.FINAL,
+        )
+        self.assertEqual(finalize_shift_checklists(shift), 0)
+
+
+class ChecklistListBranchTests(TestCase):
+    def setUp(self):
+        self.specialist = User.objects.create_user(
+            username="cl-branch", password="x", role=User.Role.SPECIALIST
+        )
+        self.shift = Shift.objects.create(
+            opened_by=self.specialist, status=Shift.Status.OPEN
+        )
+
+    def test_list_current_taken_from_open_shift(self):
+        checklist = EquipmentChecklist.objects.create(
+            shift=self.shift,
+            date=timezone.localdate(),
+            performed_by=self.specialist,
+            created_by=self.specialist,
+            status=ChecklistStatus.DRAFT,
+        )
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("checklists:checklist_list"))
+        self.assertEqual(response.context["current_checklist"], checklist)
+
+    def test_markem_list_current_taken_from_open_shift(self):
+        checklist = MarkemChecklist.objects.create(
+            shift=self.shift,
+            date=timezone.localdate(),
+            performed_by=self.specialist,
+            created_by=self.specialist,
+        )
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("checklists:markem"))
+        self.assertEqual(response.context["current_checklist"], checklist)
+
+    def test_matrix_for_not_implemented(self):
+        with self.assertRaises(NotImplementedError):
+            CurrentArchiveMixin().matrix_for(None)
+
+    def test_checklist_create_invalid_post_rerenders(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(reverse("checklists:checklist_create"), {"date": "bad"})
+        self.assertEqual(response.status_code, 200)
+
+    def test_checklist_update_invalid_post_rerenders(self):
+        checklist = EquipmentChecklist.objects.create(
+            date=timezone.localdate(),
+            performed_by=self.specialist,
+            created_by=self.specialist,
+        )
+        self.client.force_login(self.specialist)
+        response = self.client.post(
+            reverse("checklists:checklist_update", args=[checklist.pk]), {"date": "bad"}
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_markem_create_invalid_post_rerenders(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(reverse("checklists:markem_create"), {"date": "bad"})
+        self.assertEqual(response.status_code, 200)
+
+    def test_markem_update_invalid_post_rerenders(self):
+        checklist = MarkemChecklist.objects.create(
+            date=timezone.localdate(),
+            performed_by=self.specialist,
+            created_by=self.specialist,
+        )
+        self.client.force_login(self.specialist)
+        response = self.client.post(
+            reverse("checklists:markem_update", args=[checklist.pk]), {"date": "bad"}
+        )
+        self.assertEqual(response.status_code, 200)

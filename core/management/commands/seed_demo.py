@@ -46,7 +46,7 @@ class Command(BaseCommand):
         self.stdout.write("Создание демо-данных...")
         admin = self._users()
         sites, workshops, specialists, lines = self._organization(admin)
-        items = self._inventory(workshops, admin)
+        self._inventory(workshops, admin)
         equipment_list = self._equipment(sites, workshops, lines)
         shift = self._shift_and_journal(workshops, specialists, equipment_list)
         self._checklists(shift, workshops, specialists)

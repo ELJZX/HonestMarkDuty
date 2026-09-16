@@ -297,3 +297,30 @@ class JournalFilterAndGroupTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("spreadsheetml", response["Content-Type"])
         self.assertIn("test_file.xlsx", response["Content-Disposition"])
+
+
+class JournalFilterAndFormEdgeTests(TestCase):
+    def setUp(self):
+        self.specialist = User.objects.create_user(
+            username="journal-edge", password="x", role=User.Role.SPECIALIST
+        )
+
+    def test_filter_by_date_range(self):
+        JournalEntry.objects.create(action_task="В диапазоне", occurred_at=timezone.now())
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("journal:entry_list"),
+            {"date_from": "2000-01-01", "date_to": "2999-12-31"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "В диапазоне")
+
+    def test_form_keeps_custom_equipment_line_and_print_head(self):
+        entry = JournalEntry.objects.create(
+            action_task="x", equipment_line="Кастомная линия", print_head="99"
+        )
+        form = JournalEntryForm(instance=entry)
+        line_values = [value for value, _label in form.fields["equipment_line"].choices]
+        head_values = [value for value, _label in form.fields["print_head"].choices]
+        self.assertIn("Кастомная линия", line_values)
+        self.assertIn("99", head_values)

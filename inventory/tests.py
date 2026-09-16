@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
@@ -204,3 +205,49 @@ class InventoryViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertTrue(ItemCategory.objects.filter(name="Новая категория").exists())
+
+
+class InventoryFilterAndEdgeTests(TestCase):
+    def setUp(self):
+        self.admin, self.specialist, self.viewer = make_users()
+        self.workshop = Workshop.objects.create(name="Цех", code="Ц")
+        self.location = StorageLocation.objects.create(
+            name="Ст", shelf_code="A-01", workshop=self.workshop
+        )
+        self.category = ItemCategory.objects.create(name="Кат")
+        self.item = InventoryItem.objects.create(
+            name="Сканер",
+            kind=ItemKind.DEVICE,
+            location=self.location,
+            category=self.category,
+            quantity=1,
+            min_quantity=2,
+        )
+
+    def test_list_applies_kind_location_category_filters(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("inventory:item_list"),
+            {
+                "kind": ItemKind.DEVICE,
+                "location": self.location.pk,
+                "category": self.category.pk,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Сканер")
+
+    def test_movement_create_invalid_form(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(
+            reverse("inventory:movement_create", args=[self.item.pk]),
+            {"movement_type": "", "quantity": ""},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.item.movements.count(), 0)
+
+    def test_movement_form_rejects_negative_on_create(self):
+        form = InventoryMovementForm()
+        form.cleaned_data = {"quantity": -3}
+        with self.assertRaises(ValidationError):
+            form.clean_quantity()

@@ -305,3 +305,70 @@ class WorkshopDocumentViewTests(TestCase):
             reverse("documents:workshop_document_download", args=["ceh1", "tz"])
         )
         self.assertEqual(response.status_code, 302)
+
+
+class WorkshopDocumentSampleEdgeTests(TestCase):
+    def setUp(self):
+        self.specialist = User.objects.create_user(
+            username="ws-sample", password="x", role=User.Role.SPECIALIST
+        )
+
+    def test_sample_with_plain_paragraph_and_table(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sample = Path(tmp) / "tv_tz.docx"
+            docx = DocxDocument()
+            docx.add_paragraph("Обычный текст без подстановок")
+            table = docx.add_table(rows=1, cols=1)
+            table.cell(0, 0).text = "Цех: {{ workshop_name }}"
+            docx.save(str(sample))
+
+            with override_settings(DOCUMENT_SAMPLES_DIR=tmp):
+                self.client.force_login(self.specialist)
+                response = self.client.get(
+                    reverse("documents:workshop_document_download", args=["tv", "tz"])
+                )
+                body = b"".join(response.streaming_content)
+
+        parsed = DocxDocument(BytesIO(body))
+        paragraphs = "\n".join(p.text for p in parsed.paragraphs)
+        self.assertIn("Обычный текст без подстановок", paragraphs)
+        table_text = "\n".join(
+            cell.text for table in parsed.tables for row in table.rows for cell in row.cells
+        )
+        self.assertIn("Творожный цех", table_text)
+
+
+class DocumentFormEdgeTests(TestCase):
+    def test_form_without_template_has_no_dynamic_fields(self):
+        form = DocumentForm()
+        self.assertIsNone(form.template_obj)
+        self.assertEqual(form.dynamic_field_names, [])
+
+
+class DocumentCreatePreviewEdgeTests(TestCase):
+    def setUp(self):
+        self.specialist = User.objects.create_user(
+            username="preview-edge", password="x", role=User.Role.SPECIALIST
+        )
+        self.workshop = Workshop.objects.create(name="Цех", code="Ц")
+        self.template = DocumentTemplate.objects.create(
+            name="Шаблон",
+            title_template="Т {{ workshop_name }}",
+            body="Причина: {{ reason }}",
+        )
+        self.template.workshops.set([self.workshop])
+
+    def test_invalid_post_builds_preview_with_bad_date(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(
+            reverse("documents:document_create"),
+            {
+                "template": self.template.pk,
+                "workshop": self.workshop.pk,
+                "number": "",
+                "doc_date": "не дата",
+                "reason": "значение",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("reason", response.context["form"].dynamic_field_names)

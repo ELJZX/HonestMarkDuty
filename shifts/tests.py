@@ -265,3 +265,17 @@ class ShiftViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         shift.refresh_from_db()
         self.assertEqual(shift.status, Shift.Status.CLOSED)
+
+
+class ShiftOpenEdgeTests(TestCase):
+    def test_open_form_valid_redirects_to_list_when_shift_exists(self):
+        specialist = User.objects.create_user(
+            username="shift-open-edge", password="x", role=User.Role.SPECIALIST
+        )
+        self.client.force_login(specialist)
+        with mock.patch(
+            "shifts.views.open_shift_for", return_value=(None, "У вас уже есть открытая смена.")
+        ):
+            response = self.client.post(reverse("shifts:shift_open"))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("shifts:shift_list"))

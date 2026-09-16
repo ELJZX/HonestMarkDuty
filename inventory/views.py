@@ -24,7 +24,6 @@ from inventory.forms import (
 from inventory.models import (
     Condition,
     InventoryItem,
-    InventoryMovement,
     ItemCategory,
     ItemKind,
     StorageLocation,
