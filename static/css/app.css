@@ -697,7 +697,7 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
 .drag-hint { font-family: var(--font-mono); font-size: .82rem; color: var(--dim); margin: 0 0 .78rem; }
 .line-list.edit-mode .drag-handle { display: inline-flex; }
 .line-list.edit-mode .line-card { cursor: grab; }
-.line-list.edit-mode .line-card.dragging { opacity: .5; cursor: grabbing; }
+.line-list.edit-mode .line-card.dragging { display: none; }
 .line-list.edit-mode .line-card-main { pointer-events: none; }
 .line-list.edit-mode .line-card .icon-btn { display: none; }
 

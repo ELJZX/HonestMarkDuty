@@ -104,7 +104,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const editActions = document.querySelectorAll(".lines-edit-action");
     let editing = false;
     let dragged = null;
-    let originIndex = 0;
 
     function cards() {
       return Array.prototype.slice.call(list.querySelectorAll(".line-card"));
@@ -129,22 +128,13 @@ document.addEventListener("DOMContentLoaded", function () {
       const card = e.target.closest(".line-card");
       if (!card) return;
       dragged = card;
-      originIndex = cards().indexOf(card);
       card.classList.add("dragging");
       e.dataTransfer.effectAllowed = "move";
       try { e.dataTransfer.setData("text/plain", card.dataset.lineId || ""); } catch (err) { /* ignore */ }
-      // Убираем карточку из списка — она должна быть «в руках», а не на старом месте
-      setTimeout(function () { if (dragged === card) card.remove(); }, 0);
     });
 
     list.addEventListener("dragend", function () {
-      if (!dragged) return;
-      dragged.classList.remove("dragging");
-      if (!list.contains(dragged)) {
-        const items = cards();
-        const ref = items[originIndex] || null;
-        list.insertBefore(dragged, ref);
-      }
+      if (dragged) dragged.classList.remove("dragging");
       dragged = null;
     });
 
@@ -152,10 +142,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!editing || !dragged) return;
       e.preventDefault();
       const target = e.target.closest(".line-card");
-      if (!target || target === dragged) {
-        if (!target && !list.contains(dragged)) list.appendChild(dragged);
-        return;
-      }
+      if (!target || target === dragged) return;
       const rect = target.getBoundingClientRect();
       const sameRow = e.clientY >= rect.top && e.clientY <= rect.bottom;
       const after = sameRow
