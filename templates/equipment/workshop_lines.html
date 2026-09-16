@@ -3,13 +3,6 @@
 {% block breadcrumb %}Учет / Оборудование / {{ workshop.name }}{% endblock %}
 {% block topbar_actions %}
   <a class="btn btn-sm btn-ghost" href="{% url 'equipment:equipment_list' %}?workshop={{ workshop.pk }}">Весь реестр</a>
-  {% if user.can_edit %}
-  <button class="btn btn-sm" type="button" id="lines-edit-toggle">Изменить</button>
-  <span id="lines-edit-actions" hidden>
-    <button class="btn btn-primary btn-sm" type="submit" form="lines-reorder-form">Сохранить</button>
-    <button class="btn btn-ghost btn-sm" type="button" id="lines-edit-cancel">Отмена</button>
-  </span>
-  {% endif %}
 {% endblock %}
 {% block content %}
 <div class="page-back">
@@ -21,7 +14,14 @@
       <div class="card-title">{{ workshop.name }}</div>
       {% if workshop.description %}<div class="card-sub">{{ workshop.description }}</div>{% endif %}
     </div>
-    <span class="badge badge-muted">{{ workshop.code|default:"—" }}</span>
+    <div class="card-header-actions">
+      <span class="badge badge-muted">{{ workshop.code|default:"—" }}</span>
+      {% if user.can_edit %}
+      <button class="btn btn-sm" type="button" id="lines-edit-toggle">Изменить</button>
+      <button class="btn btn-primary btn-sm lines-edit-action" type="submit" form="lines-reorder-form" hidden>Сохранить</button>
+      <button class="btn btn-ghost btn-sm lines-edit-action" type="button" id="lines-edit-cancel" hidden>Отмена</button>
+      {% endif %}
+    </div>
   </div>
 
   <form method="post" action="{% url 'equipment:line_reorder' workshop.pk %}" id="lines-reorder-form">

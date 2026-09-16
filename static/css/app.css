@@ -20,6 +20,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 /* Fluid scaling: everything below is expressed in rem and grows/shrinks
    smoothly with the viewport, so the whole UI scales proportionally. */
@@ -196,6 +197,7 @@ code, .mono { font-family: var(--font-mono); }
 }
 .card-title { font-family: var(--font-mono); font-size: .95rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
 .card-sub { color: var(--dim); font-size: .95rem; }
+.card-header-actions { display: flex; align-items: center; gap: .56rem; flex-wrap: wrap; }
 .card-current { border-left: 3px solid #27a25a; }
 .card-current .card-title { color: var(--text); }
 

@@ -98,12 +98,13 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!list) return;
     const form = document.getElementById("lines-reorder-form");
     const toggle = document.getElementById("lines-edit-toggle");
-    const actions = document.getElementById("lines-edit-actions");
     const cancel = document.getElementById("lines-edit-cancel");
     const hint = document.getElementById("lines-drag-hint");
     const orderInput = document.getElementById("lines-order");
+    const editActions = document.querySelectorAll(".lines-edit-action");
     let editing = false;
     let dragged = null;
+    let originIndex = 0;
 
     function cards() {
       return Array.prototype.slice.call(list.querySelectorAll(".line-card"));
@@ -116,7 +117,7 @@ document.addEventListener("DOMContentLoaded", function () {
         card.setAttribute("draggable", on ? "true" : "false");
       });
       if (toggle) toggle.hidden = on;
-      if (actions) actions.hidden = !on;
+      editActions.forEach(function (btn) { btn.hidden = !on; });
       if (hint) hint.hidden = !on;
     }
 
@@ -128,27 +129,39 @@ document.addEventListener("DOMContentLoaded", function () {
       const card = e.target.closest(".line-card");
       if (!card) return;
       dragged = card;
+      originIndex = cards().indexOf(card);
       card.classList.add("dragging");
       e.dataTransfer.effectAllowed = "move";
       try { e.dataTransfer.setData("text/plain", card.dataset.lineId || ""); } catch (err) { /* ignore */ }
+      // Убираем карточку из списка — она должна быть «в руках», а не на старом месте
+      setTimeout(function () { if (dragged === card) card.remove(); }, 0);
     });
 
     list.addEventListener("dragend", function () {
-      if (dragged) dragged.classList.remove("dragging");
+      if (!dragged) return;
+      dragged.classList.remove("dragging");
+      if (!list.contains(dragged)) {
+        const items = cards();
+        const ref = items[originIndex] || null;
+        list.insertBefore(dragged, ref);
+      }
       dragged = null;
     });
 
     list.addEventListener("dragover", function (e) {
       if (!editing || !dragged) return;
       e.preventDefault();
-      const card = e.target.closest(".line-card");
-      if (!card || card === dragged) return;
-      const rect = card.getBoundingClientRect();
+      const target = e.target.closest(".line-card");
+      if (!target || target === dragged) {
+        if (!target && !list.contains(dragged)) list.appendChild(dragged);
+        return;
+      }
+      const rect = target.getBoundingClientRect();
       const sameRow = e.clientY >= rect.top && e.clientY <= rect.bottom;
       const after = sameRow
         ? e.clientX > rect.left + rect.width / 2
         : e.clientY > rect.top + rect.height / 2;
-      list.insertBefore(dragged, after ? card.nextSibling : card);
+      list.insertBefore(dragged, after ? target.nextSibling : target);
     });
 
     if (form) {
