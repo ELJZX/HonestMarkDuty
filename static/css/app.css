@@ -686,6 +686,19 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
 .line-card-title { font-family: var(--font-mono); font-size: 1.05rem; margin-right: .44rem; }
 .line-card-meta { font-family: var(--font-mono); font-size: .82rem; color: var(--dim); }
 
+/* Перетаскивание линий (режим «Изменить») */
+.drag-handle {
+  display: none; flex: none; align-items: center;
+  color: var(--dim); cursor: grab; font-size: 1.1rem; line-height: 1;
+  padding: 0 .1rem; user-select: none;
+}
+.drag-hint { font-family: var(--font-mono); font-size: .82rem; color: var(--dim); margin: 0 0 .78rem; }
+.line-list.edit-mode .drag-handle { display: inline-flex; }
+.line-list.edit-mode .line-card { cursor: grab; }
+.line-list.edit-mode .line-card.dragging { opacity: .5; cursor: grabbing; }
+.line-list.edit-mode .line-card-main { pointer-events: none; }
+.line-list.edit-mode .line-card .icon-btn { display: none; }
+
 .equip-board {
   display: grid; gap: 1.22rem;
   grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));

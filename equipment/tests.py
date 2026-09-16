@@ -313,6 +313,44 @@ class EquipmentBoardTests(TestCase):
             403,
         )
 
+    def test_line_reorder(self):
+        second = ProductionLine.objects.create(
+            workshop=self.workshop, name="Линия №2", sort_order=1
+        )
+        self.client.force_login(self.specialist)
+        response = self.client.post(
+            reverse("equipment:line_reorder", args=[self.workshop.pk]),
+            {"order": f"{second.pk},{self.line.pk}"},
+        )
+        self.assertEqual(response.status_code, 302)
+        second.refresh_from_db()
+        self.line.refresh_from_db()
+        self.assertEqual(second.sort_order, 0)
+        self.assertEqual(self.line.sort_order, 1)
+
+    def test_reorder_ignores_foreign_lines(self):
+        other = Workshop.objects.create(name="Другой цех", code="ДЦ")
+        foreign = ProductionLine.objects.create(workshop=other, name="Чужая", sort_order=5)
+        self.client.force_login(self.specialist)
+        self.client.post(
+            reverse("equipment:line_reorder", args=[self.workshop.pk]),
+            {"order": f"{foreign.pk},{self.line.pk}"},
+        )
+        foreign.refresh_from_db()
+        self.assertEqual(foreign.sort_order, 5)
+
+    def test_viewer_cannot_reorder_lines(self):
+        viewer = User.objects.create_user(
+            username="board-viewer3", password="x", role=User.Role.VIEWER
+        )
+        self.client.force_login(viewer)
+        self.assertEqual(
+            self.client.post(
+                reverse("equipment:line_reorder", args=[self.workshop.pk]), {"order": ""}
+            ).status_code,
+            403,
+        )
+
     def test_form_sets_workshop_from_line(self):
         form = EquipmentForm(
             data={

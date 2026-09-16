@@ -253,6 +253,27 @@ class ProductionLineDeleteView(AdminRequiredMixin, DeleteView):
         return reverse("equipment:workshop_lines", args=[self.object.workshop_id])
 
 
+class ProductionLineReorderView(EditorRequiredMixin, View):
+    """Сохранение порядка линий внутри цеха (drag & drop)."""
+
+    def post(self, request, pk):
+        workshop = get_object_or_404(Workshop, pk=pk)
+        raw = request.POST.get("order", "")
+        ids = []
+        for chunk in raw.split(","):
+            chunk = chunk.strip()
+            if chunk.isdigit() and int(chunk) not in ids:
+                ids.append(int(chunk))
+        lines = {line.pk: line for line in workshop.lines.filter(pk__in=ids)}
+        for index, line_id in enumerate(ids):
+            line = lines.get(line_id)
+            if line and line.sort_order != index:
+                line.sort_order = index
+                line.save(update_fields=["sort_order", "updated_at"])
+        messages.success(request, "Порядок линий сохранён.")
+        return redirect("equipment:workshop_lines", pk=workshop.pk)
+
+
 class ProductionLineUpdateView(EditorRequiredMixin, UpdateView):
     model = ProductionLine
     form_class = ProductionLineForm

@@ -92,6 +92,76 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
+  // Перетаскивание линий цеха (drag & drop) с сохранением порядка
+  (function () {
+    const list = document.getElementById("lines-sortable");
+    if (!list) return;
+    const form = document.getElementById("lines-reorder-form");
+    const toggle = document.getElementById("lines-edit-toggle");
+    const actions = document.getElementById("lines-edit-actions");
+    const cancel = document.getElementById("lines-edit-cancel");
+    const hint = document.getElementById("lines-drag-hint");
+    const orderInput = document.getElementById("lines-order");
+    let editing = false;
+    let dragged = null;
+
+    function cards() {
+      return Array.prototype.slice.call(list.querySelectorAll(".line-card"));
+    }
+
+    function setEdit(on) {
+      editing = on;
+      list.classList.toggle("edit-mode", on);
+      cards().forEach(function (card) {
+        card.setAttribute("draggable", on ? "true" : "false");
+      });
+      if (toggle) toggle.hidden = on;
+      if (actions) actions.hidden = !on;
+      if (hint) hint.hidden = !on;
+    }
+
+    if (toggle) toggle.addEventListener("click", function () { setEdit(true); });
+    if (cancel) cancel.addEventListener("click", function () { setEdit(false); });
+
+    list.addEventListener("dragstart", function (e) {
+      if (!editing) return;
+      const card = e.target.closest(".line-card");
+      if (!card) return;
+      dragged = card;
+      card.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      try { e.dataTransfer.setData("text/plain", card.dataset.lineId || ""); } catch (err) { /* ignore */ }
+    });
+
+    list.addEventListener("dragend", function () {
+      if (dragged) dragged.classList.remove("dragging");
+      dragged = null;
+    });
+
+    list.addEventListener("dragover", function (e) {
+      if (!editing || !dragged) return;
+      e.preventDefault();
+      const card = e.target.closest(".line-card");
+      if (!card || card === dragged) return;
+      const rect = card.getBoundingClientRect();
+      const sameRow = e.clientY >= rect.top && e.clientY <= rect.bottom;
+      const after = sameRow
+        ? e.clientX > rect.left + rect.width / 2
+        : e.clientY > rect.top + rect.height / 2;
+      list.insertBefore(dragged, after ? card.nextSibling : card);
+    });
+
+    if (form) {
+      form.addEventListener("submit", function () {
+        if (orderInput) {
+          orderInput.value = cards()
+            .map(function (c) { return c.dataset.lineId; })
+            .join(",");
+        }
+      });
+    }
+  })();
+
   // Модальное окно подтверждения
   const modal = document.getElementById("confirm-modal");
   let pendingForm = null;
