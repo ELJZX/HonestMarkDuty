@@ -156,6 +156,15 @@ code, .mono { font-family: var(--font-mono); }
 }
 .topbar-title { font-family: var(--font-mono); font-size: 1.1rem; letter-spacing: .03em; }
 .topbar-title .crumb { color: var(--dim); }
+.back-arrow {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2.44rem; height: 2.44rem; flex: none;
+  border: 1px solid var(--border-strong); border-radius: var(--radius);
+  background: var(--surface-2); color: var(--text);
+  font-size: 1.3rem; line-height: 1; text-decoration: none;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.back-arrow:hover { background: var(--surface-3); border-color: #454545; color: var(--accent); }
 .topbar-user { display: flex; align-items: center; gap: .89rem; font-size: 1rem; flex-wrap: wrap; justify-content: flex-end; }
 .topbar-actions { display: flex; align-items: center; gap: .56rem; flex-wrap: wrap; }
 .account-link { font-size: 1.02rem; }
