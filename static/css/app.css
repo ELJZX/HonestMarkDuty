@@ -648,7 +648,10 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
   background: var(--ok); color: #08130c; border-color: var(--ok); font-weight: 600;
 }
 .workshop-card-btn:hover { background: #7ee6a0; color: #08130c; border-color: #7ee6a0; }
-.icon-btn { flex: none; width: 2.6rem; justify-content: center; padding-left: .4rem; padding-right: .4rem; }
+.icon-btn {
+  flex: none; width: 1.9rem; height: 1.9rem; min-width: 0;
+  padding: 0; font-size: .9rem; justify-content: center;
+}
 
 /* Плавающая кнопка добавления (справа внизу) */
 .fab {
