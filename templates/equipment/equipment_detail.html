@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% block title %}{{ equipment.name }}{% endblock %}
 {% block breadcrumb %}Учет / Оборудование / {{ equipment.name }}{% endblock %}
-{% block back_link %}
-  <a class="back-arrow" href="{% if equipment.line %}{% url 'equipment:line_equipment' equipment.line.pk %}{% else %}{% url 'equipment:board' %}{% endif %}" title="Назад">←</a>
-{% endblock %}
 {% block topbar_actions %}
   <a class="btn btn-sm" href="{% url 'equipment:equipment_update' equipment.pk %}">Изменить</a>
 {% endblock %}
 {% block content %}
+<div class="page-back">
+  <a class="back-arrow" href="{% if equipment.line %}{% url 'equipment:line_equipment' equipment.line.pk %}{% else %}{% url 'equipment:board' %}{% endif %}" title="Назад">←</a>
+</div>
 <div class="grid grid-side">
   <div>
     <div class="card">

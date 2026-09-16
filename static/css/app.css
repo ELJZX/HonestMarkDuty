@@ -165,6 +165,7 @@ code, .mono { font-family: var(--font-mono); }
   transition: background .12s, border-color .12s, color .12s;
 }
 .back-arrow:hover { background: var(--surface-3); border-color: #454545; color: var(--accent); }
+.page-back { display: flex; margin-bottom: .78rem; }
 .topbar-user { display: flex; align-items: center; gap: .89rem; font-size: 1rem; flex-wrap: wrap; justify-content: flex-end; }
 .topbar-actions { display: flex; align-items: center; gap: .56rem; flex-wrap: wrap; }
 .account-link { font-size: 1.02rem; }

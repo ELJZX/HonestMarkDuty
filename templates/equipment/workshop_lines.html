@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% block title %}{{ workshop.name }}{% endblock %}
 {% block breadcrumb %}Учет / Оборудование / {{ workshop.name }}{% endblock %}
-{% block back_link %}
-  <a class="back-arrow" href="{% url 'equipment:board' %}" title="Назад к цехам">←</a>
-{% endblock %}
 {% block topbar_actions %}
   <a class="btn btn-sm btn-ghost" href="{% url 'equipment:equipment_list' %}?workshop={{ workshop.pk }}">Весь реестр</a>
 {% endblock %}
 {% block content %}
+<div class="page-back">
+  <a class="back-arrow" href="{% url 'equipment:board' %}" title="Назад к цехам">←</a>
+</div>
 <div class="card">
   <div class="card-header">
     <div>

@@ -110,7 +110,6 @@
     <header class="topbar">
       <div class="flex items-center gap-2">
         <button class="burger" id="burger" type="button">☰</button>
-        {% block back_link %}{% endblock %}
         <div class="topbar-title">
           <a href="{% url 'analytics:dashboard' %}">{{ PROJECT_NAME }}</a>
           <span class="crumb">/ {% block breadcrumb %}{{ PROJECT_NAME }}{% endblock %}</span>
