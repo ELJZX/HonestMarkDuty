@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import User
-from checklists.exports import build_checklist_workbook, save_checklist_file
+from checklists.exports import _machines_layout, build_checklist_workbook, save_checklist_file
 from checklists.markem_exports import build_markem_workbook, save_markem_file
 from checklists.models import (
     ChecklistCheck,
@@ -101,6 +101,24 @@ class ChecklistServiceTests(ChecklistBaseTestCase):
         workbook = build_checklist_workbook(self.checklist)
         self.assertIn("Чек лист технического осмотра", workbook.active["A1"].value)
 
+    def test_machines_layout_skips_empty_group_and_spans(self):
+        ChecklistMachine.objects.create(group=self.group, name="Второй", sort_order=1)
+        ChecklistGroup.objects.create(name="Пустая", sort_order=1)
+        machines, spans, last_col = _machines_layout()
+        names = [m.name for m in machines]
+        self.assertIn("New Serac", names)
+        self.assertIn("Второй", names)
+        self.assertNotIn("Пустая", [s[0] for s in spans])
+        span = next(s for s in spans if s[0] == "Цех №1")
+        self.assertEqual(span[2] - span[1], 1)
+        self.assertGreaterEqual(last_col, 3)
+
+    def test_workbook_with_multiple_machines(self):
+        ChecklistMachine.objects.create(group=self.group, name="Второй", sort_order=1)
+        ChecklistGroup.objects.create(name="Пустая", sort_order=1)
+        workbook = build_checklist_workbook(self.checklist)
+        self.assertIn("Чек лист", workbook.active["A1"].value)
+
     def test_save_checklist_file(self):
         save_checklist_file(self.checklist)
         self.checklist.refresh_from_db()
@@ -136,8 +154,8 @@ class ChecklistViewTests(ChecklistBaseTestCase):
         self.client.force_login(self.specialist)
         response = self.client.get(reverse("checklists:hub"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Честный знак")
-        self.assertContains(response, "Markem Image 9450")
+        self.assertContains(response, "Осмотр оборудования «Честный знак»")
+        self.assertContains(response, "Технический осмотр и обслуживание принтеров Markem Image")
 
     def test_markem_page_renders(self):
         self.client.force_login(self.specialist)
@@ -180,6 +198,26 @@ class ChecklistViewTests(ChecklistBaseTestCase):
         self.checklist.refresh_from_db()
         self.assertTrue(self.checklist.file)
 
+    def test_date_export_generates_and_redirects(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("checklists:checklist_date_export"),
+            {"date": timezone.localdate().isoformat()},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.checklist.refresh_from_db()
+        self.assertTrue(self.checklist.file)
+
+    def test_date_export_missing_shows_message(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("checklists:checklist_date_export"),
+            {"date": "2000-01-01"},
+            follow=True,
+        )
+        self.assertRedirects(response, reverse("journal:export_list"))
+        self.assertContains(response, "Чек-лист за выбранную дату не найден")
+
     def test_detail_renders(self):
         self.client.force_login(self.specialist)
         response = self.client.get(reverse("checklists:checklist_detail", args=[self.checklist.pk]))
@@ -210,6 +248,37 @@ class ChecklistViewTests(ChecklistBaseTestCase):
         self.client.force_login(viewer)
         self.assertEqual(self.client.get(reverse("checklists:checklist_create")).status_code, 403)
 
+    def test_create_without_finalize_stays_draft(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(
+            reverse("checklists:checklist_create"),
+            {
+                "date": timezone.localdate().isoformat(),
+                "performed_by": self.specialist.pk,
+                "note": "",
+                f"score__{self.machine.id}__{self.check.id}": "1",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        created = EquipmentChecklist.objects.latest("id")
+        self.assertEqual(created.status, ChecklistStatus.DRAFT)
+
+    def test_update_with_finalize(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(
+            reverse("checklists:checklist_update", args=[self.checklist.pk]),
+            {
+                "date": timezone.localdate().isoformat(),
+                "performed_by": self.specialist.pk,
+                "note": "",
+                f"score__{self.machine.id}__{self.check.id}": "3",
+                "finalize": "1",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.checklist.refresh_from_db()
+        self.assertEqual(self.checklist.status, ChecklistStatus.FINAL)
+
     def test_generate_view(self):
         self.client.force_login(self.specialist)
         response = self.client.post(
@@ -230,6 +299,36 @@ class ChecklistViewTests(ChecklistBaseTestCase):
             self.client.post(reverse("checklists:checklist_delete", args=[self.checklist.pk])).status_code,
             302,
         )
+
+    def test_create_form_renders(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("checklists:checklist_create"))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("form", response.context)
+
+    def test_update_checklist_get_and_post(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("checklists:checklist_update", args=[self.checklist.pk]))
+        self.assertEqual(response.status_code, 200)
+        response = self.client.post(
+            reverse("checklists:checklist_update", args=[self.checklist.pk]),
+            {
+                "date": timezone.localdate().isoformat(),
+                "performed_by": self.specialist.pk,
+                "note": "обновлено",
+                f"score__{self.machine.id}__{self.check.id}": "2",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.checklist.results.count(), 1)
+
+    def test_date_export_invalid_date_shows_message(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("checklists:checklist_date_export"), {"date": "bad"}, follow=True
+        )
+        self.assertRedirects(response, reverse("journal:export_list"))
+        self.assertContains(response, "Укажите дату")
 
 
 class MarkemBaseTestCase(TestCase):
@@ -349,6 +448,38 @@ class MarkemViewTests(MarkemBaseTestCase):
         self.client.force_login(viewer)
         self.assertEqual(self.client.get(reverse("checklists:markem_create")).status_code, 403)
 
+    def test_create_with_finalize(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(
+            reverse("checklists:markem_create"),
+            {
+                "date": timezone.localdate().isoformat(),
+                "performed_by": self.specialist.pk,
+                "note": "",
+                f"val__{self.printer.id}__{self.parameter.id}": "15066",
+                "finalize": "1",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        created = MarkemChecklist.objects.latest("id")
+        self.assertEqual(created.status, ChecklistStatus.FINAL)
+
+    def test_update_with_finalize(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(
+            reverse("checklists:markem_update", args=[self.checklist.pk]),
+            {
+                "date": timezone.localdate().isoformat(),
+                "performed_by": self.specialist.pk,
+                "note": "",
+                f"val__{self.printer.id}__{self.parameter.id}": "1",
+                "finalize": "1",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.checklist.refresh_from_db()
+        self.assertEqual(self.checklist.status, ChecklistStatus.FINAL)
+
     def test_close_moves_to_archive(self):
         self.client.force_login(self.specialist)
         response = self.client.post(
@@ -368,6 +499,26 @@ class MarkemViewTests(MarkemBaseTestCase):
         self.checklist.refresh_from_db()
         self.assertTrue(self.checklist.file)
 
+    def test_date_export_generates_and_redirects(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("checklists:markem_date_export"),
+            {"date": timezone.localdate().isoformat()},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.checklist.refresh_from_db()
+        self.assertTrue(self.checklist.file)
+
+    def test_date_export_missing_shows_message(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("checklists:markem_date_export"),
+            {"date": "2000-01-01"},
+            follow=True,
+        )
+        self.assertRedirects(response, reverse("journal:export_list"))
+        self.assertContains(response, "Чек-лист за выбранную дату не найден")
+
     def test_closed_not_editable_by_specialist(self):
         self.checklist.status = ChecklistStatus.FINAL
         self.checklist.save()
@@ -385,3 +536,52 @@ class MarkemViewTests(MarkemBaseTestCase):
             ).status_code,
             200,
         )
+
+    def test_create_form_renders(self):
+        self.client.force_login(self.specialist)
+        self.assertEqual(
+            self.client.get(reverse("checklists:markem_create")).status_code, 200
+        )
+
+    def test_update_markem_checklist_get_and_post(self):
+        self.client.force_login(self.specialist)
+        self.assertEqual(
+            self.client.get(
+                reverse("checklists:markem_update", args=[self.checklist.pk])
+            ).status_code,
+            200,
+        )
+        response = self.client.post(
+            reverse("checklists:markem_update", args=[self.checklist.pk]),
+            {
+                "date": timezone.localdate().isoformat(),
+                "performed_by": self.specialist.pk,
+                "note": "обновлено",
+                f"val__{self.printer.id}__{self.parameter.id}": "999",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.checklist.values.count(), 1)
+
+    def test_delete_markem_admin(self):
+        self.client.force_login(self.specialist)
+        self.assertEqual(
+            self.client.post(
+                reverse("checklists:markem_delete", args=[self.checklist.pk])
+            ).status_code,
+            403,
+        )
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse("checklists:markem_delete", args=[self.checklist.pk])
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(MarkemChecklist.objects.filter(pk=self.checklist.pk).exists())
+
+    def test_date_export_invalid_date_shows_message(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("checklists:markem_date_export"), {"date": "bad"}, follow=True
+        )
+        self.assertRedirects(response, reverse("journal:export_list"))
+        self.assertContains(response, "Укажите дату")

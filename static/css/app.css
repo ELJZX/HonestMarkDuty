@@ -24,7 +24,7 @@
 /* Fluid scaling: everything below is expressed in rem and grows/shrinks
    smoothly with the viewport, so the whole UI scales proportionally. */
 html {
-  font-size: clamp(15px, 0.4vw + 12.5px, 20px);
+  font-size: clamp(13.5px, 0.36vw + 11.25px, 18px);
 }
 
 body {
@@ -401,6 +401,17 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
   color: #0b6b2a;
   white-space: nowrap;
 }
+/* Статус смены под ФИО дежурного специалиста */
+.j-shift-closed-tag {
+  display: block;
+  margin-top: .28rem;
+  font-size: .68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #7a4b00;
+  white-space: nowrap;
+}
 
 /* Разделители между группами (датами/сменами) */
 .journal-table tr.j-group-start > td { border-top: 2px solid var(--border-strong); }
@@ -437,6 +448,38 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
 .archive-table td { padding: .33rem .44rem; vertical-align: middle; }
 .archive-table th { font-size: .7rem; white-space: nowrap; }
 .archive-table td { overflow-wrap: anywhere; }
+
+/* Аккордеон выбора отчёта на странице «Архив Excel» */
+.archive-accordion { display: flex; flex-direction: column; gap: .67rem; }
+.archive-group {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.archive-group > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: .78rem;
+  padding: .89rem 1.11rem;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  color: var(--text);
+  user-select: none;
+  transition: background .12s;
+}
+.archive-group > summary::-webkit-details-marker { display: none; }
+.archive-group > summary::after {
+  content: "▸";
+  color: var(--dim);
+  font-size: 1.05rem;
+  transition: transform .15s ease;
+}
+.archive-group[open] > summary::after { transform: rotate(90deg); }
+.archive-group[open] > summary { border-bottom: 1px solid var(--border); }
+.archive-group > summary:hover { background: var(--surface-3); }
+.archive-group .filters { padding: 1.11rem; margin-bottom: 0; }
 
 /* ---------- Всплывающие уведомления ---------- */
 .toast-stack {
@@ -498,6 +541,30 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
 }
 .topbar-shift-meta { font-family: var(--font-mono); font-size: .72rem; color: var(--muted); }
 @media (max-width: 900px) { .topbar-shift-info { display: none; } }
+
+/* Крупный виджет смены на странице «Смены» (перенесён из шапки) */
+.shift-panel {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.4rem;
+  margin-bottom: 1rem;
+  background: var(--surface-2);
+}
+.shift-panel-open { border-color: rgba(101, 217, 138, .5); background: rgba(101, 217, 138, .08); }
+.shift-panel-closed { border-color: rgba(217, 162, 60, .45); background: rgba(217, 162, 60, .07); }
+.shift-panel-info { display: flex; flex-direction: column; line-height: 1.2; }
+.shift-panel-status {
+  font-family: var(--font-mono); font-size: .95rem; text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.shift-panel-open .shift-panel-status { color: var(--ok); }
+.shift-panel-closed .shift-panel-status { color: #d9a23c; }
+.shift-panel-name { font-size: 1.5rem; font-weight: 600; margin-top: .25rem; }
+.shift-panel-meta { font-family: var(--font-mono); font-size: .95rem; color: var(--muted); margin-top: .25rem; }
+.shift-panel-actions { display: flex; gap: .6rem; flex-wrap: wrap; }
+.shift-panel-actions .btn { padding: .6rem 1.2rem; font-size: 1rem; }
 
 /* ---------- Чеклист оборудования ---------- */
 .checklist-catalog { display: flex; flex-direction: column; align-items: flex-start; gap: .56rem; }

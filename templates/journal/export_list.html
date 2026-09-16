@@ -2,51 +2,48 @@
 {% block title %}Архив Excel{% endblock %}
 {% block breadcrumb %}Сменная работа / архив Excel{% endblock %}
 {% block content %}
-<div class="grid-archive">
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">Архив сменного журнала</div>
-      <div class="card-sub">Формируется при сдаче смены</div>
-    </div>
-    <p class="muted">Выберите период</p>
-    <form method="get" action="{% url 'journal:export_period' %}" class="filters">
-      <div class="form-row">
-        <label for="date_from">Начало периода</label>
-        <input class="field-input" type="date" id="date_from" name="date_from" required>
-      </div>
-      <div class="form-row">
-        <label for="date_to">Конец периода</label>
-        <input class="field-input" type="date" id="date_to" name="date_to" required>
-      </div>
-      <button class="btn btn-primary" type="submit">Сформировать и скачать</button>
-    </form>
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Архив Excel</div>
   </div>
 
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">Архив чеклистов оборудования</div>
-      <div class="card-sub">Всего: {{ checklists_total }}</div>
-    </div>
-    <div class="table-wrap">
-      <table class="data archive-table">
-        <thead>
-          <tr><th>Дата</th><th>Цех</th><th>Выполнил</th><th>Файл</th></tr>
-        </thead>
-        <tbody>
-          {% for c in checklist_exports %}
-          <tr>
-            <td class="mono nowrap">{{ c.date|date:"d.m.Y" }}</td>
-            <td>{{ c.workshop|default:"—" }}</td>
-            <td>{% firstof c.performed_by.full_name c.performed_by.username "—" %}</td>
-            <td><a class="btn btn-xs" href="{{ c.file.url }}">Скачать</a></td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="4" class="empty">Чеклисты не сформированы</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    <div class="mt-1"><a class="btn btn-sm btn-ghost" href="{% url 'checklists:hub' %}">Все чеклисты</a></div>
+  <div class="archive-accordion">
+    <details class="archive-group">
+      <summary>Сменный журнал</summary>
+      <form method="get" action="{% url 'journal:export_period' %}" class="filters">
+        <div class="form-row">
+          <label for="date_from">Начало периода</label>
+          <input class="field-input" type="date" id="date_from" name="date_from" required>
+        </div>
+        <div class="form-row">
+          <label for="date_to">Конец периода</label>
+          <input class="field-input" type="date" id="date_to" name="date_to" required>
+        </div>
+        <button class="btn btn-primary" type="submit">Сформировать и скачать</button>
+      </form>
+    </details>
+
+    <details class="archive-group">
+      <summary>Чек-лист осмотра оборудования «Честный знак»</summary>
+      <form method="get" action="{% url 'checklists:checklist_date_export' %}" class="filters">
+        <div class="form-row">
+          <label for="znak_date">Дата</label>
+          <input class="field-input" type="date" id="znak_date" name="date" required>
+        </div>
+        <button class="btn btn-primary" type="submit">Сформировать и скачать</button>
+      </form>
+    </details>
+
+    <details class="archive-group">
+      <summary>Чек-лист технического осмотра и обслуживания принтеров Markem Image 9450</summary>
+      <form method="get" action="{% url 'checklists:markem_date_export' %}" class="filters">
+        <div class="form-row">
+          <label for="markem_date">Дата</label>
+          <input class="field-input" type="date" id="markem_date" name="date" required>
+        </div>
+        <button class="btn btn-primary" type="submit">Сформировать и скачать</button>
+      </form>
+    </details>
   </div>
 </div>
 {% endblock %}

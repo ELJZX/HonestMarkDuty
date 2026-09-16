@@ -8,9 +8,6 @@
 <div class="card">
   <div class="card-header">
     <div class="card-title">Сменный журнал специалистов по цифровой маркировке</div>
-    <div class="card-sub">
-      Всего записей: {{ total }}{% if open_shift %} · смена открыта{% endif %}
-    </div>
   </div>
 
   <form method="get" class="filters">
@@ -67,7 +64,11 @@
               </td>
               <td class="j-spec" rowspan="{{ group.span }}">
                 {{ group.specialist }}
-                {% if group.is_current %}<span class="j-current-tag">текущая смена</span>{% endif %}
+                {% if group.is_current %}
+                  <span class="j-current-tag">Текущая смена</span>
+                {% elif group.shift_closed %}
+                  <span class="j-shift-closed-tag">Смена закрыта</span>
+                {% endif %}
               </td>
             {% endif %}
             <td class="mono nowrap">{{ row.entry_time|time:"H:i" }}</td>

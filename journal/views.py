@@ -6,12 +6,12 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils.dateparse import parse_date
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView, View
+from django.views.generic import CreateView, DeleteView, ListView, TemplateView, UpdateView, View
 
 from core.mixins import EditorRequiredMixin
 from journal.exports import export_full_journal, group_entries, workbook_response
 from journal.forms import JournalEntryForm
-from journal.models import JournalEntry, JournalExport
+from journal.models import JournalEntry
 from shifts.models import Shift
 
 
@@ -161,23 +161,8 @@ class JournalEntryDeleteView(EditorRequiredMixin, DeleteView):
         return super().form_valid(form)
 
 
-class JournalExportListView(LoginRequiredMixin, ListView):
-    model = JournalExport
+class JournalExportListView(LoginRequiredMixin, TemplateView):
     template_name = "journal/export_list.html"
-    context_object_name = "exports"
-    paginate_by = 30
-
-    def get_context_data(self, **kwargs):
-        from checklists.models import EquipmentChecklist
-
-        ctx = super().get_context_data(**kwargs)
-        ctx["checklist_exports"] = (
-            EquipmentChecklist.objects.exclude(file="")
-            .select_related("workshop", "performed_by")
-            .order_by("-date", "-created_at")[:30]
-        )
-        ctx["checklists_total"] = EquipmentChecklist.objects.count()
-        return ctx
 
 
 class JournalExportCreateView(EditorRequiredMixin, View):

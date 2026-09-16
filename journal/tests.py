@@ -1,13 +1,14 @@
 from datetime import timedelta
 
-from django.test import TestCase
+from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import User
-from journal.exports import build_workbook, export_full_journal, group_entries
+from journal.exports import build_workbook, export_full_journal, group_entries, workbook_response
 from journal.forms import JournalEntryForm
 from journal.models import JournalEntry, JournalExport
+from journal.views import _filter_entries, build_groups
 from shifts.models import Shift
 
 
@@ -22,6 +23,12 @@ class JournalEntryModelTests(TestCase):
     def test_specialist_name_fallback(self):
         entry = JournalEntry.objects.create(action_task="тест", specialist=None)
         self.assertEqual(entry.specialist_name, "—")
+
+    def test_specialist_name_from_shift(self):
+        user = User.objects.create_user(username="u3", password="x", last_name="Сидоров")
+        shift = Shift.objects.create(opened_by=user)
+        entry = JournalEntry(specialist=None, shift=shift)
+        self.assertEqual(entry.specialist_name, "Сидоров")
 
     def test_marker_flag(self):
         marker = JournalEntry.objects.create(
@@ -186,3 +193,107 @@ class JournalViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(JournalExport.objects.filter(is_full=True).exists())
         self.assertEqual(self.client.get(reverse("journal:export_list")).status_code, 200)
+
+    def test_export_create_empty_journal_warns(self):
+        JournalEntry.objects.all().delete()
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("journal:export_create"), follow=True)
+        self.assertRedirects(response, reverse("journal:export_list"))
+        self.assertContains(response, "Журнал пуст")
+
+    def test_export_list_has_accordion_sections(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("journal:export_list"))
+        self.assertContains(response, "Сменный журнал")
+        self.assertContains(response, "Чек-лист осмотра оборудования «Честный знак»")
+        self.assertContains(
+            response,
+            "Чек-лист технического осмотра и обслуживания принтеров Markem Image 9450",
+        )
+        self.assertContains(response, reverse("checklists:checklist_date_export"))
+        self.assertContains(response, reverse("checklists:markem_date_export"))
+
+    def test_shift_export_downloads_xlsx(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("journal:shift_export", args=[self.shift.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("spreadsheetml", response["Content-Type"])
+        self.assertIn(".xlsx", response["Content-Disposition"])
+
+    def test_period_export_requires_dates(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("journal:export_period"), follow=True)
+        self.assertRedirects(response, reverse("journal:export_list"))
+        self.assertContains(response, "Укажите начало и конец периода")
+
+    def test_period_export_downloads_and_swaps_dates(self):
+        today = timezone.localdate()
+        later = (today + timedelta(days=1)).isoformat()
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("journal:export_period"),
+            {"date_from": later, "date_to": today.isoformat()},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("spreadsheetml", response["Content-Type"])
+
+    def test_period_export_empty_redirects(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("journal:export_period"),
+            {"date_from": "2000-01-01", "date_to": "2000-01-02"},
+            follow=True,
+        )
+        self.assertRedirects(response, reverse("journal:export_list"))
+        self.assertContains(response, "За выбранный период записей нет")
+
+
+class JournalFilterAndGroupTests(TestCase):
+    def setUp(self):
+        self.spec = User.objects.create_user(username="spec", password="x", last_name="Иванов")
+        self.other = User.objects.create_user(username="other", password="x", last_name="Петров")
+
+    def test_filter_entries_by_query_specialist_and_dates(self):
+        entry = JournalEntry.objects.create(
+            action_task="проверка печати", specialist=self.spec, occurred_at=timezone.now()
+        )
+        old = JournalEntry.objects.create(
+            action_task="другое",
+            specialist=self.other,
+            occurred_at=timezone.now() - timedelta(days=5),
+        )
+
+        ids = list(_filter_entries(RequestFactory().get("/", {"q": "печати"})).values_list("pk", flat=True))
+        self.assertIn(entry.pk, ids)
+        self.assertNotIn(old.pk, ids)
+
+        ids = list(_filter_entries(
+            RequestFactory().get("/", {"specialist": str(self.other.pk)})
+        ).values_list("pk", flat=True))
+        self.assertIn(old.pk, ids)
+        self.assertNotIn(entry.pk, ids)
+
+        today = timezone.localdate().isoformat()
+        ids = list(_filter_entries(
+            RequestFactory().get("/", {"date_from": today})
+        ).values_list("pk", flat=True))
+        self.assertIn(entry.pk, ids)
+        self.assertNotIn(old.pk, ids)
+
+    def test_build_groups_marks_current_and_closed(self):
+        open_shift = Shift.objects.create(opened_by=self.spec, status=Shift.Status.OPEN)
+        JournalEntry.objects.create(shift=open_shift, action_task="a")
+        closed = Shift.objects.create(opened_by=self.spec, status=Shift.Status.CLOSED)
+        JournalEntry.objects.create(shift=closed, action_task="b")
+        groups = build_groups(
+            JournalEntry.objects.order_by("occurred_at"), current_shift_id=open_shift.pk
+        )
+        self.assertEqual(len([g for g in groups if g["is_current"]]), 1)
+        self.assertEqual(len([g for g in groups if g["shift_closed"]]), 1)
+
+    def test_workbook_response_headers(self):
+        entries = [JournalEntry.objects.create(action_task="a")]
+        response = workbook_response(entries, "test_file")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("spreadsheetml", response["Content-Type"])
+        self.assertIn("test_file.xlsx", response["Content-Disposition"])

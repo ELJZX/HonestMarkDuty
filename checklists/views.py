@@ -6,6 +6,7 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from django.views.generic import DeleteView, DetailView, ListView, TemplateView, View
 
 from checklists.exports import save_checklist_file
@@ -311,3 +312,41 @@ class MarkemDeleteView(AdminRequiredMixin, DeleteView):
     def form_valid(self, form):
         messages.success(self.request, "Чеклист удалён.")
         return super().form_valid(form)
+
+
+# --- Выгрузка чеклиста за выбранную дату (архив Excel) ----------------------
+
+
+class DateExportView(LoginRequiredMixin, View):
+    """Формирует и отдаёт чеклист за выбранную дату."""
+
+    model = None
+    save_file = None
+    missing_message = "Чек-лист за выбранную дату не найден"
+
+    def get(self, request):
+        date = parse_date(request.GET.get("date", "") or "")
+        if date is None:
+            messages.warning(request, "Укажите дату.")
+            return redirect("journal:export_list")
+
+        checklist = (
+            self.model.objects.filter(date=date).order_by("-created_at").first()
+        )
+        if checklist is None:
+            messages.warning(request, self.missing_message)
+            return redirect("journal:export_list")
+
+        if not checklist.file:
+            self.save_file(checklist)
+        return redirect(checklist.file.url)
+
+
+class ChecklistDateExportView(DateExportView):
+    model = EquipmentChecklist
+    save_file = staticmethod(save_checklist_file)
+
+
+class MarkemDateExportView(DateExportView):
+    model = MarkemChecklist
+    save_file = staticmethod(save_markem_file)

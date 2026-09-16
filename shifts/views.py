@@ -101,6 +101,9 @@ class ShiftListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["open_shift"] = Shift.objects.open().select_related("opened_by").first()
+        ctx["last_shift"] = (
+            Shift.objects.closed().select_related("opened_by").first()
+        )
         ctx["current"] = self.request.GET
         return ctx
 

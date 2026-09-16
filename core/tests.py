@@ -1,4 +1,5 @@
 from pathlib import Path
+from unittest import mock
 
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
@@ -7,7 +8,7 @@ from django.urls import reverse
 
 from accounts.models import User
 from config.version import get_version
-from core.audit import get_current_user, serialize, set_current_user, snapshot
+from core.audit import get_current_user, record_audit, serialize, set_current_user, snapshot
 from core.context_processors import project_context
 from core.models import AuditLog, ProductionSite, Workshop
 from core.views import server_error
@@ -49,6 +50,18 @@ class AuditHelpersTests(TestCase):
         self.assertNotIn("created_at", data)
         self.assertNotIn("updated_at", data)
         self.assertIn("name", data)
+
+    def test_record_audit_skips_anonymous_user(self):
+        workshop = Workshop.objects.create(name="Цех", code="Ц")
+        record_audit(workshop, AuditLog.Action.UPDATE, {}, user=AnonymousUser())
+        log = AuditLog.objects.filter(action=AuditLog.Action.UPDATE).first()
+        self.assertIsNotNone(log)
+        self.assertIsNone(log.user)
+
+    def test_record_audit_swallows_errors(self):
+        workshop = Workshop.objects.create(name="Цех", code="Ц")
+        with mock.patch.object(AuditLog.objects, "create", side_effect=RuntimeError("boom")):
+            record_audit(workshop, AuditLog.Action.UPDATE, {})  # не должно бросать
 
 
 class AuditLogModelTests(TestCase):
@@ -103,6 +116,18 @@ class HomeAndAuditViewsTests(TestCase):
         Workshop.objects.create(name="Цех", code="Ц")
         self.client.force_login(self.admin)
         response = self.client.get(reverse("core:audit_list"), {"action": "create"})
+        self.assertEqual(response.status_code, 200)
+
+    def test_audit_list_filters_by_model_user_and_query(self):
+        Workshop.objects.create(name="Цех фильтр", code="ЦФ")
+        self.client.force_login(self.admin)
+        response = self.client.get(
+            reverse("core:audit_list"),
+            {"model": "workshop", "action": "create", "q": "фильтр"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["logs"])
+        response = self.client.get(reverse("core:audit_list"), {"user": self.admin.pk})
         self.assertEqual(response.status_code, 200)
 
 

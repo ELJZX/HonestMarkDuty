@@ -185,3 +185,47 @@ class DocumentViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         document.refresh_from_db()
         self.assertIn("обновлено", document.body)
+
+    def test_document_list_filters(self):
+        Document.objects.create(
+            template=self.template,
+            workshop=self.workshop,
+            number="ТЗ-9",
+            title="Заключение",
+            status=DocumentStatus.SAVED,
+        )
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("documents:document_list"),
+            {
+                "q": "ТЗ-9",
+                "type": DocumentType.TECHNICAL_REPORT,
+                "workshop": self.workshop.pk,
+                "status": DocumentStatus.SAVED,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "ТЗ-9")
+
+    def test_create_form_preview_with_template(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("documents:document_create"),
+            {"template": self.template.pk, "workshop": self.workshop.pk},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["preview_title"], "Заключение по Мясной цех")
+
+    def test_download_generates_missing_file(self):
+        document = Document.objects.create(
+            template=self.template,
+            workshop=self.workshop,
+            number="ТЗ-4",
+            context_data={"reason": "x"},
+        )
+        document.render()
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("documents:document_download", args=[document.pk]))
+        self.assertEqual(response.status_code, 200)
+        document.refresh_from_db()
+        self.assertTrue(document.file)

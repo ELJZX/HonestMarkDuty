@@ -1,13 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ shift }}{% endblock %}
 {% block breadcrumb %}Смены / {{ shift.date|date:"d.m.Y" }}{% endblock %}
-{% block topbar_actions %}
-  {% if shift.is_open %}
-    <button class="btn btn-sm btn-primary" type="button"
-            data-action-url="{% url 'shifts:shift_close_ajax' shift.pk %}"
-            data-action-modal="Вы точно хотите сдать смену?">Сдать смену</button>
-  {% endif %}
-{% endblock %}
+{% block topbar_actions %}{% endblock %}
 {% block content %}
 <div class="card">
   <div class="card-header">

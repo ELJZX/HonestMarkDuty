@@ -1,26 +1,42 @@
 {% extends "base.html" %}
 {% block title %}Смены{% endblock %}
 {% block breadcrumb %}Смены{% endblock %}
-{% block topbar_actions %}
+{% block topbar_actions %}{% endblock %}
+{% block content %}
+<div class="shift-panel {% if open_shift %}shift-panel-open{% else %}shift-panel-closed{% endif %}">
   {% if open_shift %}
-    <div class="topbar-shift">
-      <div class="topbar-shift-info">
-        <span class="topbar-shift-title">Смена открыта</span>
-        <span class="topbar-shift-meta">{% firstof open_shift.opened_by.username "—" %} · {{ open_shift.opened_at|date:"d.m.Y H:i" }}</span>
-      </div>
-      <a class="btn btn-xs" href="{% url 'shifts:shift_detail' open_shift.pk %}">Просмотр</a>
-      <button class="btn btn-xs btn-primary" type="button"
+    <div class="shift-panel-info">
+      <div class="shift-panel-status">Смена открыта</div>
+      <div class="shift-panel-name">{% firstof open_shift.opened_by.full_name open_shift.opened_by.username "—" %}</div>
+      <div class="shift-panel-meta">{{ open_shift.opened_at|date:"d.m.Y H:i" }}</div>
+    </div>
+    <div class="shift-panel-actions">
+      <a class="btn" href="{% url 'shifts:shift_detail' open_shift.pk %}">Просмотр</a>
+      <button class="btn btn-primary" type="button"
               data-action-url="{% url 'shifts:shift_close_ajax' open_shift.pk %}"
               data-action-modal="Вы точно хотите сдать смену?">Сдать смену</button>
     </div>
   {% else %}
-    <button class="btn btn-primary btn-sm" type="button"
-            data-action-url="{% url 'shifts:shift_open_ajax' %}"
-            data-action-modal="После открытия смены все новые обращения будут к ней привязаны."
-            data-yes-label="Открыть смену">Открыть смену</button>
+    <div class="shift-panel-info">
+      <div class="shift-panel-status">Смена не активна</div>
+      <div class="shift-panel-name">
+        {% if last_shift %}
+          Предыдущая смена: {{ last_shift.date|date:"d.m.Y" }}, специалист — {% firstof last_shift.opened_by.full_name last_shift.opened_by.username "—" %}
+        {% else %}
+          Активной смены нет
+        {% endif %}
+      </div>
+      <div class="shift-panel-meta">Примите смену, для фиксации событий</div>
+    </div>
+    <div class="shift-panel-actions">
+      <button class="btn btn-primary" type="button"
+              data-action-url="{% url 'shifts:shift_open_ajax' %}"
+              data-action-modal="После нажатия кнопки &quot;Принять смену&quot;, все новые сообщения будут привязаны к вашей учетной записи, вы готовы продолжить?"
+              data-yes-label="Принять смену">Принять смену</button>
+    </div>
   {% endif %}
-{% endblock %}
-{% block content %}
+</div>
+
 <div class="card">
   <div class="card-header">
     <div class="card-title">История смен</div>
