@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% block title %}{{ document.title }}{% endblock %}
-{% block breadcrumb %}Документы / {{ document.title|truncatechars:40 }}{% endblock %}
+{% block title %}{{ document.title|default:document.number|default:"Документ" }}{% endblock %}
+{% block breadcrumb %}Документы / {{ document.title|default:document.number|default:"документ" }}{% endblock %}
 {% block topbar_actions %}
   <a class="btn btn-sm" href="{% url 'documents:document_print' document.pk %}">Печать</a>
   <a class="btn btn-sm" href="{% url 'documents:document_download' document.pk %}">Скачать DOCX</a>
@@ -9,18 +9,21 @@
 <div class="grid grid-side">
   <div class="card">
     <div class="card-header">
-      <div class="card-title">{{ document.title }}</div>
-      <span class="badge {{ document.status_badge }}">{{ document.get_status_display }}</span>
+      <div class="card-title">{{ document.title|default:document.number|default:"Документ" }}</div>
     </div>
     <dl class="detail-grid mb-2">
-      <dt>Тип</dt><dd>{{ document.template.get_doc_type_display }}</dd>
+      <dt>Тип</dt><dd>{{ document.kind_display }}</dd>
       <dt>Номер</dt><dd class="mono">{{ document.number|default:"—" }}</dd>
       <dt>Дата</dt><dd class="mono">{{ document.doc_date|date:"d.m.Y" }}</dd>
       <dt>Цех</dt><dd>{{ document.workshop|default:"—" }}</dd>
       <dt>Автор</dt><dd>{% firstof document.created_by.full_name document.created_by.username "—" %}</dd>
     </dl>
-    <div class="card-sub mb-1">Текст документа</div>
-    <div class="preview" style="color:var(--text)">{{ document.body }}</div>
+    {% if document.body %}
+      <div class="card-sub mb-1">Текст документа</div>
+      <div class="preview" style="color:var(--text)">{{ document.body }}</div>
+    {% elif document.file %}
+      <div class="message info">Документ добавлен в архив файлом. Скачайте его для просмотра.</div>
+    {% endif %}
   </div>
 
   <div>
@@ -29,23 +32,25 @@
       <div class="flex gap-1 wrap">
         <a class="btn" href="{% url 'documents:document_download' document.pk %}">Скачать DOCX</a>
         <a class="btn" href="{% url 'documents:document_print' document.pk %}">Версия для печати</a>
-        <form method="post" action="{% url 'documents:document_regenerate' document.pk %}">
-          {% csrf_token %}
-          <button class="btn" type="submit">Пересформировать</button>
-        </form>
-        {% if user.can_edit %}<a class="btn" href="{% url 'documents:document_update' document.pk %}">Изменить</a>{% endif %}
+        {% if document.template %}
+          <form method="post" action="{% url 'documents:document_regenerate' document.pk %}">
+            {% csrf_token %}
+            <button class="btn" type="submit">Пересформировать</button>
+          </form>
+          {% if user.can_edit %}<a class="btn" href="{% url 'documents:document_update' document.pk %}">Изменить</a>{% endif %}
+        {% endif %}
       </div>
     </div>
+    {% if document.context_data %}
     <div class="card">
       <div class="card-header"><div class="card-title">Поля документа</div></div>
       <dl class="detail-grid">
         {% for k, v in document.context_data.items %}
           <dt>{{ k }}</dt><dd>{{ v }}</dd>
-        {% empty %}
-          <dt>—</dt><dd class="dim">Только автозаполнение</dd>
         {% endfor %}
       </dl>
     </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

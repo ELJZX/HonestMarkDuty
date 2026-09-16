@@ -2,6 +2,7 @@ import tempfile
 from io import BytesIO
 from pathlib import Path
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -10,9 +11,16 @@ from docx import Document as DocxDocument
 from accounts.models import User
 from core.models import Workshop
 from documents.forms import DocumentForm
-from documents.models import Document, DocumentStatus, DocumentTemplate, DocumentType
+from documents.models import (
+    Document,
+    DocumentKind,
+    DocumentStatus,
+    DocumentTemplate,
+    DocumentType,
+)
 from documents.services import build_context, build_docx, render_text
 from documents.workshop_docs import WORKSHOP_DOCUMENTS
+from shifts.models import Shift
 
 
 class DocumentTemplateModelTests(TestCase):
@@ -372,3 +380,198 @@ class DocumentCreatePreviewEdgeTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn("reason", response.context["form"].dynamic_field_names)
+
+
+class DocumentUploadArchiveTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username="doc-admin", password="x", role=User.Role.ADMIN, is_superuser=True, is_staff=True
+        )
+        self.specialist = User.objects.create_user(
+            username="doc-spec", password="x", role=User.Role.SPECIALIST
+        )
+        self.other = User.objects.create_user(
+            username="doc-other", password="x", role=User.Role.SPECIALIST
+        )
+        self.workshop = Workshop.objects.create(name="Цех №1", code="ЦЕХ1")
+        self.shift = Shift.objects.create(opened_by=self.specialist, status=Shift.Status.OPEN)
+
+    def _upload(self, name, user=None):
+        self.client.force_login(user or self.specialist)
+        return self.client.post(
+            reverse("documents:document_upload"),
+            {"file": SimpleUploadedFile(name, b"doc-bytes")},
+        )
+
+    def test_upload_creates_archived_document(self):
+        response = self._upload("ceh1_tz_16.09.2026.docx")
+        self.assertEqual(response.status_code, 302)
+        doc = Document.objects.get()
+        self.assertEqual(doc.kind, DocumentKind.TECHNICAL_REPORT)
+        self.assertEqual(doc.number, "ТЗ-0001")
+        self.assertEqual(doc.workshop, self.workshop)
+        self.assertEqual(doc.doc_date.isoformat(), "2026-09-16")
+        self.assertEqual(doc.created_by, self.specialist)
+        self.assertTrue(doc.file)
+
+    def test_upload_numbers_are_sequential_per_kind(self):
+        self._upload("ceh1_tz_16.09.2026.docx")
+        self._upload("ceh1_tz_17.09.2026.docx")
+        self._upload("csm_sl_17.09.2026.docx")
+        numbers = list(Document.objects.order_by("id").values_list("number", flat=True))
+        self.assertEqual(numbers, ["ТЗ-0001", "ТЗ-0002", "СЛ-0001"])
+
+    def test_upload_unknown_code_sets_no_workshop(self):
+        response = self._upload("zzz_tz_16.09.2026.docx")
+        self.assertEqual(response.status_code, 302)
+        self.assertIsNone(Document.objects.get().workshop)
+
+    def test_upload_invalid_filename_rejected(self):
+        response = self._upload("bad_name.docx")
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Document.objects.exists())
+
+    def test_upload_uses_current_user_without_open_shift(self):
+        self.shift.status = Shift.Status.CLOSED
+        self.shift.save()
+        self._upload("ceh1_tz_16.09.2026.docx", user=self.other)
+        self.assertEqual(Document.objects.get().created_by, self.other)
+
+    def test_viewer_cannot_upload(self):
+        viewer = User.objects.create_user(
+            username="doc-viewer", password="x", role=User.Role.VIEWER
+        )
+        self.client.force_login(viewer)
+        response = self.client.post(
+            reverse("documents:document_upload"),
+            {"file": SimpleUploadedFile("ceh1_tz_16.09.2026.docx", b"x")},
+        )
+        self.assertEqual(response.status_code, 403)
+
+
+class DocumentArchiveSearchTests(TestCase):
+    def setUp(self):
+        self.specialist = User.objects.create_user(
+            username="arch-spec",
+            password="x",
+            role=User.Role.SPECIALIST,
+            last_name="Иванов",
+            first_name="Иван",
+        )
+        self.workshop = Workshop.objects.create(name="Цех №1", code="ЦЕХ1")
+        self.document = Document.objects.create(
+            kind=DocumentKind.TECHNICAL_REPORT,
+            workshop=self.workshop,
+            number="ТЗ-0001",
+            doc_date=timezone.localdate().replace(year=2026),
+            created_by=self.specialist,
+        )
+
+    def test_page_shows_archive_and_upload_button(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("documents:document_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Архив технических заключений и служебных записок")
+        self.assertContains(response, "Добавить документ в архив")
+        self.assertContains(response, 'id="doc-search"')
+        self.assertNotContains(response, 'placeholder="заголовок')
+
+    def test_partial_returns_only_rows(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("documents:document_list"), {"partial": "1"})
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "<!DOCTYPE")
+        self.assertContains(response, "ТЗ-0001")
+
+    def test_search_by_number_author_workshop_date(self):
+        self.client.force_login(self.specialist)
+        for query in ("ТЗ-0001", "Иванов", "Цех №1", "2026"):
+            response = self.client.get(
+                reverse("documents:document_list"), {"q": query, "partial": "1"}
+            )
+            self.assertContains(response, "ТЗ-0001", msg_prefix=query)
+
+    def test_filter_by_kind_and_workshop(self):
+        Document.objects.create(
+            kind=DocumentKind.SERVICE_NOTE, number="СЛ-0001", workshop=self.workshop
+        )
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("documents:document_list"),
+            {"kind": DocumentKind.SERVICE_NOTE, "partial": "1"},
+        )
+        self.assertContains(response, "СЛ-0001")
+        self.assertNotContains(response, "ТЗ-0001")
+
+        response = self.client.get(
+            reverse("documents:document_list"), {"workshop": "Цех №1", "partial": "1"}
+        )
+        self.assertContains(response, "ТЗ-0001")
+
+    def test_search_no_match(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("documents:document_list"), {"q": "нет-такого", "partial": "1"}
+        )
+        self.assertContains(response, "Документов нет")
+
+
+class DocumentTemplateListCleanupTests(TestCase):
+    def setUp(self):
+        self.specialist = User.objects.create_user(
+            username="tmpl-spec", password="x", role=User.Role.SPECIALIST
+        )
+
+    def test_templates_section_removed(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("documents:template_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response, "Готовые шаблоны технических заключений и служебных записок по цехам"
+        )
+        self.assertNotContains(response, "Шаблоны документов")
+        self.assertNotContains(response, "Добавить шаблон")
+        self.assertNotContains(response, "+ Шаблон")
+
+
+class WorkshopDocumentDateTests(TestCase):
+    def setUp(self):
+        self.specialist = User.objects.create_user(
+            username="date-spec", password="x", role=User.Role.SPECIALIST
+        )
+
+    def test_date_tokens_replaced(self):
+        from documents.workshop_docs import render_sample_text
+
+        today = timezone.localdate()
+        rendered = render_sample_text(
+            "Дата: «ДАТА» «МЕСЯЦ» «ГОД»",
+            {
+                "date_day": f"{today.day:02d}",
+                "date_month": "сентября",
+                "date_year": str(today.year),
+            },
+        )
+        self.assertEqual(rendered, f"Дата: «{today.day:02d}» сентября {today.year}")
+
+    def test_sample_with_date_tokens_downloaded_filled(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sample = Path(tmp) / "ceh1_tz.docx"
+            docx = DocxDocument()
+            docx.add_paragraph("ПАО Комбинат   «ДАТА» «МЕСЯЦ» «ГОД»")
+            docx.add_paragraph("Цех: {{ workshop_name }}")
+            docx.save(str(sample))
+
+            with override_settings(DOCUMENT_SAMPLES_DIR=tmp):
+                self.client.force_login(self.specialist)
+                response = self.client.get(
+                    reverse("documents:workshop_document_download", args=["ceh1", "tz"])
+                )
+                body = b"".join(response.streaming_content)
+
+        text = "\n".join(p.text for p in DocxDocument(BytesIO(body)).paragraphs)
+        today = timezone.localdate()
+        self.assertIn(f"«{today.day:02d}»", text)
+        self.assertIn(str(today.year), text)
+        self.assertIn("Цех №1", text)
+        self.assertNotIn("«ДАТА»", text)

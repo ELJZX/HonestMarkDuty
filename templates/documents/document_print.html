@@ -24,7 +24,7 @@
   <div class="print-page">
     <div class="doc-head">{{ ORGANIZATION_NAME }}</div>
     <div class="doc-city">{{ ORGANIZATION_CITY }}</div>
-    <div class="doc-title">{{ document.title }}</div>
+    <div class="doc-title">{{ document.title|default:document.number }}</div>
     <div class="doc-meta">№ {{ document.number|default:"—" }} от {{ document.doc_date|date:"d.m.Y" }}</div>
     <div class="doc-body">
       {% for block in document.body.splitlines %}<p>{{ block }}</p>{% endfor %}

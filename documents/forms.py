@@ -40,7 +40,7 @@ class DocumentTemplateForm(StyledModelForm):
 class DocumentForm(StyledModelForm):
     class Meta:
         model = Document
-        fields = ("template", "workshop", "number", "doc_date", "status")
+        fields = ("template", "workshop", "number", "doc_date")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+import re
+from datetime import datetime
+from pathlib import Path
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import CharField, Q
+from django.db.models.functions import Cast
 from django.http import FileResponse, Http404
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import (
@@ -16,8 +22,14 @@ from django.views.generic import (
 )
 
 from core.mixins import AdminRequiredMixin, EditorRequiredMixin
+from core.models import Workshop
 from documents.forms import DocumentForm, DocumentTemplateForm
-from documents.models import Document, DocumentStatus, DocumentTemplate
+from documents.models import (
+    Document,
+    DocumentKind,
+    DocumentTemplate,
+    DocumentType,
+)
 from documents.services import build_context, build_docx, render_text
 from documents.workshop_docs import (
     DOC_KINDS,
@@ -86,6 +98,42 @@ class DocumentTemplateDeleteView(AdminRequiredMixin, DeleteView):
     success_url = reverse_lazy("documents:template_list")
 
 
+ARCHIVE_FILENAME_RE = re.compile(
+    r"^(?P<code>[a-z0-9]+)_(?P<kind>tz|sl)_(?P<date>\d{2}\.\d{2}\.\d{4})$",
+    re.IGNORECASE,
+)
+DOCUMENT_NUMBER_RE = re.compile(r"^[А-Яа-яA-Za-z]{2}-(\d+)$")
+
+
+def current_shift_specialist():
+    """Дежурный специалист открытой смены (или None)."""
+    from shifts.models import Shift
+
+    shift = Shift.objects.open().select_related("opened_by").first()
+    return shift.opened_by if shift else None
+
+
+def next_document_number(kind: str) -> str:
+    """Следующий номер документа: ТЗ-0001 / СЛ-0001."""
+    prefix = "ТЗ" if kind == DocumentKind.TECHNICAL_REPORT else "СЛ"
+    max_number = 0
+    for number in Document.objects.filter(kind=kind).values_list("number", flat=True):
+        match = DOCUMENT_NUMBER_RE.match(number or "")
+        if match:
+            max_number = max(max_number, int(match.group(1)))
+    return f"{prefix}-{max_number + 1:04d}"
+
+
+def kind_from_template(template) -> str:
+    if not template:
+        return ""
+    mapping = {
+        DocumentType.TECHNICAL_REPORT: DocumentKind.TECHNICAL_REPORT,
+        DocumentType.SERVICE_NOTE: DocumentKind.SERVICE_NOTE,
+    }
+    return mapping.get(template.doc_type, "")
+
+
 class DocumentListView(LoginRequiredMixin, ListView):
     model = Document
     template_name = "documents/document_list.html"
@@ -95,27 +143,81 @@ class DocumentListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         qs = Document.objects.select_related("template", "workshop", "created_by")
         params = self.request.GET
-        if params.get("q"):
-            q = params["q"]
-            qs = qs.filter(title__icontains=q) | qs.filter(number__icontains=q)
-        if params.get("type"):
-            qs = qs.filter(template__doc_type=params["type"])
+        query = (params.get("q") or "").strip()
+        if query:
+            qs = qs.annotate(
+                doc_date_text=Cast("doc_date", output_field=CharField())
+            ).filter(
+                Q(number__icontains=query)
+                | Q(title__icontains=query)
+                | Q(workshop__name__icontains=query)
+                | Q(created_by__last_name__icontains=query)
+                | Q(created_by__first_name__icontains=query)
+                | Q(created_by__patronymic__icontains=query)
+                | Q(created_by__username__icontains=query)
+                | Q(doc_date_text__icontains=query)
+            )
+        if params.get("kind"):
+            qs = qs.filter(kind=params["kind"])
         if params.get("workshop"):
-            qs = qs.filter(workshop_id=params["workshop"])
-        if params.get("status"):
-            qs = qs.filter(status=params["status"])
+            qs = qs.filter(workshop__name=params["workshop"])
         return qs
 
     def get_context_data(self, **kwargs):
-        from core.models import Workshop
-        from documents.models import DocumentType
-
         ctx = super().get_context_data(**kwargs)
-        ctx["types"] = DocumentType.choices
-        ctx["statuses"] = DocumentStatus.choices
-        ctx["workshops"] = Workshop.objects.all()
+        ctx["kinds"] = DocumentKind.choices
+        ctx["workshop_rows"] = WORKSHOP_DOCUMENTS
         ctx["current"] = self.request.GET
         return ctx
+
+    def render_to_response(self, context, **response_kwargs):
+        if self.request.GET.get("partial"):
+            return render(self.request, "documents/partials/document_rows.html", context)
+        return super().render_to_response(context, **response_kwargs)
+
+
+class DocumentUploadView(EditorRequiredMixin, View):
+    """Добавление готового документа в архив по имени файла."""
+
+    def post(self, request):
+        upload = request.FILES.get("file")
+        if upload is None:
+            messages.error(request, "Файл не выбран.")
+            return redirect("documents:document_list")
+
+        match = ARCHIVE_FILENAME_RE.match(Path(upload.name).stem)
+        if not match:
+            messages.error(
+                request,
+                "Имя файла должно быть вида «код_tz_ДД.ММ.ГГГГ» или «код_sl_ДД.ММ.ГГГГ», "
+                "например ceh1_tz_16.09.2026.",
+            )
+            return redirect("documents:document_list")
+
+        try:
+            doc_date = datetime.strptime(match.group("date"), "%d.%m.%Y").date()
+        except ValueError:
+            messages.error(request, "Не удалось распознать дату в имени файла.")
+            return redirect("documents:document_list")
+
+        kind = match.group("kind").lower()
+        code = match.group("code").lower()
+        workshop_name = WORKSHOP_BY_CODE.get(code)
+        workshop = (
+            Workshop.objects.filter(name=workshop_name).first() if workshop_name else None
+        )
+
+        document = Document(
+            kind=kind,
+            workshop=workshop,
+            doc_date=doc_date,
+            number=next_document_number(kind),
+            created_by=current_shift_specialist() or request.user,
+        )
+        document.file.save(Path(upload.name).name, upload, save=False)
+        document.save()
+        messages.success(request, f"Документ {document.number} добавлен в архив.")
+        return redirect("documents:document_list")
 
 
 class DocumentCreateView(EditorRequiredMixin, CreateView):
@@ -183,6 +285,7 @@ class DocumentCreateView(EditorRequiredMixin, CreateView):
     def form_valid(self, form):
         document = form.save(commit=False)
         document.created_by = self.request.user
+        document.kind = kind_from_template(document.template)
         document.context_data = form.collect_context()
         document.save()
         document.render(save=False)
@@ -200,6 +303,7 @@ class DocumentUpdateView(EditorRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         document = form.save(commit=False)
+        document.kind = kind_from_template(document.template)
         document.context_data = form.collect_context()
         document.save()
         document.render(save=False)
@@ -231,14 +335,22 @@ class DocumentDownloadView(LoginRequiredMixin, View):
 
     def get(self, request, pk):
         document = get_object_or_404(Document, pk=pk)
-        if not document.file:
+        if not document.file and document.template:
             document.file.save(f"document_{document.pk}.docx", build_docx(document), save=True)
-        filename = f"{document.template.doc_type}_{document.number or document.pk}.docx".replace(" ", "_")
+        if not document.file:
+            raise Http404("Файл документа не найден.")
+
+        extension = Path(document.file.name).suffix.lower() or ".docx"
+        content_types = {
+            ".docx": self.DOCX_CONTENT_TYPE,
+            ".doc": "application/msword",
+        }
+        filename = f"{document.kind or 'document'}_{document.number or document.pk}{extension}".replace(" ", "_")
         return FileResponse(
             document.file.open("rb"),
             as_attachment=True,
             filename=filename,
-            content_type=self.DOCX_CONTENT_TYPE,
+            content_type=content_types.get(extension, "application/octet-stream"),
         )
 
 

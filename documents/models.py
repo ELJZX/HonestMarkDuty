@@ -61,14 +61,26 @@ class DocumentStatus(models.TextChoices):
     ARCHIVED = "archived", "В архиве"
 
 
+class DocumentKind(models.TextChoices):
+    """Вид документа в архиве (определяется по имени загружаемого файла)."""
+
+    TECHNICAL_REPORT = "tz", "Техническое заключение"
+    SERVICE_NOTE = "sl", "Служебная записка"
+
+
 class Document(AuditedModel):
-    """Сформированный документ."""
+    """Сформированный или загруженный в архив документ."""
 
     template = models.ForeignKey(
         DocumentTemplate,
         verbose_name="Шаблон",
         on_delete=models.PROTECT,
         related_name="documents",
+        null=True,
+        blank=True,
+    )
+    kind = models.CharField(
+        "Вид документа", max_length=2, choices=DocumentKind.choices, blank=True, default=""
     )
     workshop = models.ForeignKey(
         "core.Workshop",
@@ -100,7 +112,16 @@ class Document(AuditedModel):
         ordering = ("-doc_date", "-created_at")
 
     def __str__(self) -> str:
-        return f"{self.title or self.template.name} № {self.number or '—'}"
+        label = self.title or (self.template.name if self.template else self.get_kind_display())
+        return f"{label or 'Документ'} № {self.number or '—'}"
+
+    @property
+    def kind_display(self) -> str:
+        if self.kind:
+            return self.get_kind_display()
+        if self.template:
+            return self.template.get_doc_type_display()
+        return "—"
 
     @property
     def status_badge(self) -> str:
@@ -114,6 +135,8 @@ class Document(AuditedModel):
         """Заполняет заголовок и тело документа по шаблону и данным цеха."""
         from documents.services import build_context, render_text
 
+        if not self.template:
+            return
         context = build_context(self)
         self.title = render_text(self.template.title_template, context)
         self.body = render_text(self.template.body, context)

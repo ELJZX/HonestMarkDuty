@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import re
 from io import BytesIO
 from pathlib import Path
 
@@ -14,7 +15,9 @@ from docx import Document as DocxDocument
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt
 
-from documents.services import date_long, render_text
+from documents.services import MONTHS_RU, date_long, render_text
+
+DATE_TOKEN_RE = re.compile(r"«\s*(ДАТА|МЕСЯЦ|ГОД)\s*»")
 
 WORKSHOP_DOCUMENTS = [
     {"name": "Цех №1", "code": "ceh1"},
@@ -54,14 +57,34 @@ def document_context(name: str, code: str) -> dict:
         "workshop_code": code,
         "date": today.strftime("%d.%m.%Y"),
         "date_long": date_long(today),
+        "date_day": f"{today.day:02d}",
+        "date_month": MONTHS_RU[today.month - 1],
+        "date_year": str(today.year),
     }
+
+
+def render_sample_text(text: str, context: dict) -> str:
+    """Подставляет {{ поля }} и дату «ДАТА» «МЕСЯЦ» «ГОД» в текст образца."""
+    rendered = render_text(text, context)
+    if "«" not in rendered:
+        return rendered
+
+    def replace(match):
+        token = match.group(1)
+        if token == "ДАТА":
+            return f"«{context.get('date_day', '')}»"
+        if token == "МЕСЯЦ":
+            return context.get("date_month", "")
+        return context.get("date_year", "")
+
+    return DATE_TOKEN_RE.sub(replace, rendered)
 
 
 def _replace_in_paragraph(paragraph, context: dict) -> None:
     if not paragraph.runs:
         return
     original = "".join(run.text for run in paragraph.runs)
-    rendered = render_text(original, context)
+    rendered = render_sample_text(original, context)
     if rendered == original:
         return
     for run in paragraph.runs:

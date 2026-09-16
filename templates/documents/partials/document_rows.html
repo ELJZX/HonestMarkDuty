@@ -1,0 +1,15 @@
+{% for d in documents %}
+<tr>
+  <td class="mono nowrap">{{ d.doc_date|date:"d.m.Y" }}</td>
+  <td class="mono">{{ d.number|default:"—" }}</td>
+  <td>{{ d.kind_display }}</td>
+  <td>{{ d.workshop|default:"—" }}</td>
+  <td>{% firstof d.created_by.full_name d.created_by.username "—" %}</td>
+  <td class="actions">
+    <a class="btn btn-xs" href="{% url 'documents:document_detail' d.pk %}">Открыть</a>
+    <a class="btn btn-xs" href="{% url 'documents:document_download' d.pk %}">Скачать</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="6" class="empty">Документов нет</td></tr>
+{% endfor %}

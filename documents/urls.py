@@ -7,6 +7,7 @@ app_name = "documents"
 urlpatterns = [
     path("", views.DocumentListView.as_view(), name="document_list"),
     path("new/", views.DocumentCreateView.as_view(), name="document_create"),
+    path("upload/", views.DocumentUploadView.as_view(), name="document_upload"),
     path(
         "download/<slug:code>/<str:kind>/",
         views.WorkshopDocumentDownloadView.as_view(),

@@ -28,60 +28,36 @@
       <details class="nav-group" {% if request.resolver_match.namespace == 'shifts' or request.resolver_match.namespace == 'journal' or request.resolver_match.namespace == 'checklists' %}open{% endif %}>
         <summary class="nav-label">Сменная работа</summary>
         <div class="nav-items">
-          <a class="nav-item {% if request.resolver_match.namespace == 'shifts' %}active{% endif %}" href="{% url 'shifts:shift_list' %}">
-            <span class="ico">◷</span> Смены
-          </a>
-          <a class="nav-item {% if request.resolver_match.namespace == 'journal' and request.resolver_match.url_name != 'export_list' %}active{% endif %}" href="{% url 'journal:entry_list' %}">
-            <span class="ico">▤</span> Сменный журнал
-          </a>
-          <a class="nav-item {% if request.resolver_match.namespace == 'checklists' %}active{% endif %}" href="{% url 'checklists:hub' %}">
-            <span class="ico">▣</span> Чеклисты
-          </a>
-          <a class="nav-item {% if request.resolver_match.url_name == 'export_list' %}active{% endif %}" href="{% url 'journal:export_list' %}">
-            <span class="ico">⇩</span> Архив Excel
-          </a>
+          <a class="nav-item {% if request.resolver_match.namespace == 'shifts' %}active{% endif %}" href="{% url 'shifts:shift_list' %}">Смены</a>
+          <a class="nav-item {% if request.resolver_match.namespace == 'journal' and request.resolver_match.url_name != 'export_list' %}active{% endif %}" href="{% url 'journal:entry_list' %}">Сменный журнал</a>
+          <a class="nav-item {% if request.resolver_match.namespace == 'checklists' %}active{% endif %}" href="{% url 'checklists:hub' %}">Чеклисты</a>
+          <a class="nav-item {% if request.resolver_match.url_name == 'export_list' %}active{% endif %}" href="{% url 'journal:export_list' %}">Архив Excel</a>
         </div>
       </details>
 
       <details class="nav-group" {% if request.resolver_match.namespace == 'documents' %}open{% endif %}>
         <summary class="nav-label">Документы</summary>
         <div class="nav-items">
-          <a class="nav-item {% if request.resolver_match.url_name == 'template_list' %}active{% endif %}" href="{% url 'documents:template_list' %}">
-            <span class="ico">▨</span> Шаблоны
-          </a>
-          <a class="nav-item {% if request.resolver_match.namespace == 'documents' and request.resolver_match.url_name != 'template_list' %}active{% endif %}" href="{% url 'documents:document_list' %}">
-            <span class="ico">▧</span> Архив документов
-          </a>
+          <a class="nav-item {% if request.resolver_match.url_name == 'template_list' %}active{% endif %}" href="{% url 'documents:template_list' %}">Шаблоны</a>
+          <a class="nav-item {% if request.resolver_match.namespace == 'documents' and request.resolver_match.url_name != 'template_list' %}active{% endif %}" href="{% url 'documents:document_list' %}">Архив документов</a>
         </div>
       </details>
 
       <details class="nav-group" {% if request.resolver_match.namespace == 'inventory' or request.resolver_match.namespace == 'equipment' %}open{% endif %}>
         <summary class="nav-label">Учет</summary>
         <div class="nav-items">
-          <a class="nav-item {% if request.resolver_match.namespace == 'inventory' and request.resolver_match.url_name != 'location_list' and request.resolver_match.url_name != 'category_list' %}active{% endif %}" href="{% url 'inventory:item_list' %}">
-            <span class="ico">▦</span> Склад
-          </a>
-          <a class="nav-item {% if request.resolver_match.url_name == 'location_list' %}active{% endif %}" href="{% url 'inventory:location_list' %}">
-            <span class="ico">⌗</span> Полки
-          </a>
-          <a class="nav-item {% if request.resolver_match.namespace == 'equipment' and request.resolver_match.url_name != 'category_list' %}active{% endif %}" href="{% url 'equipment:board' %}">
-            <span class="ico">⌘</span> Оборудование
-          </a>
-          <a class="nav-item {% if request.resolver_match.url_name == 'category_list' %}active{% endif %}" href="{% url 'equipment:category_list' %}">
-            <span class="ico">⌸</span> Категории
-          </a>
+          <a class="nav-item {% if request.resolver_match.namespace == 'inventory' and request.resolver_match.url_name != 'location_list' and request.resolver_match.url_name != 'category_list' %}active{% endif %}" href="{% url 'inventory:item_list' %}">Склад</a>
+          <a class="nav-item {% if request.resolver_match.url_name == 'location_list' %}active{% endif %}" href="{% url 'inventory:location_list' %}">Полки</a>
+          <a class="nav-item {% if request.resolver_match.namespace == 'equipment' and request.resolver_match.url_name != 'category_list' %}active{% endif %}" href="{% url 'equipment:board' %}">Оборудование</a>
+          <a class="nav-item {% if request.resolver_match.url_name == 'category_list' %}active{% endif %}" href="{% url 'equipment:category_list' %}">Категории</a>
         </div>
       </details>
 
       <details class="nav-group" {% if request.resolver_match.namespace == 'analytics' and request.resolver_match.url_name != 'dashboard' or request.resolver_match.url_name == 'audit_list' %}open{% endif %}>
         <summary class="nav-label">Аналитика и контроль</summary>
         <div class="nav-items">
-          <a class="nav-item {% if request.resolver_match.url_name == 'statistics' %}active{% endif %}" href="{% url 'analytics:statistics' %}">
-            <span class="ico">∿</span> Статистика
-          </a>
-          <a class="nav-item {% if request.resolver_match.url_name == 'audit_list' %}active{% endif %}" href="{% url 'core:audit_list' %}">
-            <span class="ico">◎</span> Аудит изменений
-          </a>
+          <a class="nav-item {% if request.resolver_match.url_name == 'statistics' %}active{% endif %}" href="{% url 'analytics:statistics' %}">Статистика</a>
+          <a class="nav-item {% if request.resolver_match.url_name == 'audit_list' %}active{% endif %}" href="{% url 'core:audit_list' %}">Аудит изменений</a>
         </div>
       </details>
 
@@ -89,15 +65,9 @@
       <details class="nav-group" {% if request.resolver_match.namespace == 'accounts' or request.resolver_match.url_name == 'workshop_list' or request.resolver_match.url_name == 'site_list' %}open{% endif %}>
         <summary class="nav-label">Администрирование</summary>
         <div class="nav-items">
-          <a class="nav-item {% if request.resolver_match.url_name == 'user_list' or request.resolver_match.url_name == 'user_create' or request.resolver_match.url_name == 'user_update' %}active{% endif %}" href="{% url 'accounts:user_list' %}">
-            <span class="ico">◇</span> Пользователи
-          </a>
-          <a class="nav-item {% if request.resolver_match.url_name == 'workshop_list' %}active{% endif %}" href="{% url 'core:workshop_list' %}">
-            <span class="ico">⌂</span> Цеха
-          </a>
-          <a class="nav-item {% if request.resolver_match.url_name == 'site_list' %}active{% endif %}" href="{% url 'core:site_list' %}">
-            <span class="ico">⌖</span> Площадки
-          </a>
+          <a class="nav-item {% if request.resolver_match.url_name == 'user_list' or request.resolver_match.url_name == 'user_create' or request.resolver_match.url_name == 'user_update' %}active{% endif %}" href="{% url 'accounts:user_list' %}">Пользователи</a>
+          <a class="nav-item {% if request.resolver_match.url_name == 'workshop_list' %}active{% endif %}" href="{% url 'core:workshop_list' %}">Цеха</a>
+          <a class="nav-item {% if request.resolver_match.url_name == 'site_list' %}active{% endif %}" href="{% url 'core:site_list' %}">Площадки</a>
         </div>
       </details>
       {% endif %}

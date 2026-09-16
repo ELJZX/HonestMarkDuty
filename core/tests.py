@@ -288,3 +288,15 @@ class SeedDemoCommandTests(TestCase):
         admin = User.objects.get(username="admin")
         self.assertEqual(admin.last_name, "")
         self.assertEqual(admin.first_name, "")
+
+
+class NavigationTemplateTests(TestCase):
+    def test_nav_has_no_icons(self):
+        admin = User.objects.create_user(
+            username="nav-admin", password="x", role=User.Role.ADMIN, is_superuser=True, is_staff=True
+        )
+        self.client.force_login(admin)
+        response = self.client.get(reverse("analytics:dashboard"))
+        self.assertEqual(response.status_code, 200)
+        for icon in ("◷", "▤", "▣", "⇩", "▧", "▨", "▦", "⌗", "⌘", "⌸", "∿", "◎", "◇", "⌂", "⌖"):
+            self.assertNotContains(response, icon)
