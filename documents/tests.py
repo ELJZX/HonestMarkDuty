@@ -1,11 +1,18 @@
-from django.test import TestCase
+import tempfile
+from io import BytesIO
+from pathlib import Path
+
+from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
+from docx import Document as DocxDocument
 
 from accounts.models import User
 from core.models import Workshop
 from documents.forms import DocumentForm
 from documents.models import Document, DocumentStatus, DocumentTemplate, DocumentType
 from documents.services import build_context, build_docx, render_text
+from documents.workshop_docs import WORKSHOP_DOCUMENTS
 
 
 class DocumentTemplateModelTests(TestCase):
@@ -229,3 +236,72 @@ class DocumentViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         document.refresh_from_db()
         self.assertTrue(document.file)
+
+
+class WorkshopDocumentViewTests(TestCase):
+    def setUp(self):
+        self.specialist = User.objects.create_user(
+            username="wspec", password="x", role=User.Role.SPECIALIST
+        )
+
+    def test_template_list_lists_workshops_and_buttons(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("documents:template_list"))
+        self.assertEqual(response.status_code, 200)
+        for item in WORKSHOP_DOCUMENTS:
+            self.assertContains(response, item["name"])
+        self.assertContains(response, "Скачать техническое заключение")
+        self.assertContains(response, "Скачать служебную записку")
+        self.assertContains(
+            response,
+            reverse("documents:workshop_document_download", args=["ceh1", "tz"]),
+        )
+
+    def test_download_placeholder_document(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("documents:workshop_document_download", args=["kmc", "sl"])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("officedocument", response["Content-Type"])
+        expected = f"kmc_sl_{timezone.localdate():%d.%m.%Y}.docx"
+        self.assertIn(expected, response["Content-Disposition"])
+        body = b"".join(response.streaming_content)
+        self.assertGreater(len(body), 0)
+        text = "\n".join(p.text for p in DocxDocument(BytesIO(body)).paragraphs)
+        self.assertIn("Служебная записка", text)
+        self.assertIn("Кисломолочный цех", text)
+
+    def test_download_uses_sample_when_present(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sample = Path(tmp) / "tv_tz.docx"
+            docx = DocxDocument()
+            docx.add_paragraph("Цех: {{ workshop_name }} ({{ workshop_code }})")
+            docx.add_paragraph("Дата: {{ date }}")
+            docx.save(str(sample))
+
+            with override_settings(DOCUMENT_SAMPLES_DIR=tmp):
+                self.client.force_login(self.specialist)
+                response = self.client.get(
+                    reverse("documents:workshop_document_download", args=["tv", "tz"])
+                )
+                body = b"".join(response.streaming_content)
+
+        text = "\n".join(p.text for p in DocxDocument(BytesIO(body)).paragraphs)
+        self.assertIn("Творожный цех", text)
+        self.assertIn("(tv)", text)
+        self.assertIn(timezone.localdate().strftime("%d.%m.%Y"), text)
+        self.assertNotIn("{{", text)
+
+    def test_unknown_code_returns_404(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("documents:workshop_document_download", args=["nope", "tz"])
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_requires_login(self):
+        response = self.client.get(
+            reverse("documents:workshop_document_download", args=["ceh1", "tz"])
+        )
+        self.assertEqual(response.status_code, 302)

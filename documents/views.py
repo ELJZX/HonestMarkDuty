@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import FileResponse
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
+from django.utils import timezone
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -18,12 +19,45 @@ from core.mixins import AdminRequiredMixin, EditorRequiredMixin
 from documents.forms import DocumentForm, DocumentTemplateForm
 from documents.models import Document, DocumentStatus, DocumentTemplate
 from documents.services import build_context, build_docx, render_text
+from documents.workshop_docs import (
+    DOC_KINDS,
+    WORKSHOP_BY_CODE,
+    WORKSHOP_DOCUMENTS,
+    build_workshop_document,
+)
 
 
 class DocumentTemplateListView(LoginRequiredMixin, ListView):
     model = DocumentTemplate
     template_name = "documents/template_list.html"
     context_object_name = "templates"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["workshop_rows"] = WORKSHOP_DOCUMENTS
+        return ctx
+
+
+class WorkshopDocumentDownloadView(LoginRequiredMixin, View):
+    """Скачивание документа цеха (техническое заключение / служебная записка)."""
+
+    DOCX_CONTENT_TYPE = (
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+
+    def get(self, request, code, kind):
+        name = WORKSHOP_BY_CODE.get(code)
+        if name is None or kind not in DOC_KINDS:
+            raise Http404("Документ не найден")
+
+        stream = build_workshop_document(name, code, kind)
+        filename = f"{code}_{kind}_{timezone.localdate():%d.%m.%Y}.docx"
+        return FileResponse(
+            stream,
+            as_attachment=True,
+            filename=filename,
+            content_type=self.DOCX_CONTENT_TYPE,
+        )
 
 
 class DocumentTemplateCreateView(EditorRequiredMixin, CreateView):

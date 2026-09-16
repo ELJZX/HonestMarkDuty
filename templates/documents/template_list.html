@@ -6,6 +6,29 @@
 {% endblock %}
 {% block content %}
 <div class="card">
+  <div class="card-header">
+    <div class="card-title">Документы по цехам</div>
+    <div class="card-sub">Файлы формируются по образцам</div>
+  </div>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Цех</th><th></th></tr></thead>
+      <tbody>
+        {% for w in workshop_rows %}
+        <tr>
+          <td class="primary">{{ w.name }}</td>
+          <td class="actions">
+            <a class="btn btn-sm" href="{% url 'documents:workshop_document_download' w.code 'tz' %}">Скачать техническое заключение</a>
+            <a class="btn btn-sm" href="{% url 'documents:workshop_document_download' w.code 'sl' %}">Скачать служебную записку</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
   <div class="card-header"><div class="card-title">Шаблоны документов</div></div>
   <div class="table-wrap">
     <table class="data">

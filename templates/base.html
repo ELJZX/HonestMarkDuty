@@ -43,6 +43,18 @@
         </div>
       </details>
 
+      <details class="nav-group" {% if request.resolver_match.namespace == 'documents' %}open{% endif %}>
+        <summary class="nav-label">Документы</summary>
+        <div class="nav-items">
+          <a class="nav-item {% if request.resolver_match.url_name == 'template_list' %}active{% endif %}" href="{% url 'documents:template_list' %}">
+            <span class="ico">▨</span> Шаблоны
+          </a>
+          <a class="nav-item {% if request.resolver_match.namespace == 'documents' and request.resolver_match.url_name != 'template_list' %}active{% endif %}" href="{% url 'documents:document_list' %}">
+            <span class="ico">▧</span> Архив документов
+          </a>
+        </div>
+      </details>
+
       <details class="nav-group" {% if request.resolver_match.namespace == 'inventory' or request.resolver_match.namespace == 'equipment' %}open{% endif %}>
         <summary class="nav-label">Учет</summary>
         <div class="nav-items">
@@ -57,18 +69,6 @@
           </a>
           <a class="nav-item {% if request.resolver_match.url_name == 'category_list' %}active{% endif %}" href="{% url 'equipment:category_list' %}">
             <span class="ico">⌸</span> Категории
-          </a>
-        </div>
-      </details>
-
-      <details class="nav-group" {% if request.resolver_match.namespace == 'documents' %}open{% endif %}>
-        <summary class="nav-label">Документы</summary>
-        <div class="nav-items">
-          <a class="nav-item {% if request.resolver_match.namespace == 'documents' and request.resolver_match.url_name != 'template_list' %}active{% endif %}" href="{% url 'documents:document_list' %}">
-            <span class="ico">▧</span> Документы
-          </a>
-          <a class="nav-item {% if request.resolver_match.url_name == 'template_list' %}active{% endif %}" href="{% url 'documents:template_list' %}">
-            <span class="ico">▨</span> Шаблоны
           </a>
         </div>
       </details>

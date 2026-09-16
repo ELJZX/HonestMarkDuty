@@ -7,6 +7,11 @@ app_name = "documents"
 urlpatterns = [
     path("", views.DocumentListView.as_view(), name="document_list"),
     path("new/", views.DocumentCreateView.as_view(), name="document_create"),
+    path(
+        "download/<slug:code>/<str:kind>/",
+        views.WorkshopDocumentDownloadView.as_view(),
+        name="workshop_document_download",
+    ),
     path("<int:pk>/", views.DocumentDetailView.as_view(), name="document_detail"),
     path("<int:pk>/edit/", views.DocumentUpdateView.as_view(), name="document_update"),
     path("<int:pk>/print/", views.DocumentPrintView.as_view(), name="document_print"),
