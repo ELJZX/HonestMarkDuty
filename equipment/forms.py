@@ -20,6 +20,7 @@ class EquipmentForm(StyledModelForm):
             "category",
             "site",
             "workshop",
+            "line",
             "manufacturer",
             "model_name",
             "serial_number",
@@ -33,6 +34,13 @@ class EquipmentForm(StyledModelForm):
             "is_active",
         )
         widgets = {"notes": forms.Textarea(attrs={"rows": 3})}
+
+    def clean(self):
+        cleaned = super().clean()
+        line = cleaned.get("line")
+        if line and not cleaned.get("workshop"):
+            cleaned["workshop"] = line.workshop
+        return cleaned
 
 
 class EquipmentStatusLogForm(StyledModelForm):

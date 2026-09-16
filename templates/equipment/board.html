@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Оборудование{% endblock %}
+{% block breadcrumb %}Учет / Оборудование{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-sm btn-ghost" href="{% url 'equipment:equipment_list' %}">Весь реестр</a>
+  <a class="btn btn-sm" href="{% url 'equipment:category_list' %}">Категории</a>
+  <a class="btn btn-primary btn-sm" href="{% url 'equipment:equipment_create' %}">+ Оборудование</a>
+{% endblock %}
+{% block content %}
+<div class="grid grid-4 mb-3">
+  <div class="stat">
+    <div class="stat-label">Цеха</div>
+    <div class="stat-value">{{ workshops|length }}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Линии</div>
+    <div class="stat-value">{{ lines_total }}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Оборудование</div>
+    <div class="stat-value">{{ equipment_total }}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Без линии</div>
+    <div class="stat-value">{{ unassigned_total }}</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Цеха</div>
+    <div class="card-sub">Выберите цех, чтобы открыть список линий</div>
+  </div>
+
+  <div class="workshop-board">
+    {% for w in workshops %}
+    <a class="workshop-card" href="{% url 'equipment:workshop_lines' w.pk %}">
+      <div class="workshop-card-img">
+        <img src="{% static 'img/workshop.svg' %}" alt="{{ w.name }}">
+      </div>
+      <div class="workshop-card-body">
+        <div class="workshop-card-name">{{ w.name }}</div>
+        <div class="workshop-card-meta">
+          {{ w.lines_total }} линий · {{ w.equipment_total }} ед. оборудования
+        </div>
+      </div>
+    </a>
+    {% empty %}
+    <div class="empty">Цеха не добавлены</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -53,7 +53,7 @@
 
   <div class="table-wrap">
     <table class="data">
-      <thead><tr><th>Оборудование</th><th>Инв. №</th><th>Площадка</th><th>Цех</th><th>Критичность</th><th>Состояние</th><th>След. ТО</th><th></th></tr></thead>
+      <thead><tr><th>Оборудование</th><th>Инв. №</th><th>Площадка</th><th>Цех</th><th>Линия</th><th>Критичность</th><th>Состояние</th><th>След. ТО</th><th></th></tr></thead>
       <tbody>
         {% for e in equipment_list %}
         <tr>
@@ -63,6 +63,7 @@
           <td class="mono">{{ e.inventory_number }}</td>
           <td>{{ e.site|default:"—" }}</td>
           <td>{{ e.workshop|default:"—" }}</td>
+          <td>{% if e.line %}<a href="{% url 'equipment:line_equipment' e.line.pk %}">{{ e.line.name }}</a>{% else %}—{% endif %}</td>
           <td>{{ e.get_criticality_display }}</td>
           <td><span class="badge {{ e.status_badge }}">{{ e.get_status_display }}</span></td>
           <td class="mono nowrap">
@@ -72,7 +73,7 @@
           <td class="actions"><a class="btn btn-sm" href="{% url 'equipment:equipment_detail' e.pk %}">Открыть</a></td>
         </tr>
         {% empty %}
-        <tr><td colspan="8" class="empty">Оборудование не найдено</td></tr>
+        <tr><td colspan="9" class="empty">Оборудование не найдено</td></tr>
         {% endfor %}
       </tbody>
     </table>

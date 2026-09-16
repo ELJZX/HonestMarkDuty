@@ -600,3 +600,55 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
 .score-1 { background: #c0392b; color: #fff; }
 .score-2 { background: #e3b341; color: #111; }
 .score-3 { background: #27a25a; color: #fff; }
+
+/* ---------- Доска оборудования (цех → линия → оборудование) ---------- */
+.workshop-board {
+  display: grid; gap: 1.22rem;
+  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+}
+.workshop-card {
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius); color: inherit; text-decoration: none;
+  transition: border-color .12s, transform .12s;
+}
+.workshop-card:hover { border-color: #454545; transform: translateY(-2px); }
+.workshop-card-img { aspect-ratio: 16 / 9; background: #121212; border-bottom: 1px solid var(--border); }
+.workshop-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.workshop-card-body { padding: 1.11rem 1.22rem; }
+.workshop-card-name { font-size: 1.2rem; font-weight: 600; margin-bottom: .33rem; }
+.workshop-card-meta { font-family: var(--font-mono); font-size: .82rem; color: var(--dim); }
+
+.line-list {
+  display: grid; gap: .78rem;
+  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+}
+.line-card {
+  display: flex; align-items: center; justify-content: space-between; gap: .78rem;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1rem 1.22rem;
+  color: inherit; text-decoration: none;
+  transition: border-color .12s, background .12s;
+}
+.line-card:hover { border-color: #454545; background: var(--surface-3); }
+.line-card-title { font-family: var(--font-mono); font-size: 1.05rem; margin-right: .44rem; }
+.line-card-meta { font-family: var(--font-mono); font-size: .82rem; color: var(--dim); }
+
+.equip-board {
+  display: grid; gap: 1.22rem;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+}
+.equip-card {
+  display: flex; flex-direction: column; gap: .44rem;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1.11rem 1.22rem;
+  color: inherit; text-decoration: none;
+  transition: border-color .12s, transform .12s;
+}
+.equip-card:hover { border-color: #454545; transform: translateY(-2px); }
+.equip-card-name { font-size: 1.15rem; font-weight: 500; }
+.equip-card-sub { font-family: var(--font-mono); font-size: .82rem; color: var(--dim); }
+.equip-card-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: .56rem; margin-top: auto; padding-top: .56rem;
+}

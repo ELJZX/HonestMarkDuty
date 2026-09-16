@@ -62,6 +62,14 @@ class Equipment(AuditedModel):
         blank=True,
         related_name="equipment",
     )
+    line = models.ForeignKey(
+        "core.ProductionLine",
+        verbose_name="Линия",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="equipment",
+    )
     manufacturer = models.CharField("Производитель", max_length=150, blank=True)
     model_name = models.CharField("Модель", max_length=150, blank=True)
     serial_number = models.CharField("Серийный номер", max_length=150, blank=True)

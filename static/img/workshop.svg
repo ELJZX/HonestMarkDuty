@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" role="img" aria-label="Завод">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#151515"/>
+      <stop offset="1" stop-color="#0d0d0d"/>
+    </linearGradient>
+    <linearGradient id="b1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#333333"/>
+      <stop offset="1" stop-color="#242424"/>
+    </linearGradient>
+    <linearGradient id="b2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b3b3b"/>
+      <stop offset="1" stop-color="#262626"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#sky)"/>
+
+  <!-- дым -->
+  <g fill="#3a3a3a" opacity="0.55">
+    <circle cx="250" cy="96" r="16"/>
+    <circle cx="272" cy="82" r="20"/>
+    <circle cx="298" cy="92" r="15"/>
+    <circle cx="600" cy="110" r="13"/>
+    <circle cx="618" cy="96" r="17"/>
+  </g>
+
+  <!-- трубы -->
+  <rect x="236" y="120" width="28" height="180" rx="3" fill="url(#b2)"/>
+  <rect x="588" y="150" width="24" height="150" rx="3" fill="url(#b2)"/>
+  <rect x="232" y="120" width="36" height="12" rx="3" fill="#4a4a4a"/>
+  <rect x="584" y="150" width="32" height="11" rx="3" fill="#4a4a4a"/>
+
+  <!-- корпуса -->
+  <rect x="120" y="220" width="230" height="130" fill="url(#b1)"/>
+  <rect x="350" y="170" width="180" height="180" fill="url(#b2)"/>
+  <rect x="530" y="235" width="180" height="115" fill="url(#b1)"/>
+
+  <!-- пилообразная крыша -->
+  <path d="M350 170 l45 -34 l45 34 l45 -34 l45 34 Z" fill="#444444"/>
+
+  <!-- окна -->
+  <g fill="#65d98a" opacity="0.75">
+    <rect x="140" y="245" width="26" height="22" rx="2"/>
+    <rect x="182" y="245" width="26" height="22" rx="2"/>
+    <rect x="224" y="245" width="26" height="22" rx="2"/>
+    <rect x="266" y="245" width="26" height="22" rx="2"/>
+    <rect x="140" y="288" width="26" height="22" rx="2"/>
+    <rect x="182" y="288" width="26" height="22" rx="2"/>
+    <rect x="224" y="288" width="26" height="22" rx="2"/>
+    <rect x="266" y="288" width="26" height="22" rx="2"/>
+
+    <rect x="372" y="200" width="26" height="24" rx="2"/>
+    <rect x="414" y="200" width="26" height="24" rx="2"/>
+    <rect x="456" y="200" width="26" height="24" rx="2"/>
+    <rect x="372" y="248" width="26" height="24" rx="2"/>
+    <rect x="414" y="248" width="26" height="24" rx="2"/>
+    <rect x="456" y="248" width="26" height="24" rx="2"/>
+    <rect x="372" y="296" width="26" height="24" rx="2"/>
+    <rect x="414" y="296" width="26" height="24" rx="2"/>
+    <rect x="456" y="296" width="26" height="24" rx="2"/>
+
+    <rect x="556" y="262" width="28" height="22" rx="2"/>
+    <rect x="602" y="262" width="28" height="22" rx="2"/>
+    <rect x="648" y="262" width="28" height="22" rx="2"/>
+    <rect x="556" y="302" width="28" height="22" rx="2"/>
+    <rect x="602" y="302" width="28" height="22" rx="2"/>
+    <rect x="648" y="302" width="28" height="22" rx="2"/>
+  </g>
+
+  <!-- ворота -->
+  <rect x="470" y="300" width="48" height="50" rx="3" fill="#1b1b1b" stroke="#4a4a4a"/>
+  <line x1="470" y1="316" x2="518" y2="316" stroke="#4a4a4a" stroke-width="2"/>
+  <line x1="470" y1="332" x2="518" y2="332" stroke="#4a4a4a" stroke-width="2"/>
+
+  <!-- земля -->
+  <rect x="0" y="350" width="800" height="100" fill="#0b0b0b"/>
+  <line x1="0" y1="350" x2="800" y2="350" stroke="#2c2c2c" stroke-width="2"/>
+</svg>

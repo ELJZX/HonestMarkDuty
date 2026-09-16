@@ -16,7 +16,7 @@ from checklists.models import (
     ChecklistResult,
     EquipmentChecklist,
 )
-from core.models import ProductionSite, Workshop
+from core.models import ProductionLine, ProductionSite, Workshop
 from documents.models import Document, DocumentTemplate, DocumentType
 from equipment.models import (
     Criticality,
@@ -45,9 +45,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write("Создание демо-данных...")
         admin = self._users()
-        sites, workshops, specialists = self._organization(admin)
+        sites, workshops, specialists, lines = self._organization(admin)
         items = self._inventory(workshops, admin)
-        equipment_list = self._equipment(sites, workshops)
+        equipment_list = self._equipment(sites, workshops, lines)
         shift = self._shift_and_journal(workshops, specialists, equipment_list)
         self._checklists(shift, workshops, specialists)
         self._documents(workshops, specialists)
@@ -119,7 +119,24 @@ class Command(BaseCommand):
         for user, workshop in zip(specialists, workshops):
             user.workshop = workshop
             user.save()
-        return site, workshops, specialists
+
+        lines_data = [
+            ("МЦ", "Линия №1", "L-01"),
+            ("МЦ", "Линия №2", "L-02"),
+            ("УЦ", "Линия упаковки №1", "L-11"),
+            ("УЦ", "Линия упаковки №2", "L-12"),
+            ("СГП", "Зона отгрузки", "L-21"),
+        ]
+        workshop_by_code = {w.code: w for w in workshops}
+        lines = {}
+        for order, (wcode, lname, lcode) in enumerate(lines_data):
+            line, _ = ProductionLine.objects.get_or_create(
+                workshop=workshop_by_code[wcode],
+                name=lname,
+                defaults={"code": lcode, "sort_order": order},
+            )
+            lines[lcode] = line
+        return site, workshops, specialists, lines
 
     # -------------------------------------------------------------- inventory
     def _inventory(self, workshops, admin):
@@ -174,9 +191,15 @@ class Command(BaseCommand):
         return items
 
     # -------------------------------------------------------------- equipment
-    def _equipment(self, site, workshops):
+    def _equipment(self, site, workshops, lines):
         packing_cat, _ = EquipmentCategory.objects.get_or_create(name="Упаковочное оборудование")
         marking_cat, _ = EquipmentCategory.objects.get_or_create(name="Маркировочное оборудование")
+        line_by_inv = {
+            "EQ-001": "L-11",
+            "EQ-002": "L-11",
+            "EQ-003": "L-01",
+            "EQ-004": "L-21",
+        }
         equipment_list = []
         for name, inv, cat, workshop, status in [
             ("Упаковочная машина Multivac", "EQ-001", packing_cat, workshops[1], EquipmentStatus.OPERATIONAL),
@@ -200,6 +223,11 @@ class Command(BaseCommand):
                     else timezone.localdate() + timedelta(days=60),
                 },
             )
+            line = lines.get(line_by_inv.get(inv))
+            if line and equipment.line_id != line.pk:
+                equipment.line = line
+                equipment.workshop = line.workshop
+                equipment.save()
             equipment_list.append(equipment)
         MaintenanceRecord.objects.get_or_create(
             equipment=equipment_list[0],

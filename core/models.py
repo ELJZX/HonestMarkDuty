@@ -120,6 +120,37 @@ class Workshop(AuditedModel):
         return self.name
 
 
+class ProductionLine(AuditedModel):
+    """Производственная линия внутри цеха — объединяет оборудование."""
+
+    workshop = models.ForeignKey(
+        Workshop,
+        verbose_name="Цех",
+        on_delete=models.CASCADE,
+        related_name="lines",
+    )
+    name = models.CharField("Название линии", max_length=200)
+    code = models.CharField("Код", max_length=30, blank=True)
+    description = models.TextField("Описание", blank=True)
+    sort_order = models.PositiveIntegerField("Порядок", default=0)
+    is_active = models.BooleanField("Активна", default=True)
+
+    class Meta:
+        verbose_name = "Производственная линия"
+        verbose_name_plural = "Производственные линии"
+        ordering = ("workshop__name", "sort_order", "name")
+        constraints = [
+            models.UniqueConstraint(fields=("workshop", "name"), name="unique_line_in_workshop"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.workshop.name} · {self.name}"
+
+    @property
+    def equipment_count(self) -> int:
+        return self.equipment.count()
+
+
 class ProductionSite(AuditedModel):
     """Производственная площадка (здание/адрес)."""
 

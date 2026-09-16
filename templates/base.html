@@ -64,7 +64,7 @@
           <a class="nav-item {% if request.resolver_match.url_name == 'location_list' %}active{% endif %}" href="{% url 'inventory:location_list' %}">
             <span class="ico">⌗</span> Полки
           </a>
-          <a class="nav-item {% if request.resolver_match.namespace == 'equipment' and request.resolver_match.url_name != 'category_list' %}active{% endif %}" href="{% url 'equipment:equipment_list' %}">
+          <a class="nav-item {% if request.resolver_match.namespace == 'equipment' and request.resolver_match.url_name != 'category_list' %}active{% endif %}" href="{% url 'equipment:board' %}">
             <span class="ico">⌘</span> Оборудование
           </a>
           <a class="nav-item {% if request.resolver_match.url_name == 'category_list' %}active{% endif %}" href="{% url 'equipment:category_list' %}">

@@ -10,7 +10,7 @@ from django.urls import reverse, reverse_lazy
 from django.views.generic import CreateView, DetailView, DeleteView, ListView, UpdateView, View
 
 from core.mixins import AdminRequiredMixin, EditorRequiredMixin
-from core.models import ProductionSite, Workshop
+from core.models import ProductionLine, ProductionSite, Workshop
 from equipment.forms import (
     EquipmentCategoryForm,
     EquipmentForm,
@@ -32,7 +32,7 @@ class EquipmentListView(LoginRequiredMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        qs = Equipment.objects.select_related("site", "workshop", "category", "responsible")
+        qs = Equipment.objects.select_related("site", "workshop", "line", "category", "responsible")
         params = self.request.GET
         query = params.get("q")
         site = params.get("site")
@@ -66,13 +66,79 @@ class EquipmentListView(LoginRequiredMixin, ListView):
         return ctx
 
 
+class EquipmentBoardView(LoginRequiredMixin, ListView):
+    """Доска цехов: карточки с названием, переход к линиям цеха."""
+
+    model = Workshop
+    template_name = "equipment/board.html"
+    context_object_name = "workshops"
+
+    def get_queryset(self):
+        return (
+            Workshop.objects.filter(is_active=True)
+            .annotate(
+                lines_total=Count("lines", filter=Q(lines__is_active=True), distinct=True),
+                equipment_total=Count("equipment", filter=Q(equipment__is_active=True), distinct=True),
+            )
+            .order_by("name")
+        )
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["equipment_total"] = Equipment.objects.filter(is_active=True).count()
+        ctx["lines_total"] = ProductionLine.objects.filter(is_active=True).count()
+        ctx["unassigned_total"] = Equipment.objects.filter(is_active=True, line__isnull=True).count()
+        return ctx
+
+
+class WorkshopLinesView(LoginRequiredMixin, DetailView):
+    """Список производственных линий выбранного цеха."""
+
+    model = Workshop
+    template_name = "equipment/workshop_lines.html"
+    context_object_name = "workshop"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["lines"] = (
+            self.object.lines.filter(is_active=True)
+            .annotate(equipment_total=Count("equipment", filter=Q(equipment__is_active=True)))
+            .order_by("sort_order", "name")
+        )
+        ctx["no_line_equipment"] = (
+            self.object.equipment.filter(is_active=True, line__isnull=True)
+            .select_related("category")
+        )
+        return ctx
+
+
+class LineEquipmentView(LoginRequiredMixin, DetailView):
+    """Список оборудования выбранной производственной линии."""
+
+    model = ProductionLine
+    template_name = "equipment/line_equipment.html"
+    context_object_name = "line"
+
+    def get_queryset(self):
+        return ProductionLine.objects.select_related("workshop")
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["equipment_list"] = (
+            self.object.equipment.filter(is_active=True)
+            .select_related("category", "responsible")
+            .order_by("name")
+        )
+        return ctx
+
+
 class EquipmentDetailView(LoginRequiredMixin, DetailView):
     model = Equipment
     template_name = "equipment/equipment_detail.html"
     context_object_name = "equipment"
 
     def get_queryset(self):
-        return Equipment.objects.select_related("site", "workshop", "category", "responsible")
+        return Equipment.objects.select_related("site", "workshop", "line", "category", "responsible")
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ line.name }}{% endblock %}
+{% block breadcrumb %}Учет / Оборудование / {{ line.workshop.name }} / {{ line.name }}{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-sm btn-ghost" href="{% url 'equipment:workshop_lines' line.workshop.pk %}">← К линиям</a>
+  <a class="btn btn-primary btn-sm" href="{% url 'equipment:equipment_create' %}">+ Оборудование</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">{{ line.name }}</div>
+      <div class="card-sub">
+        {{ line.workshop.name }}{% if line.code %} · {{ line.code }}{% endif %}
+      </div>
+    </div>
+    <span class="badge badge-muted">{{ equipment_list|length }} ед.</span>
+  </div>
+
+  {% if line.description %}<p class="card-sub mb-3">{{ line.description }}</p>{% endif %}
+
+  <div class="equip-board">
+    {% for e in equipment_list %}
+    <a class="equip-card" href="{% url 'equipment:equipment_detail' e.pk %}">
+      <span class="equip-card-name">{{ e.name }}</span>
+      <span class="equip-card-sub">{{ e.inventory_number }} · {{ e.category|default:"—" }}</span>
+      <span class="equip-card-sub">
+        {{ e.manufacturer|default:"" }} {{ e.model_name|default:"" }}
+      </span>
+      <span class="equip-card-foot">
+        <span class="badge {{ e.status_badge }}">{{ e.get_status_display }}</span>
+        <span class="equip-card-sub">Открыть →</span>
+      </span>
+    </a>
+    {% empty %}
+    <div class="empty">На линии нет оборудования</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

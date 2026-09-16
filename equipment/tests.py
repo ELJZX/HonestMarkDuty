@@ -5,6 +5,8 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import User
+from core.models import ProductionLine, Workshop
+from equipment.forms import EquipmentForm
 from equipment.models import (
     Criticality,
     Equipment,
@@ -165,3 +167,61 @@ class EquipmentViewTests(TestCase):
         response = self.client.post(reverse("equipment:category_create"), {"name": "Новая"})
         self.assertEqual(response.status_code, 302)
         self.assertTrue(EquipmentCategory.objects.filter(name="Новая").exists())
+
+
+class EquipmentBoardTests(TestCase):
+    def setUp(self):
+        self.specialist = User.objects.create_user(
+            username="board-spec", password="x", role=User.Role.SPECIALIST
+        )
+        self.workshop = Workshop.objects.create(name="Мясной цех", code="МЦ")
+        self.line = ProductionLine.objects.create(
+            workshop=self.workshop, name="Линия №1", code="L-01"
+        )
+        self.equipment = Equipment.objects.create(
+            name="Термоупаковщик",
+            inventory_number="EQ-300",
+            workshop=self.workshop,
+            line=self.line,
+        )
+
+    def test_line_str_and_equipment_count(self):
+        self.assertEqual(str(self.line), "Мясной цех · Линия №1")
+        self.assertEqual(self.line.equipment_count, 1)
+
+    def test_board_renders_workshops(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("equipment:board"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.workshop.name)
+
+    def test_workshop_lines_page(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("equipment:workshop_lines", args=[self.workshop.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.line.name)
+
+    def test_line_equipment_page(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("equipment:line_equipment", args=[self.line.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.equipment.name)
+
+    def test_registry_shows_line(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("equipment:equipment_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.line.name)
+
+    def test_form_sets_workshop_from_line(self):
+        form = EquipmentForm(
+            data={
+                "name": "Новое",
+                "inventory_number": "EQ-301",
+                "line": self.line.pk,
+                "status": EquipmentStatus.OPERATIONAL,
+                "criticality": Criticality.MEDIUM,
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["workshop"], self.workshop)
