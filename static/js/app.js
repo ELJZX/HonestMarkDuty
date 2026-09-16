@@ -142,14 +142,30 @@ document.addEventListener("DOMContentLoaded", function () {
     list.addEventListener("dragover", function (e) {
       if (!editing || !dragged) return;
       e.preventDefault();
-      const target = e.target.closest(".line-card");
-      if (!target || target === dragged) return;
-      const rect = target.getBoundingClientRect();
-      const sameRow = e.clientY >= rect.top && e.clientY <= rect.bottom;
-      const after = sameRow
-        ? e.clientX > rect.left + rect.width / 2
-        : e.clientY > rect.top + rect.height / 2;
-      list.insertBefore(dragged, after ? target.nextSibling : target);
+      const items = cards().filter(function (c) { return c !== dragged; });
+      if (!items.length) return;
+      // Для расчёта вставки карточка «по факту» вдвое короче:
+      // решаем по центральной зоне (половина высоты/ширины), а не по краям.
+      function isBefore(cursorX, cursorY, rect) {
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const halfH = rect.height / 4;
+        if (cursorY < cy - halfH) return true;
+        if (cursorY > cy + halfH) return false;
+        return cursorX < cx;
+      }
+      let ref = null;
+      for (let i = 0; i < items.length; i++) {
+        if (isBefore(e.clientX, e.clientY, items[i].getBoundingClientRect())) {
+          ref = items[i];
+          break;
+        }
+      }
+      if (ref) {
+        list.insertBefore(dragged, ref);
+      } else {
+        list.appendChild(dragged);
+      }
     });
 
     if (form) {
