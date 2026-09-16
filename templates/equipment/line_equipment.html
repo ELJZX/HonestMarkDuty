@@ -23,17 +23,22 @@
 
   <div class="equip-board">
     {% for e in equipment_list %}
-    <a class="equip-card" href="{% url 'equipment:equipment_detail' e.pk %}">
-      <span class="equip-card-name">{{ e.name }}</span>
-      <span class="equip-card-sub">{{ e.inventory_number }} · {{ e.category|default:"—" }}</span>
-      <span class="equip-card-sub">
-        {{ e.manufacturer|default:"" }} {{ e.model_name|default:"" }}
-      </span>
-      <span class="equip-card-foot">
-        <span class="badge {{ e.status_badge }}">{{ e.get_status_display }}</span>
-        <span class="equip-card-sub">Открыть →</span>
-      </span>
-    </a>
+    <div class="equip-card">
+      <a class="equip-card-main" href="{% url 'equipment:equipment_detail' e.pk %}">
+        <span class="equip-card-name">{{ e.name }}</span>
+        <span class="equip-card-sub">{{ e.inventory_number }} · {{ e.category|default:"—" }}</span>
+        <span class="equip-card-sub">
+          {{ e.manufacturer|default:"" }} {{ e.model_name|default:"" }}
+        </span>
+        <span class="equip-card-foot">
+          <span class="badge {{ e.status_badge }}">{{ e.get_status_display }}</span>
+          <span class="equip-card-sub">Открыть →</span>
+        </span>
+      </a>
+      {% if user.is_admin %}
+      <a class="btn btn-danger btn-sm icon-btn equip-card-del" href="{% url 'equipment:equipment_delete' e.pk %}" title="Удалить оборудование">✕</a>
+      {% endif %}
+    </div>
     {% empty %}
     <div class="empty">На линии нет оборудования</div>
     {% endfor %}

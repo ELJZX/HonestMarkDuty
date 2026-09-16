@@ -238,6 +238,20 @@ class EquipmentDeleteView(AdminRequiredMixin, DeleteView):
     template_name = "core/confirm_delete.html"
     success_url = reverse_lazy("equipment:equipment_list")
 
+    def get_success_url(self):
+        line_id = self.object.line_id
+        if line_id:
+            return reverse("equipment:line_equipment", args=[line_id])
+        return reverse("equipment:equipment_list")
+
+
+class ProductionLineDeleteView(AdminRequiredMixin, DeleteView):
+    model = ProductionLine
+    template_name = "core/confirm_delete.html"
+
+    def get_success_url(self):
+        return reverse("equipment:workshop_lines", args=[self.object.workshop_id])
+
 
 class EquipmentStatusChangeView(EditorRequiredMixin, View):
     def post(self, request, pk):

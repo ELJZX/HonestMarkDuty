@@ -3,6 +3,9 @@
 {% block breadcrumb %}Учет / Оборудование / {{ equipment.name }}{% endblock %}
 {% block topbar_actions %}
   <a class="btn btn-sm" href="{% url 'equipment:equipment_update' equipment.pk %}">Изменить</a>
+  {% if user.is_admin %}
+  <a class="btn btn-danger btn-sm" href="{% url 'equipment:equipment_delete' equipment.pk %}">Удалить</a>
+  {% endif %}
 {% endblock %}
 {% block content %}
 <div class="page-back">

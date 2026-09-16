@@ -5,7 +5,6 @@
 {% block topbar_actions %}
   <a class="btn btn-sm btn-ghost" href="{% url 'equipment:equipment_list' %}">Весь реестр</a>
   <a class="btn btn-sm" href="{% url 'equipment:category_list' %}">Категории</a>
-  <a class="btn btn-primary btn-sm" href="{% url 'equipment:equipment_create' %}">+ Оборудование</a>
 {% endblock %}
 {% block content %}
 <div class="card">
@@ -33,7 +32,12 @@
         <div>Готовность: <b>{{ w.ready_percent }}%</b></div>
       </div>
 
-      <a class="btn workshop-card-btn" href="{% url 'equipment:workshop_lines' w.pk %}">Подробнее</a>
+      <div class="workshop-card-actions">
+        <a class="btn workshop-card-btn" href="{% url 'equipment:workshop_lines' w.pk %}">Подробнее</a>
+        {% if user.is_admin %}
+        <a class="btn btn-danger icon-btn" href="{% url 'core:workshop_delete' w.pk %}" title="Удалить цех">✕</a>
+        {% endif %}
+      </div>
     </div>
     {% empty %}
     <div class="empty">Цеха не добавлены</div>

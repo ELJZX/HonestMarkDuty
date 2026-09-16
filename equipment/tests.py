@@ -260,6 +260,30 @@ class EquipmentBoardTests(TestCase):
         self.client.force_login(admin)
         self.assertContains(self.client.get(reverse("equipment:board")), "Добавить цех")
 
+    def test_line_delete_admin_only(self):
+        self.client.force_login(self.specialist)
+        self.assertEqual(
+            self.client.post(reverse("equipment:line_delete", args=[self.line.pk])).status_code,
+            403,
+        )
+        admin = User.objects.create_user(
+            username="board-admin2", password="x", role=User.Role.ADMIN, is_superuser=True
+        )
+        self.client.force_login(admin)
+        response = self.client.post(reverse("equipment:line_delete", args=[self.line.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(ProductionLine.objects.filter(pk=self.line.pk).exists())
+
+    def test_delete_equipment_returns_to_line(self):
+        self.client.force_login(
+            User.objects.create_user(
+                username="board-admin3", password="x", role=User.Role.ADMIN, is_superuser=True
+            )
+        )
+        response = self.client.post(reverse("equipment:equipment_delete", args=[self.equipment.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("equipment:line_equipment", args=[self.line.pk]))
+
     def test_form_sets_workshop_from_line(self):
         form = EquipmentForm(
             data={
