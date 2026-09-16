@@ -128,9 +128,10 @@ document.addEventListener("DOMContentLoaded", function () {
       const card = e.target.closest(".line-card");
       if (!card) return;
       dragged = card;
-      card.classList.add("dragging");
       e.dataTransfer.effectAllowed = "move";
       try { e.dataTransfer.setData("text/plain", card.dataset.lineId || ""); } catch (err) { /* ignore */ }
+      // Прячем исходную карточку после того, как браузер снимет drag-image
+      setTimeout(function () { card.classList.add("dragging"); }, 0);
     });
 
     list.addEventListener("dragend", function () {
