@@ -648,6 +648,20 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
 }
 .workshop-card-btn:hover { background: #7ee6a0; color: #08130c; border-color: #7ee6a0; }
 
+/* Плавающая кнопка добавления (справа внизу) */
+.fab {
+  position: fixed; right: 1.67rem; bottom: 1.67rem; z-index: 40;
+  display: inline-flex; align-items: center; gap: .5rem;
+  padding: .78rem 1.22rem; border-radius: 999px;
+  background: var(--ok); color: #08130c; border: 1px solid var(--ok);
+  font-family: var(--font-mono); font-size: .95rem; font-weight: 600;
+  text-decoration: none; box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+  transition: background .12s, transform .12s;
+}
+.fab:hover { background: #7ee6a0; color: #08130c; transform: translateY(-2px); }
+.fab-add { font-size: 1.25rem; line-height: 1; }
+@media print { .fab { display: none !important; } }
+
 .line-list {
   display: grid; gap: .78rem;
   grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));

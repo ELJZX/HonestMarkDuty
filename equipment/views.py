@@ -16,6 +16,7 @@ from equipment.forms import (
     EquipmentForm,
     EquipmentStatusLogForm,
     MaintenanceRecordForm,
+    ProductionLineForm,
 )
 from equipment.models import (
     Equipment,
@@ -167,12 +168,55 @@ class EquipmentCreateView(EditorRequiredMixin, CreateView):
     template_name = "equipment/equipment_form.html"
     extra_context = {"title": "Новое оборудование", "back_url": "equipment:equipment_list"}
 
+    def get_initial(self):
+        initial = super().get_initial()
+        line_id = self.request.GET.get("line")
+        if line_id:
+            line = (
+                ProductionLine.objects.filter(pk=line_id).select_related("workshop").first()
+            )
+            if line:
+                initial["line"] = line.pk
+                initial["workshop"] = line.workshop_id
+        return initial
+
     def form_valid(self, form):
         messages.success(self.request, "Оборудование добавлено.")
         return super().form_valid(form)
 
     def get_success_url(self):
         return reverse("equipment:equipment_detail", args=[self.object.pk])
+
+
+class ProductionLineCreateView(EditorRequiredMixin, CreateView):
+    model = ProductionLine
+    form_class = ProductionLineForm
+    template_name = "equipment/line_form.html"
+
+    def get_initial(self):
+        initial = super().get_initial()
+        workshop_id = self.request.GET.get("workshop")
+        if workshop_id:
+            initial["workshop"] = workshop_id
+        return initial
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        workshop_id = self.request.GET.get("workshop") or self.request.POST.get("workshop")
+        if workshop_id:
+            ctx["title"] = "Новая линия"
+            ctx["cancel_url"] = reverse("equipment:workshop_lines", args=[workshop_id])
+        else:
+            ctx["title"] = "Новая линия"
+            ctx["cancel_url"] = reverse("equipment:board")
+        return ctx
+
+    def form_valid(self, form):
+        messages.success(self.request, "Линия добавлена.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse("equipment:workshop_lines", args=[self.object.workshop_id])
 
 
 class EquipmentUpdateView(EditorRequiredMixin, UpdateView):

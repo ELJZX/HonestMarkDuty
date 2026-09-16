@@ -53,4 +53,8 @@
   </div>
 </div>
 {% endif %}
+
+{% if user.can_edit %}
+<a class="fab" href="{% url 'equipment:line_create' %}?workshop={{ workshop.pk }}"><span class="fab-add">+</span> Добавить линию</a>
+{% endif %}
 {% endblock %}

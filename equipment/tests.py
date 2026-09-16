@@ -213,6 +213,53 @@ class EquipmentBoardTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.line.name)
 
+    def test_line_create_view(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("equipment:line_create") + f"?workshop={self.workshop.pk}"
+        )
+        self.assertEqual(response.status_code, 200)
+        response = self.client.post(
+            reverse("equipment:line_create"),
+            {
+                "workshop": self.workshop.pk,
+                "name": "Линия №2",
+                "sort_order": 0,
+                "is_active": "on",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            ProductionLine.objects.filter(workshop=self.workshop, name="Линия №2").exists()
+        )
+
+    def test_viewer_cannot_create_line(self):
+        viewer = User.objects.create_user(
+            username="board-viewer", password="x", role=User.Role.VIEWER
+        )
+        self.client.force_login(viewer)
+        self.assertEqual(self.client.get(reverse("equipment:line_create")).status_code, 403)
+
+    def test_fab_add_buttons(self):
+        self.client.force_login(self.specialist)
+        self.assertContains(
+            self.client.get(reverse("equipment:workshop_lines", args=[self.workshop.pk])),
+            "Добавить линию",
+        )
+        self.assertContains(
+            self.client.get(reverse("equipment:line_equipment", args=[self.line.pk])),
+            "Добавить оборудование",
+        )
+
+    def test_board_fab_admin_only(self):
+        self.client.force_login(self.specialist)
+        self.assertNotContains(self.client.get(reverse("equipment:board")), "Добавить цех")
+        admin = User.objects.create_user(
+            username="board-admin", password="x", role=User.Role.ADMIN, is_superuser=True
+        )
+        self.client.force_login(admin)
+        self.assertContains(self.client.get(reverse("equipment:board")), "Добавить цех")
+
     def test_form_sets_workshop_from_line(self):
         form = EquipmentForm(
             data={

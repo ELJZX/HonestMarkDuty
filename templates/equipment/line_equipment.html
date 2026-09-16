@@ -39,4 +39,8 @@
     {% endfor %}
   </div>
 </div>
+
+{% if user.can_edit %}
+<a class="fab" href="{% url 'equipment:equipment_create' %}?line={{ line.pk }}"><span class="fab-add">+</span> Добавить оборудование</a>
+{% endif %}
 {% endblock %}

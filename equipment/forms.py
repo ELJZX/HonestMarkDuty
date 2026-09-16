@@ -3,6 +3,7 @@ from __future__ import annotations
 from django import forms
 
 from core.forms import StyledModelForm
+from core.models import ProductionLine
 from equipment.models import (
     Equipment,
     EquipmentCategory,
@@ -61,3 +62,10 @@ class EquipmentCategoryForm(StyledModelForm):
     class Meta:
         model = EquipmentCategory
         fields = ("name", "description")
+
+
+class ProductionLineForm(StyledModelForm):
+    class Meta:
+        model = ProductionLine
+        fields = ("workshop", "name", "code", "sort_order", "description", "is_active")
+        widgets = {"description": forms.Textarea(attrs={"rows": 3})}
