@@ -92,6 +92,38 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
+  // Шаблоны быстрого добавления оборудования
+  const EXTRA_FIELDS = ["ip_address", "print_head", "slot"];
+  document.querySelectorAll("[data-preset]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      function setValue(id, value) {
+        const el = document.getElementById(id);
+        if (el && value) el.value = value;
+      }
+      setValue("id_name", btn.dataset.name);
+      setValue("id_manufacturer", btn.dataset.manufacturer);
+      setValue("id_model_name", btn.dataset.model);
+      const category = document.getElementById("id_category");
+      if (category && btn.dataset.category) {
+        const want = btn.dataset.category.toLowerCase();
+        Array.prototype.forEach.call(category.options, function (opt) {
+          if (opt.text.trim().toLowerCase() === want) category.value = opt.value;
+        });
+      }
+      const visible = (btn.dataset.fields || "")
+        .split(",")
+        .map(function (s) { return s.trim(); })
+        .filter(Boolean);
+      EXTRA_FIELDS.forEach(function (name) {
+        const row = document.querySelector('.form-row[data-field="' + name + '"]');
+        if (row) row.hidden = visible.indexOf(name) === -1;
+      });
+      document.querySelectorAll("[data-preset]").forEach(function (b) {
+        b.classList.toggle("active", b === btn);
+      });
+    });
+  });
+
   // Перетаскивание карточек ([data-sortable]) с сохранением порядка
   document.querySelectorAll("[data-sortable]").forEach(function (list) {
     const form = document.getElementById(list.dataset.form);

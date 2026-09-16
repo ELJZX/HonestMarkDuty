@@ -12,6 +12,51 @@ from equipment.models import (
 )
 
 
+# Шаблоны быстрого добавления оборудования
+EQUIPMENT_PRESETS = [
+    {
+        "label": "Терминал · ASUS · Tinkerboard 2S",
+        "name": "Терминал",
+        "manufacturer": "ASUS",
+        "model_name": "Tinkerboard 2S",
+        "category": "Терминал",
+        "fields": "",
+    },
+    {
+        "label": "Камера · Datalogic · Matrix 220",
+        "name": "Камера",
+        "manufacturer": "Datalogic",
+        "model_name": "Matrix 220",
+        "category": "Камера",
+        "fields": "ip_address",
+    },
+    {
+        "label": "Принтер · VideoJet · 6330 / 6630",
+        "name": "Принтер",
+        "manufacturer": "VideoJet",
+        "model_name": "6330 / 6630",
+        "category": "Принтер",
+        "fields": "ip_address,print_head",
+    },
+    {
+        "label": "Принтер · TSC · PEX",
+        "name": "Принтер",
+        "manufacturer": "TSC",
+        "model_name": "PEX",
+        "category": "Принтер",
+        "fields": "ip_address",
+    },
+    {
+        "label": "Принтер · Markem Imaje · 9450",
+        "name": "Принтер",
+        "manufacturer": "Markem Imaje",
+        "model_name": "9450",
+        "category": "Принтер",
+        "fields": "ip_address,slot",
+    },
+]
+
+
 class EquipmentForm(StyledModelForm):
     class Meta:
         model = Equipment
@@ -24,6 +69,9 @@ class EquipmentForm(StyledModelForm):
             "line",
             "manufacturer",
             "model_name",
+            "ip_address",
+            "print_head",
+            "slot",
             "serial_number",
             "commissioned_at",
             "status",
@@ -34,7 +82,12 @@ class EquipmentForm(StyledModelForm):
             "notes",
             "is_active",
         )
-        widgets = {"notes": forms.Textarea(attrs={"rows": 3})}
+        widgets = {
+            "notes": forms.Textarea(attrs={"rows": 3}),
+            "ip_address": forms.TextInput(attrs={"placeholder": "192.168.0.10"}),
+            "print_head": forms.TextInput(attrs={"placeholder": "32 / 53"}),
+            "slot": forms.TextInput(attrs={"placeholder": "первый / второй"}),
+        }
 
     def clean(self):
         cleaned = super().clean()

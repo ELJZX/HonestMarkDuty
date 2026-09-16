@@ -374,6 +374,36 @@ class EquipmentBoardTests(TestCase):
             403,
         )
 
+    def test_create_equipment_with_extra_fields(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(
+            reverse("equipment:equipment_create"),
+            {
+                "name": "Принтер",
+                "inventory_number": "EQ-500",
+                "manufacturer": "VideoJet",
+                "model_name": "6330",
+                "ip_address": "192.168.0.10",
+                "print_head": "32",
+                "slot": "первый",
+                "status": EquipmentStatus.OPERATIONAL,
+                "criticality": Criticality.MEDIUM,
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        equipment = Equipment.objects.get(inventory_number="EQ-500")
+        self.assertEqual(equipment.ip_address, "192.168.0.10")
+        self.assertEqual(equipment.print_head, "32")
+        self.assertEqual(equipment.slot, "первый")
+
+    def test_create_form_has_presets(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("equipment:equipment_create"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Быстрое добавление")
+        self.assertContains(response, "Matrix 220")
+        self.assertContains(response, "Markem Imaje")
+
     def test_form_sets_workshop_from_line(self):
         form = EquipmentForm(
             data={

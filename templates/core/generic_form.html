@@ -4,6 +4,7 @@
 {% block content %}
 <div class="card" style="max-width:720px">
   <div class="card-header"><div class="card-title">{{ title }}</div></div>
+  {% block form_intro %}{% endblock %}
   <form method="post" novalidate>
     {% csrf_token %}
     {% include "partials/form_fields.html" %}

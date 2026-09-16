@@ -12,6 +12,7 @@ from django.views.generic import CreateView, DetailView, DeleteView, ListView, U
 from core.mixins import AdminRequiredMixin, EditorRequiredMixin
 from core.models import ProductionLine, ProductionSite, Workshop
 from equipment.forms import (
+    EQUIPMENT_PRESETS,
     EquipmentCategoryForm,
     EquipmentForm,
     EquipmentStatusLogForm,
@@ -167,6 +168,11 @@ class EquipmentCreateView(EditorRequiredMixin, CreateView):
     form_class = EquipmentForm
     template_name = "equipment/equipment_form.html"
     extra_context = {"title": "Новое оборудование", "back_url": "equipment:equipment_list"}
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["presets"] = EQUIPMENT_PRESETS
+        return ctx
 
     def get_initial(self):
         initial = super().get_initial()

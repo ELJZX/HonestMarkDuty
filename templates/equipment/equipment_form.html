@@ -1,1 +1,18 @@
 ﻿{% extends "core/generic_form.html" %}
+{% block form_intro %}
+{% if presets %}
+<div class="preset-panel">
+  <div class="preset-title">Быстрое добавление</div>
+  <div class="preset-list">
+    {% for p in presets %}
+    <button type="button" class="btn btn-sm preset-btn" data-preset
+            data-name="{{ p.name }}"
+            data-manufacturer="{{ p.manufacturer }}"
+            data-model="{{ p.model_name }}"
+            data-category="{{ p.category }}"
+            data-fields="{{ p.fields }}">{{ p.label }}</button>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

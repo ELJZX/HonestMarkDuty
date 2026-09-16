@@ -167,6 +167,19 @@ code, .mono { font-family: var(--font-mono); }
 }
 .back-arrow:hover { background: var(--surface-3); border-color: #454545; color: var(--accent); }
 .page-back { display: flex; margin-bottom: .78rem; }
+
+/* ---------- Шаблоны быстрого добавления оборудования ---------- */
+.preset-panel {
+  border: 1px dashed var(--border-strong); border-radius: var(--radius);
+  padding: 1rem; margin-bottom: 1.22rem; background: var(--surface-2);
+}
+.preset-title {
+  font-family: var(--font-mono); font-size: .78rem; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--dim); margin-bottom: .67rem;
+}
+.preset-list { display: flex; flex-wrap: wrap; gap: .5rem; }
+.preset-btn { white-space: normal; text-align: left; }
+.preset-btn.active { border-color: var(--ok); color: var(--ok); }
 .topbar-user { display: flex; align-items: center; gap: .89rem; font-size: 1rem; flex-wrap: wrap; justify-content: flex-end; }
 .topbar-actions { display: flex; align-items: center; gap: .56rem; flex-wrap: wrap; }
 .account-link { font-size: 1.02rem; }
