@@ -77,17 +77,29 @@ class EquipmentBoardView(LoginRequiredMixin, ListView):
         return (
             Workshop.objects.filter(is_active=True)
             .annotate(
-                lines_total=Count("lines", filter=Q(lines__is_active=True), distinct=True),
-                equipment_total=Count("equipment", filter=Q(equipment__is_active=True), distinct=True),
+                total_lines=Count("lines", distinct=True),
+                active_lines=Count("lines", filter=Q(lines__is_active=True), distinct=True),
+                total_equipment=Count("equipment", distinct=True),
+                active_equipment=Count(
+                    "equipment", filter=Q(equipment__is_active=True), distinct=True
+                ),
+                operational_equipment=Count(
+                    "equipment",
+                    filter=Q(equipment__is_active=True, equipment__status=EquipmentStatus.OPERATIONAL),
+                    distinct=True,
+                ),
             )
             .order_by("name")
         )
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["equipment_total"] = Equipment.objects.filter(is_active=True).count()
-        ctx["lines_total"] = ProductionLine.objects.filter(is_active=True).count()
-        ctx["unassigned_total"] = Equipment.objects.filter(is_active=True, line__isnull=True).count()
+        for workshop in ctx["workshops"]:
+            total = workshop.total_equipment or 0
+            operational = workshop.operational_equipment or 0
+            workshop.ready_percent = (
+                f"{operational / total * 100:.2f}".replace(".", ",") if total else "0,00"
+            )
         return ctx
 
 

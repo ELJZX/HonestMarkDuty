@@ -8,44 +8,33 @@
   <a class="btn btn-primary btn-sm" href="{% url 'equipment:equipment_create' %}">+ Оборудование</a>
 {% endblock %}
 {% block content %}
-<div class="grid grid-4 mb-3">
-  <div class="stat">
-    <div class="stat-label">Цеха</div>
-    <div class="stat-value">{{ workshops|length }}</div>
-  </div>
-  <div class="stat">
-    <div class="stat-label">Линии</div>
-    <div class="stat-value">{{ lines_total }}</div>
-  </div>
-  <div class="stat">
-    <div class="stat-label">Оборудование</div>
-    <div class="stat-value">{{ equipment_total }}</div>
-  </div>
-  <div class="stat">
-    <div class="stat-label">Без линии</div>
-    <div class="stat-value">{{ unassigned_total }}</div>
-  </div>
-</div>
-
 <div class="card">
   <div class="card-header">
-    <div class="card-title">Цеха</div>
-    <div class="card-sub">Выберите цех, чтобы открыть список линий</div>
+    <div class="card-title">Список цехов</div>
   </div>
 
   <div class="workshop-board">
     {% for w in workshops %}
-    <a class="workshop-card" href="{% url 'equipment:workshop_lines' w.pk %}">
-      <div class="workshop-card-img">
-        <img src="{% static 'img/workshop.svg' %}" alt="{{ w.name }}">
-      </div>
-      <div class="workshop-card-body">
+    <div class="workshop-card">
+      <div class="workshop-card-head">
         <div class="workshop-card-name">{{ w.name }}</div>
-        <div class="workshop-card-meta">
-          {{ w.lines_total }} линий · {{ w.equipment_total }} ед. оборудования
-        </div>
+        <img class="workshop-card-thumb" src="{% static 'img/workshop.svg' %}" alt="{{ w.name }}">
       </div>
-    </a>
+
+      <div class="workshop-card-stats">
+        <div>Линии: <b>{{ w.active_lines }}</b> из {{ w.total_lines }}</div>
+        <div>Оборудование: <b>{{ w.active_equipment }}</b> из {{ w.total_equipment }}</div>
+      </div>
+
+      <hr class="workshop-card-divider">
+
+      <div class="workshop-card-valid">
+        <div>В работе: <b>{{ w.operational_equipment }}</b></div>
+        <div>Готовность: <b>{{ w.ready_percent }}%</b></div>
+      </div>
+
+      <a class="btn workshop-card-btn" href="{% url 'equipment:workshop_lines' w.pk %}">Подробнее</a>
+    </div>
     {% empty %}
     <div class="empty">Цеха не добавлены</div>
     {% endfor %}

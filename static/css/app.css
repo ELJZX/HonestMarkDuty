@@ -603,21 +603,40 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
 
 /* ---------- Доска оборудования (цех → линия → оборудование) ---------- */
 .workshop-board {
-  display: grid; gap: 1.22rem;
-  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+  display: grid; gap: 1.1rem;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
 }
 .workshop-card {
-  display: flex; flex-direction: column; overflow: hidden;
-  background: var(--surface-2); border: 1px solid var(--border);
-  border-radius: var(--radius); color: inherit; text-decoration: none;
-  transition: border-color .12s, transform .12s;
+  display: flex; flex-direction: column; gap: .7rem;
+  background: var(--surface-2); border: 1px solid var(--border-strong);
+  border-radius: .7rem; padding: .9rem;
 }
-.workshop-card:hover { border-color: #454545; transform: translateY(-2px); }
-.workshop-card-img { aspect-ratio: 16 / 9; background: #121212; border-bottom: 1px solid var(--border); }
-.workshop-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.workshop-card-body { padding: 1.11rem 1.22rem; }
-.workshop-card-name { font-size: 1.2rem; font-weight: 600; margin-bottom: .33rem; }
-.workshop-card-meta { font-family: var(--font-mono); font-size: .82rem; color: var(--dim); }
+.workshop-card-head {
+  display: flex; align-items: center; justify-content: space-between; gap: .6rem;
+  background: var(--surface-3); border: 1px solid var(--border);
+  border-radius: .5rem; padding: .65rem .8rem; min-height: 4.4rem;
+}
+.workshop-card-name {
+  flex: 1; text-align: center; font-size: 1.05rem; font-weight: 700; line-height: 1.25;
+}
+.workshop-card-thumb {
+  flex: none; width: 4.4rem; height: 2.8rem; object-fit: cover;
+  border-radius: .35rem; border: 1px solid var(--border-strong); background: #0d0d0d;
+}
+.workshop-card-stats,
+.workshop-card-valid { display: flex; flex-direction: column; gap: .28rem; font-size: .92rem; color: var(--muted); }
+.workshop-card-stats b,
+.workshop-card-valid b { color: var(--text); }
+.workshop-card-divider {
+  height: 2px; border: 0; margin: .2rem 0;
+  background: linear-gradient(90deg, var(--info), rgba(122, 168, 240, .25));
+  border-radius: 2px;
+}
+.workshop-card-btn {
+  margin-top: auto; width: 100%; justify-content: center;
+  background: var(--ok); color: #08130c; border-color: var(--ok); font-weight: 600;
+}
+.workshop-card-btn:hover { background: #7ee6a0; color: #08130c; border-color: #7ee6a0; }
 
 .line-list {
   display: grid; gap: .78rem;
