@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -167,6 +168,33 @@ class EquipmentViewTests(TestCase):
         response = self.client.post(reverse("equipment:category_create"), {"name": "Новая"})
         self.assertEqual(response.status_code, 302)
         self.assertTrue(EquipmentCategory.objects.filter(name="Новая").exists())
+
+
+class SeedStructureCommandTests(TestCase):
+    def test_seed_structure_order(self):
+        call_command("seed_structure", verbosity=0)
+        names = list(
+            Workshop.objects.filter(is_active=True)
+            .order_by("sort_order", "name")
+            .values_list("name", flat=True)
+        )
+        self.assertEqual(names, ["Цех №1", "КМЦ", "ПМЦ", "ПСМ", "Творожный цех"])
+
+        kmc = Workshop.objects.get(name="КМЦ")
+        lines = list(
+            kmc.lines.filter(is_active=True)
+            .order_by("sort_order", "name")
+            .values_list("name", flat=True)
+        )
+        self.assertEqual(lines, ["AVE", "Finnah", "Trepko", "C3 Flex", "Джонга 1,2"])
+
+        pmc = Workshop.objects.get(name="ПСМ")
+        lines = list(
+            pmc.lines.filter(is_active=True)
+            .order_by("sort_order", "name")
+            .values_list("name", flat=True)
+        )
+        self.assertEqual(lines, ["Школьник (А1(1),А1(2))", "EL4", "A3 Flex", "Serac"])
 
 
 class EquipmentBoardTests(TestCase):
