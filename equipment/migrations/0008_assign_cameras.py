@@ -65,17 +65,18 @@ LINE_ALIASES = {
 }
 
 
-def seed_cameras(apps, schema_editor):
+def assign_cameras(apps, schema_editor):
     if "test" in sys.argv:
         return
     Equipment = apps.get_model("equipment", "Equipment")
-    EquipmentCategory = apps.get_model("equipment", "EquipmentCategory")
     Workshop = apps.get_model("core", "Workshop")
     ProductionLine = apps.get_model("core", "ProductionLine")
+    cameras = {c.camera_id: c for c in Equipment.objects.filter(is_camera=True)}
 
-    category, _ = EquipmentCategory.objects.get_or_create(name="Камера")
-
-    for camera_id, workshop_hint, line_hint, ip in CAMERAS:
+    for camera_id, workshop_hint, line_hint, _ip in CAMERAS:
+        camera = cameras.get(camera_id)
+        if camera is None:
+            continue
         canonical = None
         workshop = None
         for name, aliases in WORKSHOP_ALIASES.items():
@@ -83,37 +84,24 @@ def seed_cameras(apps, schema_editor):
                 canonical = name
                 workshop = Workshop.objects.filter(name__in=aliases).first()
                 break
-        line = None
-        if canonical and workshop:
+        if workshop is None:
+            continue
+        camera.workshop = workshop
+        if canonical:
             line_name = LINE_ALIASES.get(canonical, {}).get(line_hint, line_hint)
-            line = ProductionLine.objects.filter(workshop=workshop, name=line_name).first()
-
-        defaults = {
-            "name": line_hint,
-            "category": category,
-            "workshop": workshop,
-            "line": line,
-            "ip_address": ip,
-            "manufacturer": "Datalogic",
-            "model_name": "Matrix 220",
-            "is_camera": True,
-            "is_active": True,
-        }
-        existing = Equipment.objects.filter(camera_id=camera_id).first()
-        if existing is None:
-            Equipment.objects.create(camera_id=camera_id, **defaults)
-        else:
-            for field, value in defaults.items():
-                setattr(existing, field, value)
-            existing.save()
+            camera.line = ProductionLine.objects.filter(
+                workshop=workshop, name=line_name
+            ).first()
+        camera.save()
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("equipment", "0006_equipment_is_camera"),
+        ("equipment", "0007_seed_cameras"),
+        ("core", "0004_seed_structure"),
     ]
 
     operations = [
-        migrations.RunPython(seed_cameras, migrations.RunPython.noop),
+        migrations.RunPython(assign_cameras, migrations.RunPython.noop),
     ]
