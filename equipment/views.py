@@ -136,10 +136,12 @@ class CameraWallView(LoginRequiredMixin, ListView):
                     "name": workshop.name if workshop else "Без цеха",
                     "lines": [],
                     "_lines": {},
+                    "count": 0,
                 }
                 by_workshop[wkey] = group
                 groups.append(group)
             group = by_workshop[wkey]
+            group["count"] += 1
             line = camera.line
             lkey = line.pk if line else 0
             if lkey not in group["_lines"]:

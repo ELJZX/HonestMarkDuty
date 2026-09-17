@@ -769,6 +769,17 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
 .camera-line { margin-bottom: 1rem; }
 .camera-line-title { font-family: var(--font-mono); font-size: .9rem; color: var(--dim); margin-bottom: .44rem; }
 
+.cam-workshops { display: grid; gap: 1.33rem; grid-template-columns: repeat(auto-fit, minmax(30rem, 1fr)); }
+@media (max-width: 900px) { .cam-workshops { grid-template-columns: 1fr; } }
+.cam-workshop { background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: .7rem; padding: 1rem; }
+.cam-workshop-head {
+  display: flex; align-items: center; gap: .67rem;
+  background: var(--surface-3); border: 1px solid var(--border);
+  border-radius: .5rem; padding: .6rem .8rem; margin-bottom: 1rem;
+}
+.cam-workshop-name { flex: 1; font-size: 1.1rem; font-weight: 700; }
+.cam-workshop .cam-wall { grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); }
+
 .cam-lightbox { position: fixed; inset: 0; z-index: 210; display: flex; align-items: center; justify-content: center; }
 .cam-lightbox[hidden] { display: none; }
 .cam-lightbox-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, .8); }
