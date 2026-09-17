@@ -2,16 +2,9 @@ from django.contrib import admin
 
 from equipment.models import (
     Equipment,
-    EquipmentCategory,
     EquipmentStatusLog,
     MaintenanceRecord,
 )
-
-
-@admin.register(EquipmentCategory)
-class EquipmentCategoryAdmin(admin.ModelAdmin):
-    list_display = ("name", "description")
-    search_fields = ("name",)
 
 
 class EquipmentStatusLogInline(admin.TabularInline):
@@ -29,7 +22,7 @@ class MaintenanceRecordInline(admin.TabularInline):
 @admin.register(Equipment)
 class EquipmentAdmin(admin.ModelAdmin):
     list_display = ("name", "site", "workshop", "line", "status", "criticality")
-    list_filter = ("status", "criticality", "site", "workshop", "line", "category")
+    list_filter = ("status", "criticality", "site", "workshop", "line")
     search_fields = ("name", "serial_number", "model_name")
     inlines = (EquipmentStatusLogInline, MaintenanceRecordInline)
 

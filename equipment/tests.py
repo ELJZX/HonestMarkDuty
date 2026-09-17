@@ -14,7 +14,6 @@ from equipment.forms import EquipmentForm
 from equipment.models import (
     Criticality,
     Equipment,
-    EquipmentCategory,
     EquipmentStatus,
     MaintenanceKind,
     MaintenanceRecord,
@@ -77,9 +76,8 @@ class EquipmentViewTests(TestCase):
             username="spec", password="x", role=User.Role.SPECIALIST
         )
         self.viewer = User.objects.create_user(username="viewer", password="x", role=User.Role.VIEWER)
-        self.category = EquipmentCategory.objects.create(name="Упаковочное")
         self.equipment = Equipment.objects.create(
-            name="Упаковщик", category=self.category,
+            name="Упаковщик",
             status=EquipmentStatus.OPERATIONAL,
         )
 
@@ -168,13 +166,6 @@ class EquipmentViewTests(TestCase):
         self.equipment.refresh_from_db()
         self.assertEqual(self.equipment.maintenance_records.count(), 1)
         self.assertIsNotNone(self.equipment.next_maintenance_at)
-
-    def test_category_views(self):
-        self.client.force_login(self.specialist)
-        self.assertEqual(self.client.get(reverse("equipment:category_list")).status_code, 200)
-        response = self.client.post(reverse("equipment:category_create"), {"name": "Новая"})
-        self.assertEqual(response.status_code, 302)
-        self.assertTrue(EquipmentCategory.objects.filter(name="Новая").exists())
 
 
 class SeedStructureCommandTests(TestCase):
@@ -455,13 +446,11 @@ class EquipmentFilterAndEdgeTests(TestCase):
         self.site = ProductionSite.objects.create(name="Площадка")
         self.workshop = Workshop.objects.create(name="Цех", code="Ц", site=self.site)
         self.line = ProductionLine.objects.create(workshop=self.workshop, name="Линия", code="L")
-        self.category = EquipmentCategory.objects.create(name="Кат")
         self.equipment = Equipment.objects.create(
             name="Обор",
             site=self.site,
             workshop=self.workshop,
             line=self.line,
-            category=self.category,
         )
 
     def test_list_applies_all_filters(self):
@@ -472,7 +461,6 @@ class EquipmentFilterAndEdgeTests(TestCase):
                 "site": self.site.pk,
                 "workshop": self.workshop.pk,
                 "status": self.equipment.status,
-                "category": self.category.pk,
             },
         )
         self.assertEqual(response.status_code, 200)

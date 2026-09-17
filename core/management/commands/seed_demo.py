@@ -21,7 +21,6 @@ from documents.models import Document, DocumentTemplate, DocumentType
 from equipment.models import (
     Criticality,
     Equipment,
-    EquipmentCategory,
     EquipmentStatus,
     MaintenanceKind,
     MaintenanceRecord,
@@ -189,8 +188,6 @@ class Command(BaseCommand):
 
     # -------------------------------------------------------------- equipment
     def _equipment(self, site, workshops, lines):
-        packing_cat, _ = EquipmentCategory.objects.get_or_create(name="Упаковочное оборудование")
-        marking_cat, _ = EquipmentCategory.objects.get_or_create(name="Маркировочное оборудование")
         line_by_name = {
             "Упаковочная машина Multivac": "L-11",
             "Принтер этикеток Zebra ZT411": "L-11",
@@ -198,16 +195,15 @@ class Command(BaseCommand):
             "Камера маркировки": "L-21",
         }
         equipment_list = []
-        for name, cat, workshop, status in [
-            ("Упаковочная машина Multivac", packing_cat, workshops[1], EquipmentStatus.OPERATIONAL),
-            ("Принтер этикеток Zebra ZT411", marking_cat, workshops[1], EquipmentStatus.MAINTENANCE),
-            ("Термоупаковщик", packing_cat, workshops[0], EquipmentStatus.REPAIR),
-            ("Камера маркировки", marking_cat, workshops[2], EquipmentStatus.OPERATIONAL),
+        for name, workshop, status in [
+            ("Упаковочная машина Multivac", workshops[1], EquipmentStatus.OPERATIONAL),
+            ("Принтер этикеток Zebra ZT411", workshops[1], EquipmentStatus.MAINTENANCE),
+            ("Термоупаковщик", workshops[0], EquipmentStatus.REPAIR),
+            ("Камера маркировки", workshops[2], EquipmentStatus.OPERATIONAL),
         ]:
             equipment, _ = Equipment.objects.get_or_create(
                 name=name,
                 defaults={
-                    "category": cat,
                     "site": site,
                     "workshop": workshop,
                     "manufacturer": "Demo",

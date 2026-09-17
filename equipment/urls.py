@@ -24,7 +24,4 @@ urlpatterns = [
     path("<int:pk>/delete/", views.EquipmentDeleteView.as_view(), name="equipment_delete"),
     path("<int:pk>/status/", views.EquipmentStatusChangeView.as_view(), name="status_change"),
     path("<int:pk>/maintenance/", views.MaintenanceRecordCreateView.as_view(), name="maintenance_create"),
-    path("categories/", views.EquipmentCategoryListView.as_view(), name="category_list"),
-    path("categories/new/", views.EquipmentCategoryCreateView.as_view(), name="category_create"),
-    path("categories/<int:pk>/edit/", views.EquipmentCategoryUpdateView.as_view(), name="category_update"),
 ]

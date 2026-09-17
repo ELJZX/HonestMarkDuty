@@ -20,31 +20,10 @@ class Criticality(models.TextChoices):
     CRITICAL = "critical", "Критическая"
 
 
-class EquipmentCategory(AuditedModel):
-    name = models.CharField("Категория оборудования", max_length=150, unique=True)
-    description = models.CharField("Описание", max_length=300, blank=True)
-
-    class Meta:
-        verbose_name = "Категория оборудования"
-        verbose_name_plural = "Категории оборудования"
-        ordering = ("name",)
-
-    def __str__(self) -> str:
-        return self.name
-
-
 class Equipment(AuditedModel):
     """Единица оборудования на производственной площадке."""
 
     name = models.CharField("Наименование", max_length=250)
-    category = models.ForeignKey(
-        EquipmentCategory,
-        verbose_name="Категория",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="equipment",
-    )
     site = models.ForeignKey(
         "core.ProductionSite",
         verbose_name="Производственная площадка",

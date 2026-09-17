@@ -7,7 +7,7 @@ from __future__ import annotations
 from django.core.management.base import BaseCommand
 
 from core.models import ProductionLine, Workshop
-from equipment.models import Equipment, EquipmentCategory
+from equipment.models import Equipment
 
 # (id камеры в Camera Control, цех, линия, IP)
 CAMERAS = [
@@ -88,7 +88,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         verbose = options.get("verbosity", 1) > 0
-        category, _ = EquipmentCategory.objects.get_or_create(name="Камера")
         created = updated = 0
         for camera_id, workshop_hint, line_hint, ip in CAMERAS:
             canonical, workshop = self._resolve_workshop(workshop_hint)
@@ -101,7 +100,6 @@ class Command(BaseCommand):
                     ).first()
             defaults = {
                 "name": line_hint,
-                "category": category,
                 "workshop": workshop,
                 "line": line,
                 "ip_address": ip,
