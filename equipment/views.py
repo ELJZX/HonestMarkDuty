@@ -156,9 +156,7 @@ class EquipmentDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["status_logs"] = self.object.status_logs.select_related("changed_by")
-        ctx["maintenance_records"] = self.object.maintenance_records.select_related("created_by")
         ctx["status_form"] = EquipmentStatusLogForm(initial={"status": self.object.status})
-        ctx["maintenance_form"] = MaintenanceRecordForm()
         return ctx
 
 

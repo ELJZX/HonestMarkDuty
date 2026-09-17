@@ -93,7 +93,15 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // Шаблоны быстрого добавления оборудования
-  document.querySelectorAll("[data-preset]").forEach(function (btn) {
+  const OPTIONAL_FIELDS = ["print_head"];
+  const presetButtons = document.querySelectorAll("[data-preset]");
+  if (presetButtons.length) {
+    OPTIONAL_FIELDS.forEach(function (name) {
+      const row = document.querySelector('.form-row[data-field="' + name + '"]');
+      if (row) row.hidden = true;
+    });
+  }
+  presetButtons.forEach(function (btn) {
     btn.addEventListener("click", function () {
       function setValue(id, value) {
         const el = document.getElementById(id);
@@ -109,7 +117,14 @@ document.addEventListener("DOMContentLoaded", function () {
           if (opt.text.trim().toLowerCase() === want) category.value = opt.value;
         });
       }
-      document.querySelectorAll("[data-preset]").forEach(function (b) {
+      const visible = (btn.dataset.fields || "")
+        .split(",")
+        .map(function (s) { return s.trim(); });
+      OPTIONAL_FIELDS.forEach(function (name) {
+        const row = document.querySelector('.form-row[data-field="' + name + '"]');
+        if (row) row.hidden = visible.indexOf(name) === -1;
+      });
+      presetButtons.forEach(function (b) {
         b.classList.toggle("active", b === btn);
       });
     });

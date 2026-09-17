@@ -67,11 +67,13 @@ class EquipmentForm(StyledModelForm):
             "manufacturer",
             "model_name",
             "ip_address",
+            "print_head",
             "notes",
         )
         widgets = {
             "notes": forms.Textarea(attrs={"rows": 3}),
             "ip_address": forms.TextInput(attrs={"placeholder": "192.168.0.10"}),
+            "print_head": forms.TextInput(attrs={"placeholder": "32 / 53"}),
         }
 
     def clean(self):

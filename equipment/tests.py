@@ -112,7 +112,7 @@ class EquipmentViewTests(TestCase):
     def test_form_has_minimal_fields(self):
         self.assertEqual(
             list(EquipmentForm().fields.keys()),
-            ["name", "workshop", "line", "manufacturer", "model_name", "ip_address", "notes"],
+            ["name", "workshop", "line", "manufacturer", "model_name", "ip_address", "print_head", "notes"],
         )
 
     def test_update_equipment(self):

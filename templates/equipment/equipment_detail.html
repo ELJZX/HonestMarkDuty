@@ -40,28 +40,6 @@
         {% endfor %}
       </ul>
     </div>
-
-    <div class="card">
-      <div class="card-header"><div class="card-title">Работы по оборудованию</div></div>
-      <div class="table-wrap">
-        <table class="data">
-          <thead><tr><th>Дата</th><th>Вид</th><th>Описание</th><th>Исполнитель</th><th>Стоимость</th></tr></thead>
-          <tbody>
-            {% for r in maintenance_records %}
-            <tr>
-              <td class="mono nowrap">{{ r.performed_at|date:"d.m.Y" }}</td>
-              <td>{{ r.get_kind_display }}</td>
-              <td>{{ r.description|truncatechars:80 }}</td>
-              <td>{{ r.performer|default:"—" }}</td>
-              <td class="mono">{{ r.cost|default:"—" }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="5" class="empty">Работ не зарегистрировано</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
   </div>
 
   <div>
@@ -71,15 +49,6 @@
         {% csrf_token %}
         {% include "partials/form_fields.html" with form=status_form %}
         <div class="form-actions"><button class="btn btn-primary" type="submit">Сохранить состояние</button></div>
-      </form>
-    </div>
-
-    <div class="card">
-      <div class="card-header"><div class="card-title">Добавить работы</div></div>
-      <form method="post" action="{% url 'equipment:maintenance_create' equipment.pk %}">
-        {% csrf_token %}
-        {% include "partials/form_fields.html" with form=maintenance_form %}
-        <div class="form-actions"><button class="btn btn-primary" type="submit">Добавить</button></div>
       </form>
     </div>
 
