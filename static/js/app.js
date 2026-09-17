@@ -130,19 +130,30 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  // Живые кадры камер (обновляем снимок каждые 2 секунды)
-  const camFrames = document.querySelectorAll("img[data-cam-frame]");
-  if (camFrames.length) {
-    camFrames.forEach(function (img) {
-      img.dataset.src = img.getAttribute("src");
-    });
-    setInterval(function () {
-      camFrames.forEach(function (img) {
-        if (!img.isConnected) return;
-        img.src = img.dataset.src + "?_=" + Date.now();
-      });
-    }, 2000);
-  }
+  // Живые кадры камер: обновляем последовательно, без наложения запросов
+  document.querySelectorAll("img[data-cam-frame]").forEach(function (img) {
+    const base = img.getAttribute("src");
+    img.dataset.src = base;
+
+    function schedule(delay) {
+      setTimeout(load, delay);
+    }
+
+    function load() {
+      if (!img.isConnected) return schedule(5000);
+      const next = new Image();
+      next.onload = function () {
+        img.src = next.src;
+        schedule(2000);
+      };
+      next.onerror = function () {
+        schedule(10000);
+      };
+      next.src = base + "?_=" + Date.now();
+    }
+
+    schedule(0);
+  });
 
   // Перетаскивание карточек ([data-sortable]) с сохранением порядка
   document.querySelectorAll("[data-sortable]").forEach(function (list) {
