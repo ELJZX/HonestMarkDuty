@@ -19,20 +19,10 @@
         <span class="badge {{ equipment.status_badge }}">{{ equipment.get_status_display }}</span>
       </div>
       <dl class="detail-grid">
-        <dt>Категория</dt><dd>{{ equipment.category|default:"—" }}</dd>
-        <dt>Площадка</dt><dd>{{ equipment.site|default:"—" }}</dd>
         <dt>Цех</dt><dd>{{ equipment.workshop|default:"—" }}</dd>
         <dt>Производитель</dt><dd>{{ equipment.manufacturer|default:"—" }}</dd>
         <dt>Модель</dt><dd>{{ equipment.model_name|default:"—" }}</dd>
         <dt>IP-адрес</dt><dd class="mono">{{ equipment.ip_address|default:"—" }}</dd>
-        <dt>Печатающая головка</dt><dd>{{ equipment.print_head|default:"—" }}</dd>
-        <dt>Значение</dt><dd>{{ equipment.slot|default:"—" }}</dd>
-        <dt>Серийный №</dt><dd class="mono">{{ equipment.serial_number|default:"—" }}</dd>
-        <dt>Введено в экспл.</dt><dd>{{ equipment.commissioned_at|date:"d.m.Y"|default:"—" }}</dd>
-        <dt>Критичность</dt><dd>{{ equipment.get_criticality_display }}</dd>
-        <dt>Последнее ТО</dt><dd>{{ equipment.last_maintenance_at|date:"d.m.Y"|default:"—" }}</dd>
-        <dt>Следующее ТО</dt><dd>{{ equipment.next_maintenance_at|date:"d.m.Y"|default:"—" }} {% if equipment.is_maintenance_overdue %}<span class="badge badge-danger">просрочено</span>{% endif %}</dd>
-        <dt>Ответственный</dt><dd>{{ equipment.responsible.full_name|default:"—" }}</dd>
         <dt>Примечания</dt><dd>{{ equipment.notes|default:"—"|linebreaksbr }}</dd>
       </dl>
     </div>
