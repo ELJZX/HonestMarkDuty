@@ -14,7 +14,11 @@ class RoleRequiredMixin(LoginRequiredMixin):
         if not request.user.is_authenticated:
             return super().dispatch(request, *args, **kwargs)
         user = request.user
-        is_admin = user.is_superuser or getattr(user, "role", None) == "admin"
+        is_admin = (
+            user.is_superuser
+            or getattr(user, "role", None) == "admin"
+            or getattr(user, "is_staff", False)
+        )
         if is_admin:
             return super().dispatch(request, *args, **kwargs)
         if self.admin_only:
