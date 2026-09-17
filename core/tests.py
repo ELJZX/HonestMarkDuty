@@ -7,6 +7,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.core.management import call_command
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from accounts.models import User
 from checklists.models import EquipmentChecklist
@@ -17,6 +18,7 @@ from core.models import AuditLog, ProductionSite, Workshop
 from core.views import server_error
 from documents.models import Document
 from journal.models import JournalEntry
+from shifts.models import Shift
 
 
 class VersionTests(TestCase):
@@ -279,6 +281,14 @@ class SeedDemoCommandTests(TestCase):
         self.assertEqual(User.objects.count(), users)
         self.assertEqual(Workshop.objects.count(), workshops)
         self.assertEqual(Document.objects.count(), documents)
+
+    def test_seed_demo_survives_duplicate_shifts(self):
+        user = User.objects.create_user(username="dup-spec", password="x")
+        today = timezone.localdate()
+        Shift.objects.create(date=today, kind=Shift.Kind.DAY, opened_by=user)
+        Shift.objects.create(date=today, kind=Shift.Kind.DAY, opened_by=user)
+        call_command("seed_demo")
+        self.assertTrue(Shift.objects.filter(date=today).exists())
 
     def test_seed_demo_preserves_existing_admin_names(self):
         User.objects.create_user(

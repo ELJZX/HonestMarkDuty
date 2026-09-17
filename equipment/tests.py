@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from accounts.models import User
 from core.models import ProductionLine, ProductionSite, Workshop
-from equipment.forms import EquipmentForm
+from equipment.forms import CameraForm, EquipmentForm
 from equipment.models import (
     Criticality,
     Equipment,
@@ -618,3 +618,155 @@ class CameraTests(TestCase):
         self.client.force_login(self.specialist)
         response = self.client.post(reverse("equipment:camera_delete", args=[self.camera.pk]))
         self.assertEqual(response.status_code, 403)
+
+
+class CameraExtraTests(TestCase):
+    """Группировка камер, доступы, редиректы и фильтрация камер из учёта."""
+
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username="camx-admin", password="x", role=User.Role.ADMIN, is_superuser=True, is_staff=True
+        )
+        self.specialist = User.objects.create_user(
+            username="camx-spec", password="x", role=User.Role.SPECIALIST
+        )
+        self.kmc = Workshop.objects.create(name="КМЦ", code="КМЦ-X")
+        self.line1 = ProductionLine.objects.create(workshop=self.kmc, name="AVE", code="L-AVE-X")
+        self.line2 = ProductionLine.objects.create(workshop=self.kmc, name="Finna", code="L-FIN-X")
+        self.other = Workshop.objects.create(name="Творожный цех", code="ТЦ-X")
+        self.cam1 = Equipment.objects.create(
+            name="AVE", workshop=self.kmc, line=self.line1, is_camera=True,
+            ip_address="10.0.0.1", camera_id=101,
+        )
+        self.cam2 = Equipment.objects.create(
+            name="Finna", workshop=self.kmc, line=self.line2, is_camera=True,
+            ip_address="10.0.0.2", camera_id=102,
+        )
+        self.cam3 = Equipment.objects.create(
+            name="Безлинейная", workshop=self.other, is_camera=True, camera_id=103
+        )
+        self.cam4 = Equipment.objects.create(
+            name="Ничейная", is_camera=True, camera_id=104
+        )
+        self.inactive_cam = Equipment.objects.create(
+            name="Выключенная", workshop=self.kmc, is_camera=True, is_active=False, camera_id=105
+        )
+        self.plain = Equipment.objects.create(name="Стол", workshop=self.kmc)
+        self.line_plain = Equipment.objects.create(
+            name="Терминал", workshop=self.kmc, line=self.line1
+        )
+
+    def test_camera_wall_groups_by_workshop(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("equipment:cameras"))
+        groups = {g["name"]: g for g in response.context["groups"]}
+        self.assertEqual(groups["КМЦ"]["count"], 2)
+        self.assertEqual(groups["КМЦ"]["lines_count"], 2)
+        self.assertEqual(groups["Творожный цех"]["count"], 1)
+        self.assertIn("Без цеха", groups)
+        self.assertEqual(response.context["cameras_total"], 4)
+
+    def test_camera_wall_excludes_inactive_and_plain(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("equipment:cameras"))
+        names = [c.name for c in response.context["cameras"]]
+        self.assertNotIn("Выключенная", names)
+        self.assertNotIn("Стол", names)
+
+    def test_camera_workshop_groups_by_line(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("equipment:camera_workshop", args=[self.kmc.pk]))
+        lines = {g["name"]: g for g in response.context["lines"]}
+        self.assertEqual(len(lines["AVE"]["cameras"]), 1)
+        self.assertEqual(len(lines["Finna"]["cameras"]), 1)
+        self.assertEqual(response.context["cameras_total"], 2)
+
+    def test_camera_workshop_group_without_line(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("equipment:camera_workshop", args=[self.other.pk]))
+        lines = {g["name"]: g for g in response.context["lines"]}
+        self.assertIn("Без линии", lines)
+
+    def test_camera_form_fields(self):
+        self.assertEqual(
+            list(CameraForm().fields.keys()),
+            ["name", "workshop", "line", "ip_address", "camera_id", "notes"],
+        )
+
+    def test_camera_create_initial_from_workshop(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(
+            reverse("equipment:camera_create") + f"?workshop={self.kmc.pk}"
+        )
+        self.assertEqual(str(response.context["form"].initial["workshop"]), str(self.kmc.pk))
+
+    def test_camera_create_redirects_to_workshop(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse("equipment:camera_create"),
+            {"name": "Новая камера", "workshop": self.kmc.pk},
+        )
+        self.assertRedirects(
+            response, reverse("equipment:camera_workshop", args=[self.kmc.pk])
+        )
+
+    def test_camera_create_without_workshop_redirects_to_wall(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse("equipment:camera_create"), {"name": "Камера без цеха"}
+        )
+        self.assertRedirects(response, reverse("equipment:cameras"))
+
+    def test_camera_delete_redirects_to_workshop(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse("equipment:camera_delete", args=[self.cam1.pk])
+        )
+        self.assertRedirects(
+            response, reverse("equipment:camera_workshop", args=[self.kmc.pk])
+        )
+
+    def test_camera_delete_without_workshop_redirects_to_wall(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse("equipment:camera_delete", args=[self.cam4.pk])
+        )
+        self.assertRedirects(response, reverse("equipment:cameras"))
+
+    def test_camera_delete_rejects_non_camera(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse("equipment:camera_delete", args=[self.plain.pk])
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Equipment.objects.filter(pk=self.plain.pk).exists())
+
+    def test_seed_cameras_is_idempotent(self):
+        call_command("seed_cameras", verbosity=0)
+        first = Equipment.objects.filter(is_camera=True).count()
+        call_command("seed_cameras", verbosity=0)
+        self.assertEqual(Equipment.objects.filter(is_camera=True).count(), first)
+
+    def test_board_excludes_cameras(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("equipment:board"))
+        workshops = {w.name: w for w in response.context["workshops"]}
+        self.assertEqual(workshops["КМЦ"].total_equipment, 2)
+
+    def test_workshop_lines_excludes_cameras(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("equipment:workshop_lines", args=[self.kmc.pk])
+        )
+        no_line = list(response.context["no_line_equipment"])
+        self.assertIn(self.plain, no_line)
+        self.assertNotIn(self.cam1, no_line)
+
+    def test_line_equipment_excludes_cameras(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("equipment:line_equipment", args=[self.line1.pk])
+        )
+        equipment = list(response.context["equipment_list"])
+        self.assertIn(self.line_plain, equipment)
+        self.assertNotIn(self.cam1, equipment)

@@ -235,16 +235,20 @@ class Command(BaseCommand):
 
     # ----------------------------------------------------------- shift/journal
     def _shift_and_journal(self, workshops, specialists, equipment_list):
-        shift, created = Shift.objects.get_or_create(
-            date=timezone.localdate(),
-            kind=Shift.Kind.DAY,
-            defaults={
-                "workshop": workshops[0],
-                "opened_by": specialists[0],
-                "status": Shift.Status.OPEN,
-                "opening_notes": "Смена принята. Склад проверен, замечаний нет.",
-            },
+        shift = (
+            Shift.objects.filter(date=timezone.localdate(), kind=Shift.Kind.DAY)
+            .order_by("opened_at", "id")
+            .first()
         )
+        if shift is None:
+            shift = Shift.objects.create(
+                date=timezone.localdate(),
+                kind=Shift.Kind.DAY,
+                workshop=workshops[0],
+                opened_by=specialists[0],
+                status=Shift.Status.OPEN,
+                opening_notes="Смена принята. Склад проверен, замечаний нет.",
+            )
         specialist = specialists[0]
         base = shift.opened_at
 
