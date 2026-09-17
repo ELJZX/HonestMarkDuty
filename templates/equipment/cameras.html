@@ -13,7 +13,7 @@
 <div class="card">
   <div class="card-header">
     <div class="card-title">Камеры по цехам</div>
-    <div class="card-sub">Нажмите на кадр, чтобы увеличить · {{ cameras_total }} шт.</div>
+    <div class="card-sub">Нажмите на кадр, чтобы открыть камеру · {{ cameras_total }} шт.</div>
   </div>
 
   {% for group in groups %}
@@ -25,14 +25,16 @@
       <div class="cam-wall">
         {% for cam in line.cameras %}
         <div class="cam-tile">
-          <button type="button" class="cam-tile-img" data-cam-open
-                  data-src="{% url 'equipment:camera_frame' cam.pk %}"
-                  data-caption="{{ cam.name }} · {{ cam.ip_address|default:'—' }}">
-            <img data-cam-frame src="{% url 'equipment:camera_frame' cam.pk %}" alt="{{ cam.name }}" loading="lazy">
-          </button>
+          <div class="cam-tile-img" data-cam-open
+               data-cam-ip="{{ cam.ip_address }}"
+               data-cam-caption="{{ cam.name }} · {{ cam.ip_address|default:'—' }}"
+               title="Открыть камеру">
+            <span class="cam-ph">ожидание кадра…</span>
+            <canvas></canvas>
+          </div>
           <div class="cam-tile-cap">
             <a href="{% url 'equipment:equipment_detail' cam.pk %}">{{ cam.name }}</a>
-            <span class="badge badge-ok">онлайн</span>
+            <span class="badge {% if cam.ip_address %}badge-ok{% else %}badge-muted{% endif %}">{% if cam.ip_address %}онлайн{% else %}нет IP{% endif %}</span>
           </div>
         </div>
         {% endfor %}
@@ -49,7 +51,7 @@
   <div class="cam-lightbox-backdrop" data-cam-close></div>
   <div class="cam-lightbox-box">
     <button class="cam-lightbox-close" type="button" data-cam-close title="Закрыть">&times;</button>
-    <img id="cam-lightbox-img" alt="">
+    <iframe id="cam-lightbox-frame" title="Камера" allow="autoplay"></iframe>
     <div class="cam-lightbox-cap" id="cam-lightbox-cap"></div>
   </div>
 </div>

@@ -5,14 +5,12 @@ from datetime import timedelta
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count, Q
-from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.views.generic import CreateView, DetailView, DeleteView, ListView, UpdateView, View
 
 from core.mixins import AdminRequiredMixin, EditorRequiredMixin
 from core.models import ProductionLine, ProductionSite, Workshop
-from equipment.cameras import render_frame
 from equipment.forms import (
     EQUIPMENT_PRESETS,
     EquipmentCategoryForm,
@@ -156,18 +154,6 @@ class CameraWallView(LoginRequiredMixin, ListView):
         ctx["groups"] = groups
         ctx["cameras_total"] = len(ctx["cameras"])
         return ctx
-
-
-class CameraFrameView(LoginRequiredMixin, View):
-    """Отдаёт «живой» кадр камеры (прототип)."""
-
-    def get(self, request, pk):
-        equipment = get_object_or_404(Equipment, pk=pk)
-        if not equipment.camera_id:
-            raise Http404("У оборудования не указана камера.")
-        response = HttpResponse(render_frame(equipment), content_type="image/svg+xml")
-        response["Cache-Control"] = "no-store"
-        return response
 
 
 class WorkshopLinesView(LoginRequiredMixin, DetailView):

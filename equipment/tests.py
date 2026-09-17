@@ -553,18 +553,12 @@ class CameraTests(TestCase):
         response = self.client.get(reverse("equipment:cameras"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "AVE")
+        self.assertContains(response, "data-cam-ip=\"172.16.52.121\"")
 
-    def test_camera_frame_returns_svg(self):
+    def test_camera_detail_has_live_box(self):
         self.client.force_login(self.specialist)
-        response = self.client.get(reverse("equipment:camera_frame", args=[self.camera.pk]))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response["Content-Type"], "image/svg+xml")
-        self.assertIn(b"<svg", response.content)
-
-    def test_camera_frame_without_camera(self):
-        self.client.force_login(self.specialist)
-        response = self.client.get(reverse("equipment:camera_frame", args=[self.plain.pk]))
-        self.assertEqual(response.status_code, 404)
+        response = self.client.get(reverse("equipment:equipment_detail", args=[self.camera.pk]))
+        self.assertContains(response, "data-cam-ip=\"172.16.52.121\"")
 
     def test_seed_cameras_maps(self):
         call_command("seed_cameras", verbosity=0)

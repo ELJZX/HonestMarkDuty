@@ -130,57 +130,117 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  // Живые кадры камер: обновляем последовательно, без наложения запросов
-  document.querySelectorAll("img[data-cam-frame]").forEach(function (img) {
-    const base = img.getAttribute("src");
-    img.dataset.src = base;
+  // Реальные камеры: кадры по WebSocket напрямую с камеры (как в её веб-интерфейсе).
+  // ws://<ip>/ws/monitor_image (subprotocol = uuid) — binary JPEG + text-метаданные (нужен ack);
+  // ws://<ip>/ws/monitor_control (тот же uuid) — команды качества.
+  function camUuid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+      const r = (Math.random() * 16) | 0;
+      return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+    });
+  }
 
-    function schedule(delay) {
-      setTimeout(load, delay);
+  function drawCameraFrame(box, canvas, blob) {
+    createImageBitmap(blob)
+      .then(function (bmp) {
+        canvas.width = bmp.width;
+        canvas.height = bmp.height;
+        canvas.getContext("2d").drawImage(bmp, 0, 0);
+        bmp.close();
+        box.classList.add("has-img");
+        canvas.classList.add("loaded");
+      })
+      .catch(function () {});
+  }
+
+  function startCamera(box) {
+    const ip = box.getAttribute("data-cam-ip");
+    const canvas = box.querySelector("canvas");
+    if (!ip || !canvas) return;
+    const proto = location.protocol === "https:" ? "wss://" : "ws://";
+
+    const ph = box.querySelector(".cam-ph");
+    setTimeout(function () {
+      if (!box.classList.contains("has-img") && ph) {
+        ph.textContent = "нет кадра — нажмите, чтобы открыть камеру";
+      }
+    }, 9000);
+
+    function connect() {
+      if (!box.isConnected) return;
+      const uuid = camUuid();
+      let lastImage = null;
+      let control = null;
+      let image;
+      try {
+        image = new WebSocket(proto + ip + "/ws/monitor_image", uuid);
+      } catch (e) {
+        setTimeout(connect, 5000);
+        return;
+      }
+      image.binaryType = "blob";
+      image.onopen = function () {
+        try {
+          control = new WebSocket(proto + ip + "/ws/monitor_control", uuid);
+          control.onopen = function () {
+            control.send("IMG_SEND_ALL");
+            control.send("QUALITY_MEDIUM");
+          };
+          control.onerror = function () {};
+        } catch (e) { /* ignore */ }
+      };
+      image.onmessage = function (ev) {
+        if (ev.data instanceof Blob) {
+          lastImage = ev.data;
+          return;
+        }
+        try {
+          const meta = JSON.parse(ev.data);
+          if (lastImage) drawCameraFrame(box, canvas, lastImage);
+          if (image.readyState === WebSocket.OPEN) {
+            image.send(
+              JSON.stringify({ ack: true, imageId: meta.imageId, phaseId: meta.phaseId })
+            );
+          }
+        } catch (e) { /* ignore */ }
+      };
+      image.onerror = function () {};
+      image.onclose = function () {
+        if (control) {
+          try { control.close(); } catch (e) { /* ignore */ }
+        }
+        if (box.isConnected) setTimeout(connect, 5000);
+      };
     }
 
-    function load() {
-      if (!img.isConnected) return schedule(5000);
-      const next = new Image();
-      next.onload = function () {
-        img.src = next.src;
-        schedule(2000);
-      };
-      next.onerror = function () {
-        schedule(10000);
-      };
-      next.src = base + "?_=" + Date.now();
-    }
+    connect();
+  }
 
-    schedule(0);
-  });
+  document.querySelectorAll("[data-cam-ip]").forEach(startCamera);
 
-  // Увеличение кадра камеры (прототип)
+  // Увеличение кадра камеры — родной веб-интерфейс камеры
   (function () {
     const box = document.getElementById("cam-lightbox");
     if (!box) return;
-    const img = document.getElementById("cam-lightbox-img");
+    const frame = document.getElementById("cam-lightbox-frame");
     const caption = document.getElementById("cam-lightbox-cap");
-    let timer = null;
 
     function close() {
       box.hidden = true;
-      if (timer) { clearInterval(timer); timer = null; }
-      img.removeAttribute("src");
+      frame.removeAttribute("src");
     }
 
-    function open(src, text) {
+    function open(ip, text) {
       caption.textContent = text || "";
-      const tick = function () { img.src = src + "?_=" + Date.now(); };
-      tick();
-      if (timer) clearInterval(timer);
-      timer = setInterval(tick, 2000);
+      frame.src = "http://" + ip + "/monitor";
       box.hidden = false;
     }
 
     document.querySelectorAll("[data-cam-open]").forEach(function (el) {
       el.addEventListener("click", function () {
-        open(el.getAttribute("data-src"), el.getAttribute("data-caption"));
+        const ip = el.getAttribute("data-cam-ip");
+        if (ip) open(ip, el.getAttribute("data-cam-caption"));
       });
     });
     box.addEventListener("click", function (e) {
