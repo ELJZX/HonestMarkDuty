@@ -545,7 +545,7 @@ class CameraTests(TestCase):
             line=self.line,
             ip_address="172.16.52.121",
             is_camera=True,
-            camera_id=5,
+            camera_id=999,
         )
         self.plain = Equipment.objects.create(name="Стол", workshop=self.workshop)
 
