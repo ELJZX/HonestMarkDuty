@@ -109,6 +109,12 @@ class EquipmentViewTests(TestCase):
         self.client.force_login(self.viewer)
         self.assertEqual(self.client.get(reverse("equipment:equipment_create")).status_code, 403)
 
+    def test_form_has_minimal_fields(self):
+        self.assertEqual(
+            list(EquipmentForm().fields.keys()),
+            ["name", "workshop", "line", "manufacturer", "model_name", "ip_address", "notes"],
+        )
+
     def test_update_equipment(self):
         self.client.force_login(self.specialist)
         response = self.client.post(
@@ -411,17 +417,11 @@ class EquipmentBoardTests(TestCase):
                 "manufacturer": "VideoJet",
                 "model_name": "6330",
                 "ip_address": "192.168.0.10",
-                "print_head": "32",
-                "slot": "первый",
-                "status": EquipmentStatus.OPERATIONAL,
-                "criticality": Criticality.MEDIUM,
             },
         )
         self.assertEqual(response.status_code, 302)
         equipment = Equipment.objects.get(name="Принтер", manufacturer="VideoJet")
         self.assertEqual(equipment.ip_address, "192.168.0.10")
-        self.assertEqual(equipment.print_head, "32")
-        self.assertEqual(equipment.slot, "первый")
 
     def test_create_form_has_presets(self):
         self.client.force_login(self.specialist)

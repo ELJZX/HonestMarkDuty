@@ -62,30 +62,16 @@ class EquipmentForm(StyledModelForm):
         model = Equipment
         fields = (
             "name",
-            "category",
-            "site",
             "workshop",
             "line",
             "manufacturer",
             "model_name",
             "ip_address",
-            "print_head",
-            "slot",
-            "serial_number",
-            "commissioned_at",
-            "status",
-            "criticality",
-            "last_maintenance_at",
-            "next_maintenance_at",
-            "responsible",
             "notes",
-            "is_active",
         )
         widgets = {
             "notes": forms.Textarea(attrs={"rows": 3}),
             "ip_address": forms.TextInput(attrs={"placeholder": "192.168.0.10"}),
-            "print_head": forms.TextInput(attrs={"placeholder": "32 / 53"}),
-            "slot": forms.TextInput(attrs={"placeholder": "первый / второй"}),
         }
 
     def clean(self):
