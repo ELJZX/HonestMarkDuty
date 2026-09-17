@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ line.name }}{% endblock %}
-{% block breadcrumb %}Учет / Оборудование / {{ line.workshop.name }} / {{ line.name }}{% endblock %}
+{% block breadcrumb %}<a href="{% url 'equipment:board' %}">Учет</a> / <a href="{% url 'equipment:board' %}">Оборудование</a> / <a href="{% url 'equipment:workshop_lines' line.workshop.pk %}">{{ line.workshop.name }}</a> / {{ line.name }}{% endblock %}
 {% block content %}
 <div class="page-back">
   <a class="back-arrow" href="{% url 'equipment:workshop_lines' line.workshop.pk %}" title="Назад к линиям">←</a>

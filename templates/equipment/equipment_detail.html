@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ equipment.name }}{% endblock %}
-{% block breadcrumb %}Учет / Оборудование / {{ equipment.name }}{% endblock %}
+{% block breadcrumb %}<a href="{% url 'equipment:board' %}">Учет</a> / <a href="{% url 'equipment:board' %}">Оборудование</a> / {{ equipment.name }}{% endblock %}
 {% block topbar_actions %}
   {% if user.is_admin %}
   <a class="btn btn-sm" href="{% url 'equipment:equipment_update' equipment.pk %}">Изменить</a>

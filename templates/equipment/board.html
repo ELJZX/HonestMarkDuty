@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Оборудование{% endblock %}
-{% block breadcrumb %}Учет / Оборудование{% endblock %}
+{% block breadcrumb %}<a href="{% url 'equipment:board' %}">Учет</a> / <a href="{% url 'equipment:board' %}">Оборудование</a>{% endblock %}
 {% block content %}
 <div class="card">
   <div class="card-header">
