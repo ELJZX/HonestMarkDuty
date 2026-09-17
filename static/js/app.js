@@ -93,8 +93,15 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // Шаблоны быстрого добавления оборудования
-  const EXTRA_FIELDS = ["ip_address", "print_head", "slot"];
-  document.querySelectorAll("[data-preset]").forEach(function (btn) {
+  const OPTIONAL_FIELDS = ["print_head"];
+  const presetButtons = document.querySelectorAll("[data-preset]");
+  if (presetButtons.length) {
+    OPTIONAL_FIELDS.forEach(function (name) {
+      const row = document.querySelector('.form-row[data-field="' + name + '"]');
+      if (row) row.hidden = true;
+    });
+  }
+  presetButtons.forEach(function (btn) {
     btn.addEventListener("click", function () {
       function setValue(id, value) {
         const el = document.getElementById(id);
@@ -112,17 +119,137 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       const visible = (btn.dataset.fields || "")
         .split(",")
-        .map(function (s) { return s.trim(); })
-        .filter(Boolean);
-      EXTRA_FIELDS.forEach(function (name) {
+        .map(function (s) { return s.trim(); });
+      OPTIONAL_FIELDS.forEach(function (name) {
         const row = document.querySelector('.form-row[data-field="' + name + '"]');
         if (row) row.hidden = visible.indexOf(name) === -1;
       });
-      document.querySelectorAll("[data-preset]").forEach(function (b) {
+      presetButtons.forEach(function (b) {
         b.classList.toggle("active", b === btn);
       });
     });
   });
+
+  // Реальные камеры: кадры по WebSocket напрямую с камеры (как в её веб-интерфейсе).
+  // ws://<ip>/ws/monitor_image (subprotocol = uuid) — binary JPEG + text-метаданные (нужен ack);
+  // ws://<ip>/ws/monitor_control (тот же uuid) — команды качества.
+  function camUuid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+      const r = (Math.random() * 16) | 0;
+      return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+    });
+  }
+
+  function drawCameraFrame(box, canvas, blob) {
+    createImageBitmap(blob)
+      .then(function (bmp) {
+        canvas.width = bmp.width;
+        canvas.height = bmp.height;
+        canvas.getContext("2d").drawImage(bmp, 0, 0);
+        bmp.close();
+        box.classList.add("has-img");
+        canvas.classList.add("loaded");
+      })
+      .catch(function () {});
+  }
+
+  function startCamera(box) {
+    const ip = box.getAttribute("data-cam-ip");
+    const canvas = box.querySelector("canvas");
+    if (!ip || !canvas) return;
+    const proto = location.protocol === "https:" ? "wss://" : "ws://";
+
+    const ph = box.querySelector(".cam-ph");
+    setTimeout(function () {
+      if (!box.classList.contains("has-img") && ph) {
+        ph.textContent = "нет кадра — нажмите, чтобы открыть камеру";
+      }
+    }, 9000);
+
+    function connect() {
+      if (!box.isConnected) return;
+      const uuid = camUuid();
+      let lastImage = null;
+      let control = null;
+      let image;
+      try {
+        image = new WebSocket(proto + ip + "/ws/monitor_image", uuid);
+      } catch (e) {
+        setTimeout(connect, 5000);
+        return;
+      }
+      image.binaryType = "blob";
+      image.onopen = function () {
+        try {
+          control = new WebSocket(proto + ip + "/ws/monitor_control", uuid);
+          control.onopen = function () {
+            control.send("IMG_SEND_ALL");
+            control.send("QUALITY_MEDIUM");
+          };
+          control.onerror = function () {};
+        } catch (e) { /* ignore */ }
+      };
+      image.onmessage = function (ev) {
+        if (ev.data instanceof Blob) {
+          lastImage = ev.data;
+          return;
+        }
+        try {
+          const meta = JSON.parse(ev.data);
+          if (lastImage) drawCameraFrame(box, canvas, lastImage);
+          if (image.readyState === WebSocket.OPEN) {
+            image.send(
+              JSON.stringify({ ack: true, imageId: meta.imageId, phaseId: meta.phaseId })
+            );
+          }
+        } catch (e) { /* ignore */ }
+      };
+      image.onerror = function () {};
+      image.onclose = function () {
+        if (control) {
+          try { control.close(); } catch (e) { /* ignore */ }
+        }
+        if (box.isConnected) setTimeout(connect, 5000);
+      };
+    }
+
+    connect();
+  }
+
+  document.querySelectorAll("[data-cam-ip]").forEach(startCamera);
+
+  // Увеличение кадра камеры — родной веб-интерфейс камеры
+  (function () {
+    const box = document.getElementById("cam-lightbox");
+    if (!box) return;
+    const frame = document.getElementById("cam-lightbox-frame");
+    const caption = document.getElementById("cam-lightbox-cap");
+
+    function close() {
+      box.hidden = true;
+      frame.removeAttribute("src");
+    }
+
+    function open(ip, text) {
+      caption.textContent = text || "";
+      frame.src = "http://" + ip + "/monitor";
+      box.hidden = false;
+    }
+
+    document.querySelectorAll("[data-cam-open]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        const ip = el.getAttribute("data-cam-ip");
+        if (ip) open(ip, el.getAttribute("data-cam-caption"));
+      });
+    });
+    box.addEventListener("click", function (e) {
+      if (e.target === box || e.target.hasAttribute("data-cam-close")) close();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") close();
+    });
+  })();
 
   // Перетаскивание карточек ([data-sortable]) с сохранением порядка
   document.querySelectorAll("[data-sortable]").forEach(function (list) {

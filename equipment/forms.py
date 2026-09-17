@@ -62,31 +62,18 @@ class EquipmentForm(StyledModelForm):
         model = Equipment
         fields = (
             "name",
-            "inventory_number",
-            "category",
-            "site",
             "workshop",
             "line",
             "manufacturer",
             "model_name",
             "ip_address",
             "print_head",
-            "slot",
-            "serial_number",
-            "commissioned_at",
-            "status",
-            "criticality",
-            "last_maintenance_at",
-            "next_maintenance_at",
-            "responsible",
             "notes",
-            "is_active",
         )
         widgets = {
             "notes": forms.Textarea(attrs={"rows": 3}),
             "ip_address": forms.TextInput(attrs={"placeholder": "192.168.0.10"}),
             "print_head": forms.TextInput(attrs={"placeholder": "32 / 53"}),
-            "slot": forms.TextInput(attrs={"placeholder": "первый / второй"}),
         }
 
     def clean(self):
@@ -122,3 +109,20 @@ class ProductionLineForm(StyledModelForm):
         model = ProductionLine
         fields = ("workshop", "name", "code", "sort_order", "description", "is_active")
         widgets = {"description": forms.Textarea(attrs={"rows": 3})}
+
+
+class CameraForm(StyledModelForm):
+    class Meta:
+        model = Equipment
+        fields = ("name", "workshop", "line", "ip_address", "camera_id", "notes")
+        widgets = {
+            "notes": forms.Textarea(attrs={"rows": 3}),
+            "ip_address": forms.TextInput(attrs={"placeholder": "192.168.0.10"}),
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        line = cleaned.get("line")
+        if line and not cleaned.get("workshop"):
+            cleaned["workshop"] = line.workshop
+        return cleaned

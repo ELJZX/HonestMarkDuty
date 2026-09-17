@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Avg, Count, F
+from django.db.models import Avg, Count, F, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from django.views.generic import TemplateView
@@ -32,9 +32,10 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             "worn": InventoryItem.objects.filter(
                 condition__in=[Condition.WORN, Condition.NEEDS_REPAIR, Condition.BROKEN]
             ).count(),
-            "equipment": Equipment.objects.count(),
+            "equipment": Equipment.objects.filter(is_camera=False).count(),
             "equipment_repair": Equipment.objects.filter(
-                status__in=[EquipmentStatus.REPAIR, EquipmentStatus.MAINTENANCE]
+                is_camera=False,
+                status__in=[EquipmentStatus.REPAIR, EquipmentStatus.MAINTENANCE],
             ).count(),
             "journal": JournalEntry.objects.count(),
             "checklists": EquipmentChecklist.objects.count(),
@@ -61,7 +62,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         status_labels = dict(EquipmentStatus.choices)
         ctx["equipment_labels"] = [status_labels[c] for c in status_labels]
         ctx["equipment_values"] = [
-            Equipment.objects.filter(status=c).count() for c in status_labels
+            Equipment.objects.filter(is_camera=False, status=c).count() for c in status_labels
         ]
 
         kind_labels = dict(ItemKind.choices)
@@ -83,13 +84,19 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             .select_related("location", "category")[:8]
         )
         ctx["maintenance_due"] = (
-            Equipment.objects.filter(next_maintenance_at__isnull=False, next_maintenance_at__lte=today)
+            Equipment.objects.filter(
+                is_camera=False,
+                next_maintenance_at__isnull=False,
+                next_maintenance_at__lte=today,
+            )
             .select_related("site", "workshop")[:8]
         )
 
         ctx["workshop_stats"] = (
             Workshop.objects.annotate(
-                equipment_count=Count("equipment", distinct=True),
+                equipment_count=Count(
+                    "equipment", filter=Q(equipment__is_camera=False), distinct=True
+                ),
                 shifts_count=Count("shifts", distinct=True),
                 checklists_count=Count("checklists", distinct=True),
             )
@@ -113,7 +120,7 @@ class StatisticsView(LoginRequiredMixin, TemplateView):
         ctx["shifts_total"] = Shift.objects.filter(date__gte=period_start).count()
 
         ctx["status_rows"] = [
-            {"label": label, "count": Equipment.objects.filter(status=value).count()}
+            {"label": label, "count": Equipment.objects.filter(is_camera=False, status=value).count()}
             for value, label in EquipmentStatus.choices
         ]
 
@@ -129,7 +136,9 @@ class StatisticsView(LoginRequiredMixin, TemplateView):
 
         ctx["workshop_rows"] = (
             Workshop.objects.annotate(
-                equipment_count=Count("equipment", distinct=True),
+                equipment_count=Count(
+                    "equipment", filter=Q(equipment__is_camera=False), distinct=True
+                ),
                 shifts_count=Count("shifts", distinct=True),
                 checklists_count=Count("checklists", distinct=True),
             )

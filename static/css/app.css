@@ -747,3 +747,54 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
   display: flex; align-items: center; justify-content: space-between;
   gap: .56rem; margin-top: auto; padding-top: .56rem;
 }
+
+/* ---------- ������ ---------- */
+.cam-wall {
+  display: grid; gap: .78rem;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+}
+.cam-tile { position: relative; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.cam-tile-del { position: absolute; top: .5rem; right: .5rem; z-index: 2; }
+.cam-tile-img { position: relative; width: 100%; display: block; aspect-ratio: 16 / 9; background: #0f172a; overflow: hidden; cursor: zoom-in; }
+.cam-tile-img canvas,
+.cam-tile-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; visibility: hidden; }
+.cam-tile-img.has-img canvas,
+.cam-tile-img.has-img img { visibility: visible; }
+.cam-ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--dim); font-family: var(--font-mono); font-size: .82rem; }
+.cam-tile-img.has-img .cam-ph { display: none; }
+.cam-live-box { cursor: default; max-width: 60rem; }
+.cam-tile-cap { padding: .5rem .67rem; display: flex; justify-content: space-between; align-items: center; gap: .5rem; font-family: var(--font-mono); font-size: .82rem; }
+.cam-tile-cap a { color: inherit; }
+.cam-line-label { color: var(--dim); font-size: .72rem; margin-top: .1rem; }
+.camera-group { margin-bottom: 1.33rem; }
+.camera-group-title { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); border-bottom: 1px solid var(--border); padding-bottom: .44rem; margin-bottom: .89rem; }
+.camera-line { margin-bottom: 1rem; }
+.camera-line-title { font-family: var(--font-mono); font-size: .9rem; color: var(--dim); margin-bottom: .44rem; }
+
+.cam-workshops { display: grid; gap: 1.33rem; grid-template-columns: repeat(auto-fit, minmax(30rem, 1fr)); }
+@media (max-width: 900px) { .cam-workshops { grid-template-columns: 1fr; } }
+.cam-workshop { background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: .7rem; padding: 1rem; }
+.cam-workshop-head {
+  display: flex; align-items: center; gap: .67rem;
+  background: var(--surface-3); border: 1px solid var(--border);
+  border-radius: .5rem; padding: .6rem .8rem; margin-bottom: 1rem;
+}
+.cam-workshop-name { flex: 1; font-size: 1.1rem; font-weight: 700; }
+.cam-workshop .cam-wall { grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); }
+
+.cam-shop-card { color: inherit; text-decoration: none; transition: border-color .12s, transform .12s; }
+.cam-shop-card:hover { border-color: #454545; transform: translateY(-2px); }
+
+/* Камеры цеха: линии в ряд (вбок) с горизонтальной прокруткой */
+.cam-lines { display: flex; gap: 1.1rem; overflow-x: auto; padding-bottom: .6rem; align-items: flex-start; }
+.cam-line-col { flex: 0 0 auto; width: 18rem; }
+.cam-line-col .camera-line-title { margin-bottom: .44rem; }
+.cam-wall-stack { grid-template-columns: 1fr; }
+
+.cam-lightbox { position: fixed; inset: 0; z-index: 210; display: flex; align-items: center; justify-content: center; }
+.cam-lightbox[hidden] { display: none; }
+.cam-lightbox-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, .8); }
+.cam-lightbox-box { position: relative; z-index: 1; background: #0b1220; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: .5rem; }
+.cam-lightbox-box iframe { display: block; width: min(94vw, 70rem); height: 78vh; border: none; border-radius: .3rem; background: #000; }
+.cam-lightbox-cap { font-family: var(--font-mono); font-size: .82rem; color: var(--muted); padding: .4rem .3rem .1rem; }
+.cam-lightbox-close { position: absolute; top: -1rem; right: -1rem; width: 2rem; height: 2rem; border-radius: 50%; border: none; background: #fff; color: #111; font-size: 1.1rem; line-height: 1; cursor: pointer; }

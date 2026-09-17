@@ -149,7 +149,7 @@ class ProductionLine(AuditedModel):
 
     @property
     def equipment_count(self) -> int:
-        return self.equipment.count()
+        return self.equipment.filter(is_camera=False).count()
 
 
 class ProductionSite(AuditedModel):

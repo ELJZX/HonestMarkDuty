@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ workshop.name }} — камеры{% endblock %}
+{% block breadcrumb %}Учет / Оборудование / Камеры / {{ workshop.name }}{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-sm btn-ghost" href="{% url 'equipment:cameras' %}">Все цеха</a>
+  <a class="btn btn-sm btn-ghost" href="{% url 'equipment:workshop_lines' workshop.pk %}">Оборудование цеха</a>
+{% endblock %}
+{% block content %}
+<div class="page-back">
+  <a class="back-arrow" href="{% url 'equipment:cameras' %}" title="Назад к цехам">←</a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">{{ workshop.name }}</div>
+    <span class="badge badge-muted">{{ cameras_total }} камер</span>
+  </div>
+
+  {% if cameras %}
+  <div class="cam-wall">
+    {% for cam in cameras %}
+    <div class="cam-tile">
+      {% if user.is_admin %}
+      <a class="btn btn-danger btn-sm icon-btn cam-tile-del" href="{% url 'equipment:camera_delete' cam.pk %}" title="Удалить камеру">✕</a>
+      {% endif %}
+      <div class="cam-tile-img" data-cam-open
+           data-cam-ip="{{ cam.ip_address }}"
+           data-cam-caption="{{ cam.name }} · {{ cam.ip_address|default:'—' }}"
+           title="Открыть камеру">
+        <span class="cam-ph">ожидание кадра…</span>
+        <canvas></canvas>
+      </div>
+      <div class="cam-tile-cap">
+        <span>
+          <a href="{% url 'equipment:equipment_detail' cam.pk %}">{{ cam.name }}</a>
+          <div class="cam-line-label">{{ cam.line.name|default:"—" }}</div>
+        </span>
+        <span class="badge {% if cam.ip_address %}badge-ok{% else %}badge-muted{% endif %}">{% if cam.ip_address %}онлайн{% else %}нет IP{% endif %}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">В цехе нет камер</div>
+  {% endif %}
+</div>
+
+{% if user.is_admin %}
+<a class="fab" href="{% url 'equipment:camera_create' %}?workshop={{ workshop.pk }}"><span class="fab-add">+</span> Добавить камеру</a>
+{% endif %}
+
+<div class="cam-lightbox" id="cam-lightbox" hidden>
+  <div class="cam-lightbox-backdrop" data-cam-close></div>
+  <div class="cam-lightbox-box">
+    <button class="cam-lightbox-close" type="button" data-cam-close title="Закрыть">&times;</button>
+    <iframe id="cam-lightbox-frame" title="Камера" allow="autoplay"></iframe>
+    <div class="cam-lightbox-cap" id="cam-lightbox-cap"></div>
+  </div>
+</div>
+{% endblock %}

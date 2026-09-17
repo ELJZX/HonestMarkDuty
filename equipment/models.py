@@ -37,7 +37,6 @@ class Equipment(AuditedModel):
     """Единица оборудования на производственной площадке."""
 
     name = models.CharField("Наименование", max_length=250)
-    inventory_number = models.CharField("Инвентарный номер", max_length=60, unique=True)
     category = models.ForeignKey(
         EquipmentCategory,
         verbose_name="Категория",
@@ -73,6 +72,8 @@ class Equipment(AuditedModel):
     manufacturer = models.CharField("Производитель", max_length=150, blank=True)
     model_name = models.CharField("Модель", max_length=150, blank=True)
     ip_address = models.CharField("IP-адрес", max_length=60, blank=True)
+    is_camera = models.BooleanField("Камера", default=False)
+    camera_id = models.PositiveIntegerField("ID камеры (Camera Control)", null=True, blank=True)
     print_head = models.CharField("Печатающая головка", max_length=50, blank=True)
     slot = models.CharField("Значение (первый/второй)", max_length=50, blank=True)
     serial_number = models.CharField("Серийный номер", max_length=150, blank=True)
@@ -103,7 +104,7 @@ class Equipment(AuditedModel):
         indexes = [models.Index(fields=("status",))]
 
     def __str__(self) -> str:
-        return f"{self.name} ({self.inventory_number})"
+        return self.name
 
     @property
     def status_badge(self) -> str:

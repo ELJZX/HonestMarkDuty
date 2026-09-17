@@ -19,24 +19,28 @@
         <span class="badge {{ equipment.status_badge }}">{{ equipment.get_status_display }}</span>
       </div>
       <dl class="detail-grid">
-        <dt>Инвентарный №</dt><dd class="mono">{{ equipment.inventory_number }}</dd>
-        <dt>Категория</dt><dd>{{ equipment.category|default:"—" }}</dd>
-        <dt>Площадка</dt><dd>{{ equipment.site|default:"—" }}</dd>
         <dt>Цех</dt><dd>{{ equipment.workshop|default:"—" }}</dd>
         <dt>Производитель</dt><dd>{{ equipment.manufacturer|default:"—" }}</dd>
         <dt>Модель</dt><dd>{{ equipment.model_name|default:"—" }}</dd>
         <dt>IP-адрес</dt><dd class="mono">{{ equipment.ip_address|default:"—" }}</dd>
-        <dt>Печатающая головка</dt><dd>{{ equipment.print_head|default:"—" }}</dd>
-        <dt>Значение</dt><dd>{{ equipment.slot|default:"—" }}</dd>
-        <dt>Серийный №</dt><dd class="mono">{{ equipment.serial_number|default:"—" }}</dd>
-        <dt>Введено в экспл.</dt><dd>{{ equipment.commissioned_at|date:"d.m.Y"|default:"—" }}</dd>
-        <dt>Критичность</dt><dd>{{ equipment.get_criticality_display }}</dd>
-        <dt>Последнее ТО</dt><dd>{{ equipment.last_maintenance_at|date:"d.m.Y"|default:"—" }}</dd>
-        <dt>Следующее ТО</dt><dd>{{ equipment.next_maintenance_at|date:"d.m.Y"|default:"—" }} {% if equipment.is_maintenance_overdue %}<span class="badge badge-danger">просрочено</span>{% endif %}</dd>
-        <dt>Ответственный</dt><dd>{{ equipment.responsible.full_name|default:"—" }}</dd>
         <dt>Примечания</dt><dd>{{ equipment.notes|default:"—"|linebreaksbr }}</dd>
       </dl>
     </div>
+
+    {% if equipment.camera_id %}
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Камера</div>
+        {% if equipment.ip_address %}
+        <a class="btn btn-sm" href="http://{{ equipment.ip_address }}/monitor" target="_blank" rel="noopener">Открыть камеру</a>
+        {% endif %}
+      </div>
+      <div class="cam-tile-img cam-live-box" data-cam-ip="{{ equipment.ip_address }}">
+        <span class="cam-ph">ожидание кадра…</span>
+        <canvas></canvas>
+      </div>
+    </div>
+    {% endif %}
 
     <div class="card">
       <div class="card-header"><div class="card-title">История состояний</div></div>
@@ -51,28 +55,6 @@
         {% endfor %}
       </ul>
     </div>
-
-    <div class="card">
-      <div class="card-header"><div class="card-title">Работы по оборудованию</div></div>
-      <div class="table-wrap">
-        <table class="data">
-          <thead><tr><th>Дата</th><th>Вид</th><th>Описание</th><th>Исполнитель</th><th>Стоимость</th></tr></thead>
-          <tbody>
-            {% for r in maintenance_records %}
-            <tr>
-              <td class="mono nowrap">{{ r.performed_at|date:"d.m.Y" }}</td>
-              <td>{{ r.get_kind_display }}</td>
-              <td>{{ r.description|truncatechars:80 }}</td>
-              <td>{{ r.performer|default:"—" }}</td>
-              <td class="mono">{{ r.cost|default:"—" }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="5" class="empty">Работ не зарегистрировано</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
   </div>
 
   <div>
@@ -82,15 +64,6 @@
         {% csrf_token %}
         {% include "partials/form_fields.html" with form=status_form %}
         <div class="form-actions"><button class="btn btn-primary" type="submit">Сохранить состояние</button></div>
-      </form>
-    </div>
-
-    <div class="card">
-      <div class="card-header"><div class="card-title">Добавить работы</div></div>
-      <form method="post" action="{% url 'equipment:maintenance_create' equipment.pk %}">
-        {% csrf_token %}
-        {% include "partials/form_fields.html" with form=maintenance_form %}
-        <div class="form-actions"><button class="btn btn-primary" type="submit">Добавить</button></div>
       </form>
     </div>
 

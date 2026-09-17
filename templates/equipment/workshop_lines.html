@@ -75,7 +75,7 @@
     <div class="equip-card">
       <a class="equip-card-main" href="{% url 'equipment:equipment_detail' e.pk %}">
         <span class="equip-card-name">{{ e.name }}</span>
-        <span class="equip-card-sub">{{ e.inventory_number }} · {{ e.category|default:"—" }}</span>
+        <span class="equip-card-sub">{{ e.category|default:"—" }}</span>
         <span class="equip-card-foot">
           <span class="badge {{ e.status_badge }}">{{ e.get_status_display }}</span>
           <span class="equip-card-sub">Открыть →</span>
