@@ -748,18 +748,26 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
   gap: .56rem; margin-top: auto; padding-top: .56rem;
 }
 
-/* ---------- Камеры ---------- */
+/* ---------- пїЅпїЅпїЅпїЅпїЅпїЅ ---------- */
 .cam-wall {
   display: grid; gap: .78rem;
   grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
 }
 .cam-tile { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-.cam-tile-img { display: block; aspect-ratio: 16 / 9; background: #0f172a; }
+.cam-tile-img { width: 100%; display: block; aspect-ratio: 16 / 9; background: #0f172a; border: 0; padding: 0; cursor: zoom-in; }
 .cam-tile-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.cam-tile-cap { padding: .5rem .67rem; display: flex; justify-content: space-between; gap: .5rem; font-family: var(--font-mono); font-size: .82rem; }
+.cam-tile-cap { padding: .5rem .67rem; display: flex; justify-content: space-between; align-items: center; gap: .5rem; font-family: var(--font-mono); font-size: .82rem; }
 .cam-tile-cap a { color: inherit; }
 .cam-live-img { width: 100%; display: block; border-radius: var(--radius); background: #0f172a; aspect-ratio: 16 / 9; object-fit: cover; }
 .camera-group { margin-bottom: 1.33rem; }
 .camera-group-title { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); border-bottom: 1px solid var(--border); padding-bottom: .44rem; margin-bottom: .89rem; }
 .camera-line { margin-bottom: 1rem; }
 .camera-line-title { font-family: var(--font-mono); font-size: .9rem; color: var(--dim); margin-bottom: .44rem; }
+
+.cam-lightbox { position: fixed; inset: 0; z-index: 210; display: flex; align-items: center; justify-content: center; }
+.cam-lightbox[hidden] { display: none; }
+.cam-lightbox-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, .8); }
+.cam-lightbox-box { position: relative; z-index: 1; background: #0b1220; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: .5rem; width: min(94vw, 70rem); }
+.cam-lightbox-box img { width: 100%; max-height: 84vh; display: block; border-radius: .3rem; background: #0b1220; }
+.cam-lightbox-cap { font-family: var(--font-mono); font-size: .82rem; color: var(--muted); padding: .4rem .3rem .1rem; }
+.cam-lightbox-close { position: absolute; top: -1rem; right: -1rem; width: 2rem; height: 2rem; border-radius: 50%; border: none; background: #fff; color: #111; font-size: 1.1rem; line-height: 1; cursor: pointer; }

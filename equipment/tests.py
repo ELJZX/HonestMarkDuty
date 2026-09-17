@@ -554,14 +554,12 @@ class CameraTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "AVE")
 
-    def test_camera_frame_proxied(self):
+    def test_camera_frame_returns_svg(self):
         self.client.force_login(self.specialist)
-        with mock.patch("equipment.views.fetch_frame", return_value=b"\xff\xd8\xffjpeg"):
-            response = self.client.get(
-                reverse("equipment:camera_frame", args=[self.camera.pk])
-            )
+        response = self.client.get(reverse("equipment:camera_frame", args=[self.camera.pk]))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response["Content-Type"], "image/jpeg")
+        self.assertEqual(response["Content-Type"], "image/svg+xml")
+        self.assertIn(b"<svg", response.content)
 
     def test_camera_frame_without_camera(self):
         self.client.force_login(self.specialist)

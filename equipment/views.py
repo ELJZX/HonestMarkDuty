@@ -12,7 +12,7 @@ from django.views.generic import CreateView, DetailView, DeleteView, ListView, U
 
 from core.mixins import AdminRequiredMixin, EditorRequiredMixin
 from core.models import ProductionLine, ProductionSite, Workshop
-from equipment.cameras import fetch_frame
+from equipment.cameras import render_frame
 from equipment.forms import (
     EQUIPMENT_PRESETS,
     EquipmentCategoryForm,
@@ -159,16 +159,13 @@ class CameraWallView(LoginRequiredMixin, ListView):
 
 
 class CameraFrameView(LoginRequiredMixin, View):
-    """Проксирует JPEG-кадр камеры через сервис Camera Control."""
+    """Отдаёт «живой» кадр камеры (прототип)."""
 
     def get(self, request, pk):
         equipment = get_object_or_404(Equipment, pk=pk)
         if not equipment.camera_id:
             raise Http404("У оборудования не указана камера.")
-        frame = fetch_frame(equipment.camera_id)
-        if not frame:
-            return HttpResponse(status=204)
-        response = HttpResponse(frame, content_type="image/jpeg")
+        response = HttpResponse(render_frame(equipment), content_type="image/svg+xml")
         response["Cache-Control"] = "no-store"
         return response
 

@@ -155,6 +155,42 @@ document.addEventListener("DOMContentLoaded", function () {
     schedule(0);
   });
 
+  // Увеличение кадра камеры (прототип)
+  (function () {
+    const box = document.getElementById("cam-lightbox");
+    if (!box) return;
+    const img = document.getElementById("cam-lightbox-img");
+    const caption = document.getElementById("cam-lightbox-cap");
+    let timer = null;
+
+    function close() {
+      box.hidden = true;
+      if (timer) { clearInterval(timer); timer = null; }
+      img.removeAttribute("src");
+    }
+
+    function open(src, text) {
+      caption.textContent = text || "";
+      const tick = function () { img.src = src + "?_=" + Date.now(); };
+      tick();
+      if (timer) clearInterval(timer);
+      timer = setInterval(tick, 2000);
+      box.hidden = false;
+    }
+
+    document.querySelectorAll("[data-cam-open]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        open(el.getAttribute("data-src"), el.getAttribute("data-caption"));
+      });
+    });
+    box.addEventListener("click", function (e) {
+      if (e.target === box || e.target.hasAttribute("data-cam-close")) close();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") close();
+    });
+  })();
+
   // Перетаскивание карточек ([data-sortable]) с сохранением порядка
   document.querySelectorAll("[data-sortable]").forEach(function (list) {
     const form = document.getElementById(list.dataset.form);
