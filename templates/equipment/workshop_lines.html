@@ -16,7 +16,7 @@
     </div>
     <div class="card-header-actions">
       <span class="badge badge-muted">{{ workshop.code|default:"—" }}</span>
-      {% if user.can_edit %}
+      {% if user.is_admin %}
       <button class="btn btn-sm" type="button" id="lines-edit-toggle">Изменить</button>
       <button class="btn btn-primary btn-sm lines-edit-action" type="submit" form="lines-reorder-form" hidden>Сохранить</button>
       <button class="btn btn-ghost btn-sm lines-edit-action" type="button" id="lines-edit-cancel" hidden>Отмена</button>
@@ -27,7 +27,7 @@
   <form method="post" action="{% url 'equipment:line_reorder' workshop.pk %}" id="lines-reorder-form">
     {% csrf_token %}
     <input type="hidden" name="order" id="lines-order" value="">
-    {% if user.can_edit %}
+    {% if user.is_admin %}
     <p class="drag-hint" id="lines-drag-hint" hidden>Перетащите карточки, чтобы изменить порядок, затем нажмите «Сохранить».</p>
     {% endif %}
     <div class="line-list" id="lines-sortable" data-sortable
@@ -50,7 +50,7 @@
           </span>
           <span class="line-card-meta">{{ line.equipment_total }} ед. →</span>
         </a>
-        {% if user.can_edit %}
+        {% if user.is_admin %}
         <a class="btn btn-sm icon-btn" href="{% url 'equipment:line_update' line.pk %}" title="Редактировать линию">✎</a>
         {% endif %}
         {% if user.is_admin %}

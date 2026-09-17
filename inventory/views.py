@@ -109,7 +109,7 @@ class InventoryItemCreateView(EditorRequiredMixin, CreateView):
         return reverse("inventory:item_detail", args=[self.object.pk])
 
 
-class InventoryItemUpdateView(EditorRequiredMixin, UpdateView):
+class InventoryItemUpdateView(AdminRequiredMixin, UpdateView):
     model = InventoryItem
     form_class = InventoryItemForm
     template_name = "inventory/item_form.html"
@@ -164,7 +164,7 @@ class StorageLocationCreateView(EditorRequiredMixin, CreateView):
     extra_context = {"title": "Новое место хранения", "back_url": "inventory:location_list"}
 
 
-class StorageLocationUpdateView(EditorRequiredMixin, UpdateView):
+class StorageLocationUpdateView(AdminRequiredMixin, UpdateView):
     model = StorageLocation
     form_class = StorageLocationForm
     template_name = "inventory/location_form.html"
@@ -186,7 +186,7 @@ class ItemCategoryCreateView(EditorRequiredMixin, CreateView):
     extra_context = {"title": "Новая категория", "back_url": "inventory:category_list"}
 
 
-class ItemCategoryUpdateView(EditorRequiredMixin, UpdateView):
+class ItemCategoryUpdateView(AdminRequiredMixin, UpdateView):
     model = ItemCategory
     form_class = ItemCategoryForm
     template_name = "inventory/category_form.html"

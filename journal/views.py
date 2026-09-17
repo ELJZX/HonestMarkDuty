@@ -8,7 +8,7 @@ from django.urls import reverse, reverse_lazy
 from django.utils.dateparse import parse_date
 from django.views.generic import CreateView, DeleteView, ListView, TemplateView, UpdateView, View
 
-from core.mixins import EditorRequiredMixin
+from core.mixins import AdminRequiredMixin, EditorRequiredMixin
 from journal.exports import export_full_journal, group_entries, workbook_response
 from journal.forms import JournalEntryForm
 from journal.models import JournalEntry
@@ -137,7 +137,7 @@ class JournalEntryCreateView(EditorRequiredMixin, CreateView):
         return reverse("journal:entry_list")
 
 
-class JournalEntryUpdateView(EditorRequiredMixin, UpdateView):
+class JournalEntryUpdateView(AdminRequiredMixin, UpdateView):
     model = JournalEntry
     form_class = JournalEntryForm
     template_name = "journal/entry_form.html"
@@ -151,7 +151,7 @@ class JournalEntryUpdateView(EditorRequiredMixin, UpdateView):
         return reverse("journal:entry_list")
 
 
-class JournalEntryDeleteView(EditorRequiredMixin, DeleteView):
+class JournalEntryDeleteView(AdminRequiredMixin, DeleteView):
     model = JournalEntry
     template_name = "core/confirm_delete.html"
     success_url = reverse_lazy("journal:entry_list")

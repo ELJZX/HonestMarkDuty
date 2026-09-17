@@ -87,7 +87,7 @@ class DocumentTemplateCreateView(EditorRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class DocumentTemplateUpdateView(EditorRequiredMixin, UpdateView):
+class DocumentTemplateUpdateView(AdminRequiredMixin, UpdateView):
     model = DocumentTemplate
     form_class = DocumentTemplateForm
     template_name = "documents/template_form.html"
@@ -298,7 +298,7 @@ class DocumentCreateView(EditorRequiredMixin, CreateView):
         return redirect("documents:document_detail", pk=document.pk)
 
 
-class DocumentUpdateView(EditorRequiredMixin, UpdateView):
+class DocumentUpdateView(AdminRequiredMixin, UpdateView):
     model = Document
     form_class = DocumentForm
     template_name = "documents/document_form.html"
@@ -357,7 +357,7 @@ class DocumentDownloadView(LoginRequiredMixin, View):
         )
 
 
-class DocumentRegenerateView(EditorRequiredMixin, View):
+class DocumentRegenerateView(AdminRequiredMixin, View):
     def post(self, request, pk):
         document = get_object_or_404(Document, pk=pk)
         document.render(save=False)

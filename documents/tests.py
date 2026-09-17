@@ -179,7 +179,7 @@ class DocumentViewTests(TestCase):
         )
         document.render()
         document.file.save(f"document_{document.pk}.docx", build_docx(document), save=True)
-        self.client.force_login(self.specialist)
+        self.client.force_login(self.admin)
         self.assertEqual(self.client.get(reverse("documents:document_detail", args=[document.pk])).status_code, 200)
         self.assertEqual(self.client.get(reverse("documents:document_print", args=[document.pk])).status_code, 200)
         download = self.client.get(reverse("documents:document_download", args=[document.pk]))
@@ -193,7 +193,7 @@ class DocumentViewTests(TestCase):
             template=self.template, workshop=self.workshop, number="ТЗ-3", context_data={"reason": "a"}
         )
         document.render()
-        self.client.force_login(self.specialist)
+        self.client.force_login(self.admin)
         response = self.client.post(
             reverse("documents:document_update", args=[document.pk]),
             {

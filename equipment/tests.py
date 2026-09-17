@@ -116,7 +116,7 @@ class EquipmentViewTests(TestCase):
         )
 
     def test_update_equipment(self):
-        self.client.force_login(self.specialist)
+        self.client.force_login(self.admin)
         response = self.client.post(
             reverse("equipment:equipment_update", args=[self.equipment.pk]),
             {
@@ -140,7 +140,7 @@ class EquipmentViewTests(TestCase):
         )
 
     def test_status_change_view(self):
-        self.client.force_login(self.specialist)
+        self.client.force_login(self.admin)
         response = self.client.post(
             reverse("equipment:status_change", args=[self.equipment.pk]),
             {"status": EquipmentStatus.REPAIR, "comment": "поломка"},
@@ -151,7 +151,7 @@ class EquipmentViewTests(TestCase):
         self.assertEqual(self.equipment.status_logs.first().comment, "поломка")
 
     def test_status_change_same_status_creates_note(self):
-        self.client.force_login(self.specialist)
+        self.client.force_login(self.admin)
         self.client.post(
             reverse("equipment:status_change", args=[self.equipment.pk]),
             {"status": EquipmentStatus.OPERATIONAL, "comment": "осмотр без изменений"},
@@ -208,6 +208,9 @@ class EquipmentBoardTests(TestCase):
     def setUp(self):
         self.specialist = User.objects.create_user(
             username="board-spec", password="x", role=User.Role.SPECIALIST
+        )
+        self.admin = User.objects.create_user(
+            username="board-admin-0", password="x", role=User.Role.ADMIN, is_superuser=True
         )
         self.workshop = Workshop.objects.create(name="Мясной цех", code="МЦ")
         self.line = ProductionLine.objects.create(
@@ -319,7 +322,7 @@ class EquipmentBoardTests(TestCase):
         self.assertEqual(response.url, reverse("equipment:line_equipment", args=[self.line.pk]))
 
     def test_line_update_view(self):
-        self.client.force_login(self.specialist)
+        self.client.force_login(self.admin)
         self.assertEqual(
             self.client.get(reverse("equipment:line_update", args=[self.line.pk])).status_code,
             200,
@@ -351,7 +354,7 @@ class EquipmentBoardTests(TestCase):
         second = ProductionLine.objects.create(
             workshop=self.workshop, name="Линия №2", sort_order=1
         )
-        self.client.force_login(self.specialist)
+        self.client.force_login(self.admin)
         response = self.client.post(
             reverse("equipment:line_reorder", args=[self.workshop.pk]),
             {"order": f"{second.pk},{self.line.pk}"},
@@ -387,7 +390,7 @@ class EquipmentBoardTests(TestCase):
 
     def test_workshop_reorder(self):
         other = Workshop.objects.create(name="Второй цех", code="ВЦ")
-        self.client.force_login(self.specialist)
+        self.client.force_login(self.admin)
         response = self.client.post(
             reverse("equipment:workshop_reorder"),
             {"order": f"{other.pk},{self.workshop.pk}"},
@@ -491,7 +494,11 @@ class EquipmentFilterAndEdgeTests(TestCase):
         self.assertEqual(response.context["cancel_url"], reverse("equipment:board"))
 
     def test_status_change_invalid_form_keeps_status(self):
-        self.client.force_login(self.specialist)
+        self.client.force_login(
+            User.objects.create_user(
+                username="edge-admin", password="x", role=User.Role.ADMIN, is_superuser=True
+            )
+        )
         response = self.client.post(
             reverse("equipment:status_change", args=[self.equipment.pk]),
             {"status": "not-a-status"},

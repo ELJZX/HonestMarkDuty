@@ -11,7 +11,7 @@
   <div class="card-header">
     <div class="card-title">Список цехов</div>
     <div class="card-header-actions">
-      {% if user.can_edit %}
+      {% if user.is_admin %}
       <button class="btn btn-sm" type="button" id="workshops-edit-toggle">Изменить</button>
       <button class="btn btn-primary btn-sm workshops-edit-action" type="submit" form="workshop-reorder-form" hidden>Сохранить</button>
       <button class="btn btn-ghost btn-sm workshops-edit-action" type="button" id="workshops-edit-cancel" hidden>Отмена</button>
@@ -22,7 +22,7 @@
   <form method="post" action="{% url 'equipment:workshop_reorder' %}" id="workshop-reorder-form">
     {% csrf_token %}
     <input type="hidden" name="order" id="workshops-order" value="">
-    {% if user.can_edit %}
+    {% if user.is_admin %}
     <p class="drag-hint" id="workshops-drag-hint" hidden>Перетащите карточки, чтобы изменить порядок, затем нажмите «Сохранить».</p>
     {% endif %}
     <div class="workshop-board" id="workshops-sortable" data-sortable

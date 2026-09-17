@@ -161,7 +161,7 @@ class InventoryViewTests(TestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_update_item(self):
-        self.client.force_login(self.specialist)
+        self.client.force_login(self.admin)
         response = self.client.post(
             reverse("inventory:item_update", args=[self.item.pk]),
             {"name": "Сканер обновлён", "kind": ItemKind.DEVICE, "quantity": 1, "min_quantity": 2, "unit": "шт", "condition": Condition.WORN, "wear_percent": 90},

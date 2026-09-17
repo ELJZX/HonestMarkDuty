@@ -368,7 +368,7 @@ class ProductionLineCreateView(EditorRequiredMixin, CreateView):
         return reverse("equipment:workshop_lines", args=[self.object.workshop_id])
 
 
-class EquipmentUpdateView(EditorRequiredMixin, UpdateView):
+class EquipmentUpdateView(AdminRequiredMixin, UpdateView):
     model = Equipment
     form_class = EquipmentForm
     template_name = "equipment/equipment_form.html"
@@ -402,7 +402,7 @@ class ProductionLineDeleteView(AdminRequiredMixin, DeleteView):
         return reverse("equipment:workshop_lines", args=[self.object.workshop_id])
 
 
-class WorkshopReorderView(EditorRequiredMixin, View):
+class WorkshopReorderView(AdminRequiredMixin, View):
     """Сохранение порядка цехов на доске (drag & drop)."""
 
     def post(self, request):
@@ -422,7 +422,7 @@ class WorkshopReorderView(EditorRequiredMixin, View):
         return redirect("equipment:board")
 
 
-class ProductionLineReorderView(EditorRequiredMixin, View):
+class ProductionLineReorderView(AdminRequiredMixin, View):
     """Сохранение порядка линий внутри цеха (drag & drop)."""
 
     def post(self, request, pk):
@@ -443,7 +443,7 @@ class ProductionLineReorderView(EditorRequiredMixin, View):
         return redirect("equipment:workshop_lines", pk=workshop.pk)
 
 
-class ProductionLineUpdateView(EditorRequiredMixin, UpdateView):
+class ProductionLineUpdateView(AdminRequiredMixin, UpdateView):
     model = ProductionLine
     form_class = ProductionLineForm
     template_name = "equipment/line_form.html"
@@ -462,7 +462,7 @@ class ProductionLineUpdateView(EditorRequiredMixin, UpdateView):
         return reverse("equipment:workshop_lines", args=[self.object.workshop_id])
 
 
-class EquipmentStatusChangeView(EditorRequiredMixin, View):
+class EquipmentStatusChangeView(AdminRequiredMixin, View):
     def post(self, request, pk):
         equipment = get_object_or_404(Equipment, pk=pk)
         form = EquipmentStatusLogForm(request.POST)
@@ -521,7 +521,7 @@ class EquipmentCategoryCreateView(EditorRequiredMixin, CreateView):
     extra_context = {"title": "Новая категория", "back_url": "equipment:category_list"}
 
 
-class EquipmentCategoryUpdateView(EditorRequiredMixin, UpdateView):
+class EquipmentCategoryUpdateView(AdminRequiredMixin, UpdateView):
     model = EquipmentCategory
     form_class = EquipmentCategoryForm
     template_name = "equipment/category_form.html"
