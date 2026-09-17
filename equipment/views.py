@@ -194,6 +194,7 @@ class CameraWorkshopView(LoginRequiredMixin, DetailView):
                 lines.append(group)
             by_line[lkey]["cameras"].append(camera)
         ctx["lines"] = lines
+        ctx["cameras"] = cameras
         ctx["cameras_total"] = cameras.count()
         return ctx
 

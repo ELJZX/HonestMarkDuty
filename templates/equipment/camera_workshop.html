@@ -16,27 +16,23 @@
     <span class="badge badge-muted">{{ cameras_total }} камер</span>
   </div>
 
-  {% if lines %}
-  <div class="cam-lines">
-    {% for line in lines %}
-    <div class="cam-line-col">
-      <div class="camera-line-title">{{ line.name }}</div>
-      <div class="cam-wall cam-wall-stack">
-        {% for cam in line.cameras %}
-        <div class="cam-tile">
-          <div class="cam-tile-img" data-cam-open
-               data-cam-ip="{{ cam.ip_address }}"
-               data-cam-caption="{{ cam.name }} · {{ cam.ip_address|default:'—' }}"
-               title="Открыть камеру">
-            <span class="cam-ph">ожидание кадра…</span>
-            <canvas></canvas>
-          </div>
-          <div class="cam-tile-cap">
-            <a href="{% url 'equipment:equipment_detail' cam.pk %}">{{ cam.name }}</a>
-            <span class="badge {% if cam.ip_address %}badge-ok{% else %}badge-muted{% endif %}">{% if cam.ip_address %}онлайн{% else %}нет IP{% endif %}</span>
-          </div>
-        </div>
-        {% endfor %}
+  {% if cameras %}
+  <div class="cam-wall">
+    {% for cam in cameras %}
+    <div class="cam-tile">
+      <div class="cam-tile-img" data-cam-open
+           data-cam-ip="{{ cam.ip_address }}"
+           data-cam-caption="{{ cam.name }} · {{ cam.ip_address|default:'—' }}"
+           title="Открыть камеру">
+        <span class="cam-ph">ожидание кадра…</span>
+        <canvas></canvas>
+      </div>
+      <div class="cam-tile-cap">
+        <span>
+          <a href="{% url 'equipment:equipment_detail' cam.pk %}">{{ cam.name }}</a>
+          <div class="cam-line-label">{{ cam.line.name|default:"—" }}</div>
+        </span>
+        <span class="badge {% if cam.ip_address %}badge-ok{% else %}badge-muted{% endif %}">{% if cam.ip_address %}онлайн{% else %}нет IP{% endif %}</span>
       </div>
     </div>
     {% endfor %}

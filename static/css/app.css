@@ -764,6 +764,7 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
 .cam-live-box { cursor: default; max-width: 60rem; }
 .cam-tile-cap { padding: .5rem .67rem; display: flex; justify-content: space-between; align-items: center; gap: .5rem; font-family: var(--font-mono); font-size: .82rem; }
 .cam-tile-cap a { color: inherit; }
+.cam-line-label { color: var(--dim); font-size: .72rem; margin-top: .1rem; }
 .camera-group { margin-bottom: 1.33rem; }
 .camera-group-title { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); border-bottom: 1px solid var(--border); padding-bottom: .44rem; margin-bottom: .89rem; }
 .camera-line { margin-bottom: 1rem; }
