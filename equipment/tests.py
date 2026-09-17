@@ -24,7 +24,7 @@ from equipment.models import (
 class EquipmentModelTests(TestCase):
     def test_status_change_creates_log(self):
         equipment = Equipment.objects.create(
-            name="Упаковщик", inventory_number="EQ-1", status=EquipmentStatus.OPERATIONAL
+            name="Упаковщик", status=EquipmentStatus.OPERATIONAL
         )
         self.assertEqual(equipment.status_logs.count(), 0)
         equipment.status = EquipmentStatus.REPAIR
@@ -33,13 +33,13 @@ class EquipmentModelTests(TestCase):
         self.assertEqual(equipment.status_logs.first().status, EquipmentStatus.REPAIR)
 
     def test_no_log_when_status_unchanged(self):
-        equipment = Equipment.objects.create(name="Принтер", inventory_number="EQ-2")
+        equipment = Equipment.objects.create(name="Принтер")
         equipment.name = "Принтер Zebra"
         equipment.save()
         self.assertEqual(equipment.status_logs.count(), 0)
 
     def test_status_badge_mapping(self):
-        equipment = Equipment.objects.create(name="X", inventory_number="EQ-3")
+        equipment = Equipment.objects.create(name="X")
         expectations = {
             EquipmentStatus.OPERATIONAL: "badge-ok",
             EquipmentStatus.MAINTENANCE: "badge-warn",
@@ -52,7 +52,7 @@ class EquipmentModelTests(TestCase):
 
     def test_maintenance_overdue(self):
         equipment = Equipment.objects.create(
-            name="X", inventory_number="EQ-4",
+            name="X",
             next_maintenance_at=timezone.localdate() - timedelta(days=1),
         )
         self.assertTrue(equipment.is_maintenance_overdue)
@@ -60,8 +60,8 @@ class EquipmentModelTests(TestCase):
         self.assertFalse(equipment.is_maintenance_overdue)
 
     def test_str_and_maintenance_str(self):
-        equipment = Equipment.objects.create(name="Упаковщик", inventory_number="EQ-5")
-        self.assertIn("EQ-5", str(equipment))
+        equipment = Equipment.objects.create(name="Упаковщик")
+        self.assertIn("Упаковщик", str(equipment))
         record = MaintenanceRecord.objects.create(
             equipment=equipment, kind=MaintenanceKind.TO, description="ТО"
         )
@@ -79,7 +79,7 @@ class EquipmentViewTests(TestCase):
         self.viewer = User.objects.create_user(username="viewer", password="x", role=User.Role.VIEWER)
         self.category = EquipmentCategory.objects.create(name="Упаковочное")
         self.equipment = Equipment.objects.create(
-            name="Упаковщик", inventory_number="EQ-100", category=self.category,
+            name="Упаковщик", category=self.category,
             status=EquipmentStatus.OPERATIONAL,
         )
 
@@ -98,13 +98,12 @@ class EquipmentViewTests(TestCase):
             reverse("equipment:equipment_create"),
             {
                 "name": "Новое оборудование",
-                "inventory_number": "EQ-200",
                 "status": EquipmentStatus.OPERATIONAL,
                 "criticality": Criticality.MEDIUM,
             },
         )
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(Equipment.objects.filter(inventory_number="EQ-200").exists())
+        self.assertTrue(Equipment.objects.filter(name="Новое оборудование").exists())
 
     def test_viewer_cannot_create(self):
         self.client.force_login(self.viewer)
@@ -116,7 +115,6 @@ class EquipmentViewTests(TestCase):
             reverse("equipment:equipment_update", args=[self.equipment.pk]),
             {
                 "name": "Упаковщик v2",
-                "inventory_number": "EQ-100",
                 "status": EquipmentStatus.OPERATIONAL,
                 "criticality": Criticality.HIGH,
             },
@@ -211,7 +209,6 @@ class EquipmentBoardTests(TestCase):
         )
         self.equipment = Equipment.objects.create(
             name="Термоупаковщик",
-            inventory_number="EQ-300",
             workshop=self.workshop,
             line=self.line,
         )
@@ -411,7 +408,6 @@ class EquipmentBoardTests(TestCase):
             reverse("equipment:equipment_create"),
             {
                 "name": "Принтер",
-                "inventory_number": "EQ-500",
                 "manufacturer": "VideoJet",
                 "model_name": "6330",
                 "ip_address": "192.168.0.10",
@@ -422,7 +418,7 @@ class EquipmentBoardTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 302)
-        equipment = Equipment.objects.get(inventory_number="EQ-500")
+        equipment = Equipment.objects.get(name="Принтер", manufacturer="VideoJet")
         self.assertEqual(equipment.ip_address, "192.168.0.10")
         self.assertEqual(equipment.print_head, "32")
         self.assertEqual(equipment.slot, "первый")
@@ -439,7 +435,6 @@ class EquipmentBoardTests(TestCase):
         form = EquipmentForm(
             data={
                 "name": "Новое",
-                "inventory_number": "EQ-301",
                 "line": self.line.pk,
                 "status": EquipmentStatus.OPERATIONAL,
                 "criticality": Criticality.MEDIUM,
@@ -460,7 +455,6 @@ class EquipmentFilterAndEdgeTests(TestCase):
         self.category = EquipmentCategory.objects.create(name="Кат")
         self.equipment = Equipment.objects.create(
             name="Обор",
-            inventory_number="EQ-900",
             site=self.site,
             workshop=self.workshop,
             line=self.line,
@@ -479,7 +473,7 @@ class EquipmentFilterAndEdgeTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "EQ-900")
+        self.assertContains(response, "Обор")
 
     def test_create_get_initial_from_line(self):
         self.client.force_login(self.specialist)

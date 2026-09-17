@@ -19,7 +19,6 @@
         <span class="badge {{ equipment.status_badge }}">{{ equipment.get_status_display }}</span>
       </div>
       <dl class="detail-grid">
-        <dt>Инвентарный №</dt><dd class="mono">{{ equipment.inventory_number }}</dd>
         <dt>Категория</dt><dd>{{ equipment.category|default:"—" }}</dd>
         <dt>Площадка</dt><dd>{{ equipment.site|default:"—" }}</dd>
         <dt>Цех</dt><dd>{{ equipment.workshop|default:"—" }}</dd>

@@ -194,23 +194,22 @@ class Command(BaseCommand):
     def _equipment(self, site, workshops, lines):
         packing_cat, _ = EquipmentCategory.objects.get_or_create(name="Упаковочное оборудование")
         marking_cat, _ = EquipmentCategory.objects.get_or_create(name="Маркировочное оборудование")
-        line_by_inv = {
-            "EQ-001": "L-11",
-            "EQ-002": "L-11",
-            "EQ-003": "L-01",
-            "EQ-004": "L-21",
+        line_by_name = {
+            "Упаковочная машина Multivac": "L-11",
+            "Принтер этикеток Zebra ZT411": "L-11",
+            "Термоупаковщик": "L-01",
+            "Камера маркировки": "L-21",
         }
         equipment_list = []
-        for name, inv, cat, workshop, status in [
-            ("Упаковочная машина Multivac", "EQ-001", packing_cat, workshops[1], EquipmentStatus.OPERATIONAL),
-            ("Принтер этикеток Zebra ZT411", "EQ-002", marking_cat, workshops[1], EquipmentStatus.MAINTENANCE),
-            ("Термоупаковщик", "EQ-003", packing_cat, workshops[0], EquipmentStatus.REPAIR),
-            ("Камера маркировки", "EQ-004", marking_cat, workshops[2], EquipmentStatus.OPERATIONAL),
+        for name, cat, workshop, status in [
+            ("Упаковочная машина Multivac", packing_cat, workshops[1], EquipmentStatus.OPERATIONAL),
+            ("Принтер этикеток Zebra ZT411", marking_cat, workshops[1], EquipmentStatus.MAINTENANCE),
+            ("Термоупаковщик", packing_cat, workshops[0], EquipmentStatus.REPAIR),
+            ("Камера маркировки", marking_cat, workshops[2], EquipmentStatus.OPERATIONAL),
         ]:
             equipment, _ = Equipment.objects.get_or_create(
-                inventory_number=inv,
+                name=name,
                 defaults={
-                    "name": name,
                     "category": cat,
                     "site": site,
                     "workshop": workshop,
@@ -223,7 +222,7 @@ class Command(BaseCommand):
                     else timezone.localdate() + timedelta(days=60),
                 },
             )
-            line = lines.get(line_by_inv.get(inv))
+            line = lines.get(line_by_name.get(name))
             if line and equipment.line_id != line.pk:
                 equipment.line = line
                 equipment.workshop = line.workshop

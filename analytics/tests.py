@@ -17,7 +17,7 @@ class AnalyticsViewTests(TestCase):
         )
         self.workshop = Workshop.objects.create(name="Мясной цех", code="МЦ")
         self.item = InventoryItem.objects.create(name="Сканер", quantity=0, min_quantity=1, wear_percent=50)
-        Equipment.objects.create(name="Упаковщик", inventory_number="EQ-1", status=EquipmentStatus.OPERATIONAL)
+        Equipment.objects.create(name="Упаковщик", status=EquipmentStatus.OPERATIONAL)
         self.shift = Shift.objects.create(opened_by=self.specialist, workshop=self.workshop)
         JournalEntry.objects.create(shift=self.shift, action_task="Проверка печати", specialist=self.specialist)
         template = DocumentTemplate.objects.create(name="Шаблон", title_template="Т", body="B")

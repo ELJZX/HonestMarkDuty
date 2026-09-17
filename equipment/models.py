@@ -37,7 +37,6 @@ class Equipment(AuditedModel):
     """Единица оборудования на производственной площадке."""
 
     name = models.CharField("Наименование", max_length=250)
-    inventory_number = models.CharField("Инвентарный номер", max_length=60, unique=True)
     category = models.ForeignKey(
         EquipmentCategory,
         verbose_name="Категория",
@@ -103,7 +102,7 @@ class Equipment(AuditedModel):
         indexes = [models.Index(fields=("status",))]
 
     def __str__(self) -> str:
-        return f"{self.name} ({self.inventory_number})"
+        return self.name
 
     @property
     def status_badge(self) -> str:

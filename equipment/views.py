@@ -43,8 +43,8 @@ class EquipmentListView(LoginRequiredMixin, ListView):
         if query:
             qs = qs.filter(
                 Q(name__icontains=query)
-                | Q(inventory_number__icontains=query)
                 | Q(serial_number__icontains=query)
+                | Q(model_name__icontains=query)
             )
         if site:
             qs = qs.filter(site_id=site)

@@ -28,9 +28,9 @@ class MaintenanceRecordInline(admin.TabularInline):
 
 @admin.register(Equipment)
 class EquipmentAdmin(admin.ModelAdmin):
-    list_display = ("name", "inventory_number", "site", "workshop", "line", "status", "criticality")
+    list_display = ("name", "site", "workshop", "line", "status", "criticality")
     list_filter = ("status", "criticality", "site", "workshop", "line", "category")
-    search_fields = ("name", "inventory_number", "serial_number", "model_name")
+    search_fields = ("name", "serial_number", "model_name")
     inlines = (EquipmentStatusLogInline, MaintenanceRecordInline)
 
 

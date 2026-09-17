@@ -62,7 +62,6 @@ class EquipmentForm(StyledModelForm):
         model = Equipment
         fields = (
             "name",
-            "inventory_number",
             "category",
             "site",
             "workshop",
