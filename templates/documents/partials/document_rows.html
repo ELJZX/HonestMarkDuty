@@ -6,8 +6,10 @@
   <td>{{ d.workshop|default:"—" }}</td>
   <td>{% firstof d.created_by.full_name d.created_by.username "—" %}</td>
   <td class="actions">
-    <a class="btn btn-xs" href="{% url 'documents:document_detail' d.pk %}">Открыть</a>
     <a class="btn btn-xs" href="{% url 'documents:document_download' d.pk %}">Скачать</a>
+    {% if user.is_admin %}
+      <a class="btn btn-xs btn-danger" href="{% url 'documents:document_delete' d.pk %}">Удалить</a>
+    {% endif %}
   </td>
 </tr>
 {% empty %}

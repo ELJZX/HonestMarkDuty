@@ -7,7 +7,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from docx import Document as DocxDocument
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
 
 from accounts.models import User
 from core.models import Workshop
@@ -27,7 +27,6 @@ from documents.workshop_docs import (
     render_sample_text,
     short_name,
 )
-from shifts.models import Shift
 from shifts.models import Shift
 
 
@@ -276,17 +275,17 @@ class WorkshopDocumentViewTests(TestCase):
     def test_download_placeholder_document(self):
         self.client.force_login(self.specialist)
         response = self.client.get(
-            reverse("documents:workshop_document_download", args=["kmc", "sl"])
+            reverse("documents:workshop_document_download", args=["mc", "sl"])
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn("officedocument", response["Content-Type"])
-        expected = f"kmc_sl_{timezone.localdate():%d.%m.%Y}.docx"
+        expected = f"mc_sl_{timezone.localdate():%d.%m.%Y}.docx"
         self.assertIn(expected, response["Content-Disposition"])
         body = b"".join(response.streaming_content)
         self.assertGreater(len(body), 0)
         text = "\n".join(p.text for p in DocxDocument(BytesIO(body)).paragraphs)
         self.assertIn("Служебная записка", text)
-        self.assertIn("Кисломолочный цех", text)
+        self.assertIn("Малыш моцарелла", text)
 
     def test_download_uses_sample_when_present(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -319,7 +318,6 @@ class WorkshopDocumentViewTests(TestCase):
             position="Ведущий инженер по цифровой маркировке",
             role=User.Role.SPECIALIST,
         )
-        Shift.objects.create(opened_by=specialist)
 
         with tempfile.TemporaryDirectory() as tmp:
             sample = Path(tmp) / "mc_tz.docx"
@@ -328,13 +326,13 @@ class WorkshopDocumentViewTests(TestCase):
             docx.add_paragraph("Кому: Начальник")
             docx.add_paragraph("Должность: Начальник цеха №1")
             docx.add_paragraph("От: «ФИО»")
-            docx.add_paragraph("Должность: Специалист автоматизированных систем маркировки")
+            docx.add_paragraph("Должность: «ДОЛЖНОСТЬ»")
             docx.add_paragraph("От: Пупкин П.П.")
-            docx.add_paragraph("Специалист автоматизированных систем маркировки  _______ «ФАМИЛИЯ/ИНИЦИАЛЫ»")
+            docx.add_paragraph("«ДОЛЖНОСТЬ»  _______ «ФИО»")
             docx.save(str(sample))
 
             with override_settings(DOCUMENT_SAMPLES_DIR=tmp):
-                self.client.force_login(self.specialist)
+                self.client.force_login(specialist)
                 response = self.client.get(
                     reverse("documents:workshop_document_download", args=["mc", "tz"])
                 )
@@ -347,12 +345,12 @@ class WorkshopDocumentViewTests(TestCase):
         self.assertIn("_______ Бородин А.В.", text)
         self.assertIn("Должность: Начальник цеха №1", text)
         self.assertIn("Должность: Ведущий инженер по цифровой маркировке", text)
-        self.assertIn("Ведущий инженер по цифровой маркировке  _______ Бородин А.В.", text)
-        self.assertNotIn("Специалист автоматизированных систем маркировки", text)
+        self.assertIn("Ведущий инженер по цифровой маркировке\t_______ Бородин А.В.", text)
         self.assertNotIn("Пупкин", text)
         self.assertNotIn("{{", text)
         self.assertNotIn("ДАТА", text)
-        self.assertNotIn("ФИО", text)
+        self.assertNotIn("«ФИО»", text)
+        self.assertNotIn("«ДОЛЖНОСТЬ»", text)
 
     def test_unknown_code_returns_404(self):
         self.client.force_login(self.specialist)
@@ -449,12 +447,21 @@ class DocumentUploadArchiveTests(TestCase):
         self.workshop = Workshop.objects.create(name="Цех №1", code="ЦЕХ1")
         self.shift = Shift.objects.create(opened_by=self.specialist, status=Shift.Status.OPEN)
 
-    def _upload(self, name, user=None):
+    def _upload(self, name, user=None, content=b"doc-bytes", follow=False):
         self.client.force_login(user or self.specialist)
         return self.client.post(
             reverse("documents:document_upload"),
-            {"file": SimpleUploadedFile(name, b"doc-bytes")},
+            {"file": SimpleUploadedFile(name, content)},
+            follow=follow,
         )
+
+    @staticmethod
+    def _docx_bytes(text):
+        buffer = BytesIO()
+        docx = DocxDocument()
+        docx.add_paragraph(text)
+        docx.save(buffer)
+        return buffer.getvalue()
 
     def test_upload_creates_archived_document(self):
         response = self._upload("ceh1_tz_16.09.2026.docx")
@@ -490,6 +497,52 @@ class DocumentUploadArchiveTests(TestCase):
         self._upload("ceh1_tz_16.09.2026.docx", user=self.other)
         self.assertEqual(Document.objects.get().created_by, self.other)
 
+    def test_upload_author_is_logged_in_user(self):
+        # Открытая смена принадлежит другому специалисту — автором должен быть загрузивший.
+        self._upload(
+            "Отчёт 16.09.2026.docx",
+            user=self.other,
+            content=self._docx_bytes("Техническое заключение"),
+        )
+        self.assertEqual(Document.objects.get().created_by, self.other)
+
+    def test_upload_detects_kind_from_content(self):
+        self._upload(
+            "Документ 16.09.2026.docx", content=self._docx_bytes("Техническое заключение")
+        )
+        doc = Document.objects.get()
+        self.assertEqual(doc.kind, DocumentKind.TECHNICAL_REPORT)
+        self.assertEqual(doc.number, "ТЗ-0001")
+
+    def test_upload_detects_service_note_from_content(self):
+        self._upload(
+            "Документ 16.09.2026.docx", content=self._docx_bytes("Служебная записка")
+        )
+        doc = Document.objects.get()
+        self.assertEqual(doc.kind, DocumentKind.SERVICE_NOTE)
+        self.assertEqual(doc.number, "СЛ-0001")
+
+    def test_upload_unknown_kind_leaves_blank(self):
+        self._upload("Отчёт 16.09.2026.docx", content=self._docx_bytes("Просто текст"))
+        doc = Document.objects.get()
+        self.assertEqual(doc.kind, "")
+        self.assertEqual(doc.number, "")
+
+    def test_upload_parses_flexible_dates(self):
+        for name in ("файл_16_09_26.docx", "Отчёт 16.09.26.docx", "файл-16-09-2026.docx"):
+            Document.objects.all().delete()
+            self._upload(name, content=self._docx_bytes("Техническое заключение"))
+            self.assertEqual(Document.objects.get().doc_date.isoformat(), "2026-09-16")
+
+    def test_upload_without_date_shows_error(self):
+        response = self._upload(
+            "Отчёт без даты.docx",
+            content=self._docx_bytes("Текст"),
+            follow=True,
+        )
+        self.assertFalse(Document.objects.exists())
+        self.assertContains(response, "В названии файла должна быть указана дата в формате")
+
     def test_viewer_cannot_upload(self):
         viewer = User.objects.create_user(
             username="doc-viewer", password="x", role=User.Role.VIEWER
@@ -500,6 +553,34 @@ class DocumentUploadArchiveTests(TestCase):
             {"file": SimpleUploadedFile("ceh1_tz_16.09.2026.docx", b"x")},
         )
         self.assertEqual(response.status_code, 403)
+
+
+class DocumentUploadHelpersTests(TestCase):
+    def test_parse_date_from_name_formats(self):
+        from documents.views import parse_date_from_name
+
+        for stem in ("ceh1_tz_16.09.2026", "файл_16_09_26", "Отчёт 16.09.26", "файл-16-09-2026"):
+            self.assertEqual(parse_date_from_name(stem).isoformat(), "2026-09-16", stem)
+
+    def test_parse_date_from_name_rejects_invalid(self):
+        from documents.views import parse_date_from_name
+
+        self.assertIsNone(parse_date_from_name("Отчёт без даты"))
+        self.assertIsNone(parse_date_from_name("99.99.2026"))
+
+    def test_kind_from_name(self):
+        from documents.views import kind_from_name
+
+        self.assertEqual(kind_from_name("ceh1_tz_16.09.2026"), DocumentKind.TECHNICAL_REPORT)
+        self.assertEqual(kind_from_name("csm_sl_16.09.2026"), DocumentKind.SERVICE_NOTE)
+        self.assertEqual(kind_from_name("просто файл 16.09.2026"), "")
+
+    def test_workshop_from_name(self):
+        from documents.views import workshop_from_name
+
+        workshop = Workshop.objects.create(name="Цех №1", code="ЦЕХ1")
+        self.assertEqual(workshop_from_name("ceh1_tz_16.09.2026"), workshop)
+        self.assertIsNone(workshop_from_name("zzz_tz_16.09.2026"))
 
 
 class DocumentArchiveSearchTests(TestCase):
@@ -567,6 +648,60 @@ class DocumentArchiveSearchTests(TestCase):
             reverse("documents:document_list"), {"q": "нет-такого", "partial": "1"}
         )
         self.assertContains(response, "Документов нет")
+
+
+class DocumentArchiveActionsTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username="arch-admin", password="x", role=User.Role.ADMIN, is_superuser=True, is_staff=True
+        )
+        self.specialist = User.objects.create_user(
+            username="arch-user", password="x", role=User.Role.SPECIALIST
+        )
+        self.document = Document.objects.create(
+            kind=DocumentKind.TECHNICAL_REPORT,
+            number="ТЗ-0001",
+            doc_date=timezone.localdate(),
+            created_by=self.specialist,
+        )
+
+    def test_no_open_button_in_archive(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("documents:document_list"))
+        self.assertNotContains(response, "Открыть")
+        self.assertNotContains(
+            response,
+            f'href="{reverse("documents:document_detail", args=[self.document.pk])}"',
+        )
+
+    def test_delete_button_visible_only_for_admin(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("documents:document_list"))
+        self.assertContains(
+            response, reverse("documents:document_delete", args=[self.document.pk])
+        )
+
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("documents:document_list"))
+        self.assertNotContains(
+            response, reverse("documents:document_delete", args=[self.document.pk])
+        )
+
+    def test_admin_can_delete_document(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse("documents:document_delete", args=[self.document.pk])
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Document.objects.filter(pk=self.document.pk).exists())
+
+    def test_specialist_cannot_delete_document(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(
+            reverse("documents:document_delete", args=[self.document.pk])
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(Document.objects.filter(pk=self.document.pk).exists())
 
 
 class DocumentTemplateListCleanupTests(TestCase):
@@ -677,7 +812,21 @@ class WorkshopDocsFunctionTests(TestCase):
             "Специалист по маркировке  _______ «ФАМИЛИЯ/ИНИЦИАЛЫ»", context
         )
         self.assertEqual(
-            rendered, "Ведущий инженер по цифровой маркировке  _______ Бобров М.А."
+            rendered, "Ведущий инженер по цифровой маркировке\t_______ Бобров М.А."
+        )
+
+    def test_render_sample_text_fills_quoted_position(self):
+        context = document_context("Цех №1", "ceh1", self._user())
+        self.assertEqual(
+            render_sample_text("Должность: «ДОЛЖНОСТЬ»", context),
+            "Должность: Ведущий инженер по цифровой маркировке",
+        )
+
+    def test_render_sample_text_signature_with_two_underscore_groups(self):
+        context = document_context("Цех №1", "ceh1", self._user())
+        self.assertEqual(
+            render_sample_text("«ДОЛЖНОСТЬ» ___     _____ «ФИО»", context),
+            "Ведущий инженер по цифровой маркировке\t___     _____ Бобров М.А.",
         )
 
     def test_render_sample_text_keeps_chief_position(self):
@@ -705,7 +854,7 @@ class WorkshopDocsFunctionTests(TestCase):
         self.assertIn("Должность: Ведущий инженер по цифровой маркировке", texts)
         self.assertIn("От: Бобров М.А.", texts)
 
-    def test_signature_paragraph_is_right_aligned(self):
+    def test_signature_line_uses_right_tab_stop(self):
         with tempfile.TemporaryDirectory() as tmp:
             sample = Path(tmp) / "ceh1_tz.docx"
             docx = DocxDocument()
@@ -718,7 +867,16 @@ class WorkshopDocsFunctionTests(TestCase):
 
         paragraphs = list(DocxDocument(stream).paragraphs)
         self.assertIsNone(paragraphs[0].alignment)
-        self.assertEqual(paragraphs[1].alignment, WD_ALIGN_PARAGRAPH.RIGHT)
+
+        signature = paragraphs[1]
+        self.assertEqual(signature.alignment, WD_ALIGN_PARAGRAPH.LEFT)
+        self.assertIn("\t", signature.text)
+        self.assertTrue(
+            any(
+                stop.alignment == WD_TAB_ALIGNMENT.RIGHT
+                for stop in signature.paragraph_format.tab_stops
+            )
+        )
 
     def test_build_workshop_document_placeholder_without_sample(self):
         with tempfile.TemporaryDirectory() as tmp:

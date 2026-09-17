@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime
+from datetime import date
 from pathlib import Path
 
 from django.contrib import messages
@@ -21,6 +21,8 @@ from django.views.generic import (
     View,
 )
 
+from docx import Document as DocxDocument
+
 from core.mixins import AdminRequiredMixin, EditorRequiredMixin
 from core.models import Workshop
 from documents.forms import DocumentForm, DocumentTemplateForm
@@ -37,7 +39,6 @@ from documents.workshop_docs import (
     WORKSHOP_DOCUMENTS,
     build_workshop_document,
 )
-from shifts.models import Shift
 
 
 class DocumentTemplateListView(LoginRequiredMixin, ListView):
@@ -63,9 +64,7 @@ class WorkshopDocumentDownloadView(LoginRequiredMixin, View):
         if name is None or kind not in DOC_KINDS:
             raise Http404("Документ не найден")
 
-        shift = Shift.objects.open().select_related("opened_by").first()
-        specialist = shift.opened_by if shift and shift.opened_by_id else request.user
-        stream = build_workshop_document(name, code, kind, specialist=specialist)
+        stream = build_workshop_document(name, code, kind, specialist=request.user)
         filename = f"{code}_{kind}_{timezone.localdate():%d.%m.%Y}.docx"
         return FileResponse(
             stream,
@@ -101,19 +100,77 @@ class DocumentTemplateDeleteView(AdminRequiredMixin, DeleteView):
     success_url = reverse_lazy("documents:template_list")
 
 
-ARCHIVE_FILENAME_RE = re.compile(
-    r"^(?P<code>[a-z0-9]+)_(?P<kind>tz|sl)_(?P<date>\d{2}\.\d{2}\.\d{4})$",
-    re.IGNORECASE,
+DATE_IN_NAME_RE = re.compile(
+    r"(?<!\d)(?P<day>\d{1,2})[._/\-](?P<month>\d{1,2})[._/\-](?P<year>\d{2,4})(?!\d)"
 )
+KIND_TOKEN_RE = re.compile(r"(?<![a-z0-9])(?P<kind>tz|sl)(?![a-z0-9])", re.IGNORECASE)
 DOCUMENT_NUMBER_RE = re.compile(r"^[А-Яа-яA-Za-z]{2}-(\d+)$")
 
+DATE_ERROR_MESSAGE = (
+    "В названии файла должна быть указана дата в формате — ДД.ММ.ГГГГ, ДД.ММ.ГГ, "
+    "ДД_ММ_ГГГГ, ДД/ММ/ГГГГ (например: 16.09.2026, 16_09_26, 16/09/2026)."
+)
 
-def current_shift_specialist():
-    """Дежурный специалист открытой смены (или None)."""
-    from shifts.models import Shift
 
-    shift = Shift.objects.open().select_related("opened_by").first()
-    return shift.opened_by if shift else None
+def parse_date_from_name(stem: str):
+    """Ищет дату в имени файла: 16.09.26, 16_09_26, 16/09/2026 и т.п."""
+    match = DATE_IN_NAME_RE.search(stem or "")
+    if not match:
+        return None
+    day = int(match.group("day"))
+    month = int(match.group("month"))
+    year = int(match.group("year"))
+    if year < 100:
+        year += 2000
+    try:
+        return date(year, month, day)
+    except ValueError:
+        return None
+
+
+def kind_from_name(stem: str) -> str:
+    """Вид документа по токену tz/sl в имени файла (если есть)."""
+    match = KIND_TOKEN_RE.search(stem or "")
+    return match.group("kind").lower() if match else ""
+
+
+def kind_from_content(upload) -> str:
+    """Вид документа по тексту внутри файла."""
+    name = (upload.name or "").lower()
+    text = ""
+    if name.endswith(".docx"):
+        try:
+            upload.seek(0)
+            docx = DocxDocument(upload)
+            chunks = [paragraph.text for paragraph in docx.paragraphs]
+            for table in docx.tables:
+                for row in table.rows:
+                    for cell in row.cells:
+                        chunks.append(cell.text)
+            text = "\n".join(chunks)
+        except Exception:  # noqa: BLE001
+            text = ""
+    if not text:
+        try:
+            upload.seek(0)
+            text = upload.read().decode("utf-8", errors="ignore")
+        except Exception:  # noqa: BLE001
+            text = ""
+    lowered = text.lower()
+    if "служебная записка" in lowered:
+        return DocumentKind.SERVICE_NOTE
+    if "техническое заключение" in lowered:
+        return DocumentKind.TECHNICAL_REPORT
+    return ""
+
+
+def workshop_from_name(stem: str):
+    """Цех по коду (ceh1, kmc, …) в имени файла, если он там есть."""
+    lowered = (stem or "").lower()
+    for code, name in WORKSHOP_BY_CODE.items():
+        if re.search(rf"(?<![a-z0-9]){re.escape(code)}(?![a-z0-9])", lowered):
+            return Workshop.objects.filter(name=name).first()
+    return None
 
 
 def next_document_number(kind: str) -> str:
@@ -180,7 +237,7 @@ class DocumentListView(LoginRequiredMixin, ListView):
 
 
 class DocumentUploadView(EditorRequiredMixin, View):
-    """Добавление готового документа в архив по имени файла."""
+    """Добавление готового документа в архив. Дата берётся из имени файла."""
 
     def post(self, request):
         upload = request.FILES.get("file")
@@ -188,38 +245,28 @@ class DocumentUploadView(EditorRequiredMixin, View):
             messages.error(request, "Файл не выбран.")
             return redirect("documents:document_list")
 
-        match = ARCHIVE_FILENAME_RE.match(Path(upload.name).stem)
-        if not match:
-            messages.error(
-                request,
-                "Имя файла должно быть вида «код_tz_ДД.ММ.ГГГГ» или «код_sl_ДД.ММ.ГГГГ», "
-                "например ceh1_tz_16.09.2026.",
-            )
+        stem = Path(upload.name).stem
+        doc_date = parse_date_from_name(stem)
+        if doc_date is None:
+            messages.error(request, DATE_ERROR_MESSAGE)
             return redirect("documents:document_list")
 
-        try:
-            doc_date = datetime.strptime(match.group("date"), "%d.%m.%Y").date()
-        except ValueError:
-            messages.error(request, "Не удалось распознать дату в имени файла.")
-            return redirect("documents:document_list")
-
-        kind = match.group("kind").lower()
-        code = match.group("code").lower()
-        workshop_name = WORKSHOP_BY_CODE.get(code)
-        workshop = (
-            Workshop.objects.filter(name=workshop_name).first() if workshop_name else None
-        )
+        kind = kind_from_content(upload) or kind_from_name(stem)
 
         document = Document(
             kind=kind,
-            workshop=workshop,
+            workshop=workshop_from_name(stem),
             doc_date=doc_date,
-            number=next_document_number(kind),
-            created_by=current_shift_specialist() or request.user,
+            number=next_document_number(kind) if kind else "",
+            created_by=request.user,
         )
+        upload.seek(0)
         document.file.save(Path(upload.name).name, upload, save=False)
         document.save()
-        messages.success(request, f"Документ {document.number} добавлен в архив.")
+        if document.number:
+            messages.success(request, f"Документ {document.number} добавлен в архив.")
+        else:
+            messages.success(request, "Документ добавлен в архив.")
         return redirect("documents:document_list")
 
 

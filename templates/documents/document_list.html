@@ -8,7 +8,7 @@
     <form method="post" action="{% url 'documents:document_upload' %}" enctype="multipart/form-data" class="archive-upload">
       {% csrf_token %}
       <label class="btn btn-primary btn-sm">Добавить документ в архив
-        <input type="file" name="file" accept=".doc,.docx" onchange="this.form.submit()" hidden>
+        <input type="file" name="file" onchange="this.form.submit()" hidden>
       </label>
     </form>
   </div>
