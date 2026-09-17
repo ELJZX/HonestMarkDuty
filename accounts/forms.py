@@ -30,7 +30,6 @@ class UserCreateForm(UserCreationForm):
             "role",
             "position",
             "phone",
-            "workshop",
             "is_active",
         )
 
@@ -57,6 +56,5 @@ class UserUpdateForm(StyledModelForm):
             "role",
             "position",
             "phone",
-            "workshop",
             "is_active",
         )

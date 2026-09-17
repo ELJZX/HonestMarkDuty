@@ -18,8 +18,15 @@ from documents.models import (
     DocumentTemplate,
     DocumentType,
 )
-from documents.services import build_context, build_docx, render_text
-from documents.workshop_docs import WORKSHOP_DOCUMENTS
+from documents.services import MONTHS_RU, build_context, build_docx, render_text
+from documents.workshop_docs import (
+    WORKSHOP_DOCUMENTS,
+    build_workshop_document,
+    document_context,
+    render_sample_text,
+    short_name,
+)
+from shifts.models import Shift
 from shifts.models import Shift
 
 
@@ -301,6 +308,51 @@ class WorkshopDocumentViewTests(TestCase):
         self.assertIn(timezone.localdate().strftime("%d.%m.%Y"), text)
         self.assertNotIn("{{", text)
 
+    def test_sample_fills_date_and_specialist(self):
+        specialist = User.objects.create_user(
+            username="borodin",
+            password="x",
+            last_name="Бородин",
+            first_name="Александр",
+            patronymic="Викторович",
+            position="Ведущий инженер по цифровой маркировке",
+            role=User.Role.SPECIALIST,
+        )
+        Shift.objects.create(opened_by=specialist)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sample = Path(tmp) / "mc_tz.docx"
+            docx = DocxDocument()
+            docx.add_paragraph("«ДАТА» «МЕСЯЦ» «ГОД»")
+            docx.add_paragraph("Кому: Начальник")
+            docx.add_paragraph("Должность: Начальник цеха №1")
+            docx.add_paragraph("От: «ФИО»")
+            docx.add_paragraph("Должность: Специалист автоматизированных систем маркировки")
+            docx.add_paragraph("От: Пупкин П.П.")
+            docx.add_paragraph("Специалист автоматизированных систем маркировки  _______ «ФАМИЛИЯ/ИНИЦИАЛЫ»")
+            docx.save(str(sample))
+
+            with override_settings(DOCUMENT_SAMPLES_DIR=tmp):
+                self.client.force_login(self.specialist)
+                response = self.client.get(
+                    reverse("documents:workshop_document_download", args=["mc", "tz"])
+                )
+                body = b"".join(response.streaming_content)
+
+        text = "\n".join(p.text for p in DocxDocument(BytesIO(body)).paragraphs)
+        today = timezone.localdate()
+        self.assertIn(f"«{today.day:02d}» {MONTHS_RU[today.month - 1]} {today.year}", text)
+        self.assertIn("От: Бородин А.В.", text)
+        self.assertIn("_______ Бородин А.В.", text)
+        self.assertIn("Должность: Начальник цеха №1", text)
+        self.assertIn("Должность: Ведущий инженер по цифровой маркировке", text)
+        self.assertIn("Ведущий инженер по цифровой маркировке  _______ Бородин А.В.", text)
+        self.assertNotIn("Специалист автоматизированных систем маркировки", text)
+        self.assertNotIn("Пупкин", text)
+        self.assertNotIn("{{", text)
+        self.assertNotIn("ДАТА", text)
+        self.assertNotIn("ФИО", text)
+
     def test_unknown_code_returns_404(self):
         self.client.force_login(self.specialist)
         response = self.client.get(
@@ -575,3 +627,87 @@ class WorkshopDocumentDateTests(TestCase):
         self.assertIn(str(today.year), text)
         self.assertIn("Цех №1", text)
         self.assertNotIn("«ДАТА»", text)
+
+
+class WorkshopDocsFunctionTests(TestCase):
+    """Юнит-тесты функций формирования документов по цехам."""
+
+    def _user(self, **overrides):
+        data = {
+            "username": "doc-user",
+            "password": "x",
+            "last_name": "Бобров",
+            "first_name": "Максим",
+            "patronymic": "Андреевич",
+            "position": "Ведущий инженер по цифровой маркировке",
+            "role": User.Role.SPECIALIST,
+        }
+        data.update(overrides)
+        return User.objects.create_user(**data)
+
+    def test_short_name_full(self):
+        self.assertEqual(short_name(self._user()), "Бобров М.А.")
+
+    def test_short_name_without_last_name_falls_back(self):
+        user = self._user(username="fallback", last_name="", first_name="", patronymic="")
+        self.assertEqual(short_name(user), "fallback")
+
+    def test_short_name_none(self):
+        self.assertEqual(short_name(None), "")
+
+    def test_document_context_fields(self):
+        context = document_context("Цех №1", "ceh1", self._user())
+        self.assertEqual(context["workshop_name"], "Цех №1")
+        self.assertEqual(context["workshop_code"], "ceh1")
+        self.assertEqual(context["specialist"], "Бобров М.А.")
+        self.assertEqual(
+            context["specialist_position"], "Ведущий инженер по цифровой маркировке"
+        )
+        self.assertEqual(context["date_day"], f"{timezone.localdate().day:02d}")
+
+    def test_render_sample_text_fills_from_line(self):
+        context = document_context("Цех №1", "ceh1", self._user())
+        self.assertEqual(render_sample_text("От: «ФИО»", context), "От: Бобров М.А.")
+        self.assertEqual(render_sample_text("От: Иванов И.И.", context), "От: Бобров М.А.")
+
+    def test_render_sample_text_fills_signature_position_and_name(self):
+        context = document_context("Цех №1", "ceh1", self._user())
+        rendered = render_sample_text(
+            "Специалист по маркировке  _______ «ФАМИЛИЯ/ИНИЦИАЛЫ»", context
+        )
+        self.assertEqual(
+            rendered, "Ведущий инженер по цифровой маркировке  _______ Бобров М.А."
+        )
+
+    def test_render_sample_text_keeps_chief_position(self):
+        context = document_context("Цех №1", "ceh1", self._user())
+        self.assertEqual(
+            render_sample_text("Должность: Начальник цеха №1", context),
+            "Должность: Начальник цеха №1",
+        )
+
+    def test_build_workshop_document_fills_specialist_position_after_from(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sample = Path(tmp) / "ceh1_tz.docx"
+            docx = DocxDocument()
+            docx.add_paragraph("Кому: Начальник")
+            docx.add_paragraph("Должность: Начальник цеха №1")
+            docx.add_paragraph("От: Иванов И.И.")
+            docx.add_paragraph("Должность: Специалист автоматизированных систем маркировки")
+            docx.save(str(sample))
+
+            with override_settings(DOCUMENT_SAMPLES_DIR=tmp):
+                stream = build_workshop_document("Цех №1", "ceh1", "tz", self._user())
+
+        texts = [p.text for p in DocxDocument(stream).paragraphs]
+        self.assertIn("Должность: Начальник цеха №1", texts)
+        self.assertIn("Должность: Ведущий инженер по цифровой маркировке", texts)
+        self.assertIn("От: Бобров М.А.", texts)
+
+    def test_build_workshop_document_placeholder_without_sample(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with override_settings(DOCUMENT_SAMPLES_DIR=tmp):
+                stream = build_workshop_document("Малыш сырки", "ms", "sl", self._user())
+        text = "\n".join(p.text for p in DocxDocument(stream).paragraphs)
+        self.assertIn("Служебная записка", text)
+        self.assertIn("Малыш сырки", text)

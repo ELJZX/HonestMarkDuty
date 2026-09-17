@@ -37,6 +37,7 @@ from documents.workshop_docs import (
     WORKSHOP_DOCUMENTS,
     build_workshop_document,
 )
+from shifts.models import Shift
 
 
 class DocumentTemplateListView(LoginRequiredMixin, ListView):
@@ -62,7 +63,9 @@ class WorkshopDocumentDownloadView(LoginRequiredMixin, View):
         if name is None or kind not in DOC_KINDS:
             raise Http404("Документ не найден")
 
-        stream = build_workshop_document(name, code, kind)
+        shift = Shift.objects.open().select_related("opened_by").first()
+        specialist = shift.opened_by if shift and shift.opened_by_id else request.user
+        stream = build_workshop_document(name, code, kind, specialist=specialist)
         filename = f"{code}_{kind}_{timezone.localdate():%d.%m.%Y}.docx"
         return FileResponse(
             stream,

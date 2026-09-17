@@ -280,14 +280,14 @@ class SeedDemoCommandTests(TestCase):
         self.assertEqual(Workshop.objects.count(), workshops)
         self.assertEqual(Document.objects.count(), documents)
 
-    def test_seed_demo_clears_existing_admin_names(self):
+    def test_seed_demo_preserves_existing_admin_names(self):
         User.objects.create_user(
-            username="admin", password="x", last_name="Старый", first_name="Имя"
+            username="admin", password="x", last_name="Бобров", first_name="Максим"
         )
         call_command("seed_demo")
         admin = User.objects.get(username="admin")
-        self.assertEqual(admin.last_name, "")
-        self.assertEqual(admin.first_name, "")
+        self.assertEqual(admin.last_name, "Бобров")
+        self.assertEqual(admin.first_name, "Максим")
 
 
 class NavigationTemplateTests(TestCase):

@@ -70,10 +70,7 @@ class Command(BaseCommand):
         )
         if created:
             admin.set_password("admin12345")
-        if admin.last_name or admin.first_name:
-            admin.last_name = ""
-            admin.first_name = ""
-        admin.save()
+            admin.save()
         return admin
 
     # ----------------------------------------------------------- organization
