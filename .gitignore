@@ -26,3 +26,6 @@ htmlcov/
 # OS
 Thumbs.db
 .DS_Store
+
+# Word temporary lock files
+~$*

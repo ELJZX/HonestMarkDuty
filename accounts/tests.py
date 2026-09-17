@@ -122,3 +122,27 @@ class UserAdminViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.specialist.refresh_from_db()
         self.assertEqual(self.specialist.position, "Ведущий специалист")
+
+
+class UserWorkshopFieldRemovedTests(TestCase):
+    """Поле «Закреплённый цех» убрано со вкладки «Пользователи»."""
+
+    def test_forms_exclude_workshop(self):
+        from accounts.forms import UserCreateForm, UserUpdateForm
+
+        self.assertNotIn("workshop", UserCreateForm().fields)
+        self.assertNotIn("workshop", UserUpdateForm().fields)
+
+    def test_list_has_no_workshop_column(self):
+        admin = User.objects.create_user(
+            username="admin",
+            password="x",
+            role=User.Role.ADMIN,
+            is_superuser=True,
+            is_staff=True,
+        )
+        self.client.force_login(admin)
+        response = self.client.get(reverse("accounts:user_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "<th>Цех</th>")
+        self.assertNotContains(response, 'name="workshop"')
