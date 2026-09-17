@@ -5,12 +5,14 @@ from datetime import timedelta
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count, Q
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.views.generic import CreateView, DetailView, DeleteView, ListView, UpdateView, View
 
 from core.mixins import AdminRequiredMixin, EditorRequiredMixin
 from core.models import ProductionLine, ProductionSite, Workshop
+from equipment.cameras import fetch_frame
 from equipment.forms import (
     EQUIPMENT_PRESETS,
     EquipmentCategoryForm,
@@ -102,6 +104,73 @@ class EquipmentBoardView(LoginRequiredMixin, ListView):
                 f"{operational / total * 100:.2f}".replace(".", ",") if total else "0,00"
             )
         return ctx
+
+
+class CameraWallView(LoginRequiredMixin, ListView):
+    """Сетка камер, распределённая по цехам и линиям."""
+
+    template_name = "equipment/cameras.html"
+    context_object_name = "cameras"
+
+    def get_queryset(self):
+        return (
+            Equipment.objects.filter(is_active=True, camera_id__isnull=False)
+            .select_related("workshop", "line")
+            .order_by(
+                "workshop__sort_order",
+                "workshop__name",
+                "line__sort_order",
+                "line__name",
+                "name",
+            )
+        )
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        groups = []
+        by_workshop = {}
+        for camera in ctx["cameras"]:
+            workshop = camera.workshop
+            wkey = workshop.pk if workshop else 0
+            if wkey not in by_workshop:
+                group = {
+                    "workshop": workshop,
+                    "name": workshop.name if workshop else "Без цеха",
+                    "lines": [],
+                    "_lines": {},
+                }
+                by_workshop[wkey] = group
+                groups.append(group)
+            group = by_workshop[wkey]
+            line = camera.line
+            lkey = line.pk if line else 0
+            if lkey not in group["_lines"]:
+                line_group = {
+                    "line": line,
+                    "name": line.name if line else "Без линии",
+                    "cameras": [],
+                }
+                group["_lines"][lkey] = line_group
+                group["lines"].append(line_group)
+            group["_lines"][lkey]["cameras"].append(camera)
+        ctx["groups"] = groups
+        ctx["cameras_total"] = len(ctx["cameras"])
+        return ctx
+
+
+class CameraFrameView(LoginRequiredMixin, View):
+    """Проксирует JPEG-кадр камеры через сервис Camera Control."""
+
+    def get(self, request, pk):
+        equipment = get_object_or_404(Equipment, pk=pk)
+        if not equipment.camera_id:
+            raise Http404("У оборудования не указана камера.")
+        frame = fetch_frame(equipment.camera_id)
+        if not frame:
+            return HttpResponse(status=204)
+        response = HttpResponse(frame, content_type="image/jpeg")
+        response["Cache-Control"] = "no-store"
+        return response
 
 
 class WorkshopLinesView(LoginRequiredMixin, DetailView):

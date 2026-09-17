@@ -177,3 +177,8 @@ MESSAGE_STORAGE = "django.contrib.messages.storage.session.SessionStorage"
 # Название организации для документов (автозаполнение шаблонов)
 ORGANIZATION_NAME = env("ORGANIZATION_NAME", 'ООО "Пищевое производство"')
 ORGANIZATION_CITY = env("ORGANIZATION_CITY", "г. Москва")
+
+# Camera Control (доступ к камерам)
+CAMERA_CONTROL_URL = env("CAMERA_CONTROL_URL", "http://172.16.16.27:8500")
+CAMERA_CONTROL_USER = env("CAMERA_CONTROL_USER", "admin")
+CAMERA_CONTROL_PASSWORD = env("CAMERA_CONTROL_PASSWORD", "admin")

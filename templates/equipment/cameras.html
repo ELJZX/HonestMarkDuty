@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Камеры{% endblock %}
+{% block breadcrumb %}Учет / Оборудование / Камеры{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-sm btn-ghost" href="{% url 'equipment:board' %}">К цехам</a>
+  <a class="btn btn-sm btn-ghost" href="{% url 'equipment:equipment_list' %}">Весь реестр</a>
+{% endblock %}
+{% block content %}
+<div class="page-back">
+  <a class="back-arrow" href="{% url 'equipment:board' %}" title="Назад к цехам">←</a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Камеры по цехам</div>
+    <span class="badge badge-muted">{{ cameras_total }} шт.</span>
+  </div>
+
+  {% for group in groups %}
+  <div class="camera-group">
+    <div class="camera-group-title">{{ group.name }}</div>
+    {% for line in group.lines %}
+    <div class="camera-line">
+      <div class="camera-line-title">{{ line.name }}</div>
+      <div class="cam-wall">
+        {% for cam in line.cameras %}
+        <div class="cam-tile">
+          <a class="cam-tile-img" href="{% url 'equipment:equipment_detail' cam.pk %}" title="Открыть карточку">
+            <img data-cam-frame src="{% url 'equipment:camera_frame' cam.pk %}" alt="{{ cam.name }}" loading="lazy">
+          </a>
+          <div class="cam-tile-cap">
+            <a href="{% url 'equipment:equipment_detail' cam.pk %}">{{ cam.name }}</a>
+            <span class="dim mono">{{ cam.ip_address|default:"—" }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% empty %}
+  <div class="empty">Камеры не добавлены</div>
+  {% endfor %}
+</div>
+{% endblock %}

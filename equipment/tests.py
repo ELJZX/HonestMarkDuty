@@ -528,3 +528,50 @@ class SeedStructureEdgeTests(TestCase):
         with mock.patch.object(Workshop, "save", flaky_save):
             call_command("seed_structure", verbosity=0)
         self.assertTrue(Workshop.objects.filter(name="Цех №1", is_active=True).exists())
+
+
+class CameraTests(TestCase):
+    def setUp(self):
+        self.specialist = User.objects.create_user(
+            username="cam-spec", password="x", role=User.Role.SPECIALIST
+        )
+        self.workshop = Workshop.objects.create(name="КМЦ", code="КМЦ")
+        self.line = ProductionLine.objects.create(
+            workshop=self.workshop, name="AVE", code="L-AVE"
+        )
+        self.camera = Equipment.objects.create(
+            name="AVE",
+            workshop=self.workshop,
+            line=self.line,
+            ip_address="172.16.52.121",
+            camera_id=5,
+        )
+        self.plain = Equipment.objects.create(name="Стол", workshop=self.workshop)
+
+    def test_cameras_page(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("equipment:cameras"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "AVE")
+
+    def test_camera_frame_proxied(self):
+        self.client.force_login(self.specialist)
+        with mock.patch("equipment.views.fetch_frame", return_value=b"\xff\xd8\xffjpeg"):
+            response = self.client.get(
+                reverse("equipment:camera_frame", args=[self.camera.pk])
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "image/jpeg")
+
+    def test_camera_frame_without_camera(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("equipment:camera_frame", args=[self.plain.pk]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_seed_cameras_maps(self):
+        call_command("seed_cameras", verbosity=0)
+        camera = Equipment.objects.get(camera_id=5)
+        self.assertEqual(camera.name, "AVE")
+        self.assertEqual(camera.workshop, self.workshop)
+        self.assertEqual(camera.line, self.line)
+        self.assertEqual(camera.ip_address, "172.16.52.121")

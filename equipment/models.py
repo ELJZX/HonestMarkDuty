@@ -72,6 +72,7 @@ class Equipment(AuditedModel):
     manufacturer = models.CharField("Производитель", max_length=150, blank=True)
     model_name = models.CharField("Модель", max_length=150, blank=True)
     ip_address = models.CharField("IP-адрес", max_length=60, blank=True)
+    camera_id = models.PositiveIntegerField("ID камеры (Camera Control)", null=True, blank=True)
     print_head = models.CharField("Печатающая головка", max_length=50, blank=True)
     slot = models.CharField("Значение (первый/второй)", max_length=50, blank=True)
     serial_number = models.CharField("Серийный номер", max_length=150, blank=True)

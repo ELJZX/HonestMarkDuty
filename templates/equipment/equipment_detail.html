@@ -27,6 +27,18 @@
       </dl>
     </div>
 
+    {% if equipment.camera_id %}
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Камера</div>
+        {% if equipment.ip_address %}
+        <a class="btn btn-sm" href="http://{{ equipment.ip_address }}/monitor" target="_blank" rel="noopener">Открыть камеру</a>
+        {% endif %}
+      </div>
+      <img class="cam-live-img" data-cam-frame src="{% url 'equipment:camera_frame' equipment.pk %}" alt="{{ equipment.name }}">
+    </div>
+    {% endif %}
+
     <div class="card">
       <div class="card-header"><div class="card-title">История состояний</div></div>
       <ul class="timeline">

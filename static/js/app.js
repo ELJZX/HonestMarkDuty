@@ -130,6 +130,20 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
+  // Живые кадры камер (обновляем снимок каждые 2 секунды)
+  const camFrames = document.querySelectorAll("img[data-cam-frame]");
+  if (camFrames.length) {
+    camFrames.forEach(function (img) {
+      img.dataset.src = img.getAttribute("src");
+    });
+    setInterval(function () {
+      camFrames.forEach(function (img) {
+        if (!img.isConnected) return;
+        img.src = img.dataset.src + "?_=" + Date.now();
+      });
+    }, 2000);
+  }
+
   // Перетаскивание карточек ([data-sortable]) с сохранением порядка
   document.querySelectorAll("[data-sortable]").forEach(function (list) {
     const form = document.getElementById(list.dataset.form);
