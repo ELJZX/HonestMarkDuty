@@ -33,7 +33,9 @@ class EquipmentListView(LoginRequiredMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        qs = Equipment.objects.select_related("site", "workshop", "line", "category", "responsible")
+        qs = Equipment.objects.filter(camera_id__isnull=True).select_related(
+            "site", "workshop", "line", "category", "responsible"
+        )
         params = self.request.GET
         query = params.get("q")
         site = params.get("site")
@@ -63,7 +65,11 @@ class EquipmentListView(LoginRequiredMixin, ListView):
         ctx["categories"] = EquipmentCategory.objects.all()
         ctx["statuses"] = EquipmentStatus.choices
         ctx["current"] = self.request.GET
-        ctx["by_status"] = Equipment.objects.values("status").annotate(total=Count("id"))
+        ctx["by_status"] = (
+            Equipment.objects.filter(camera_id__isnull=True)
+            .values("status")
+            .annotate(total=Count("id"))
+        )
         return ctx
 
 
@@ -80,13 +86,21 @@ class EquipmentBoardView(LoginRequiredMixin, ListView):
             .annotate(
                 total_lines=Count("lines", distinct=True),
                 active_lines=Count("lines", filter=Q(lines__is_active=True), distinct=True),
-                total_equipment=Count("equipment", distinct=True),
+                total_equipment=Count(
+                    "equipment", filter=Q(equipment__camera_id__isnull=True), distinct=True
+                ),
                 active_equipment=Count(
-                    "equipment", filter=Q(equipment__is_active=True), distinct=True
+                    "equipment",
+                    filter=Q(equipment__is_active=True, equipment__camera_id__isnull=True),
+                    distinct=True,
                 ),
                 operational_equipment=Count(
                     "equipment",
-                    filter=Q(equipment__is_active=True, equipment__status=EquipmentStatus.OPERATIONAL),
+                    filter=Q(
+                        equipment__is_active=True,
+                        equipment__camera_id__isnull=True,
+                        equipment__status=EquipmentStatus.OPERATIONAL,
+                    ),
                     distinct=True,
                 ),
             )
@@ -195,11 +209,18 @@ class WorkshopLinesView(LoginRequiredMixin, DetailView):
         ctx = super().get_context_data(**kwargs)
         ctx["lines"] = (
             self.object.lines.filter(is_active=True)
-            .annotate(equipment_total=Count("equipment", filter=Q(equipment__is_active=True)))
+            .annotate(
+                equipment_total=Count(
+                    "equipment",
+                    filter=Q(equipment__is_active=True, equipment__camera_id__isnull=True),
+                )
+            )
             .order_by("sort_order", "name")
         )
         ctx["no_line_equipment"] = (
-            self.object.equipment.filter(is_active=True, line__isnull=True)
+            self.object.equipment.filter(
+                is_active=True, line__isnull=True, camera_id__isnull=True
+            )
             .select_related("category")
         )
         return ctx
@@ -218,7 +239,7 @@ class LineEquipmentView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["equipment_list"] = (
-            self.object.equipment.filter(is_active=True)
+            self.object.equipment.filter(is_active=True, camera_id__isnull=True)
             .select_related("category", "responsible")
             .order_by("name")
         )
