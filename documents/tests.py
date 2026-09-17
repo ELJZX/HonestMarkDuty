@@ -7,6 +7,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from docx import Document as DocxDocument
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from accounts.models import User
 from core.models import Workshop
@@ -703,6 +704,21 @@ class WorkshopDocsFunctionTests(TestCase):
         self.assertIn("Должность: Начальник цеха №1", texts)
         self.assertIn("Должность: Ведущий инженер по цифровой маркировке", texts)
         self.assertIn("От: Бобров М.А.", texts)
+
+    def test_signature_paragraph_is_right_aligned(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sample = Path(tmp) / "ceh1_tz.docx"
+            docx = DocxDocument()
+            docx.add_paragraph("Обычный абзац без подписи")
+            docx.add_paragraph("Ведущий инженер  _______ «ФИО»")
+            docx.save(str(sample))
+
+            with override_settings(DOCUMENT_SAMPLES_DIR=tmp):
+                stream = build_workshop_document("Цех №1", "ceh1", "tz", self._user())
+
+        paragraphs = list(DocxDocument(stream).paragraphs)
+        self.assertIsNone(paragraphs[0].alignment)
+        self.assertEqual(paragraphs[1].alignment, WD_ALIGN_PARAGRAPH.RIGHT)
 
     def test_build_workshop_document_placeholder_without_sample(self):
         with tempfile.TemporaryDirectory() as tmp:

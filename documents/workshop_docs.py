@@ -140,6 +140,8 @@ def _replace_in_paragraph(paragraph, context: dict, state: dict | None = None) -
         return
     original = "".join(run.text for run in paragraph.runs)
     stripped = original.strip()
+    if SIGNATURE_LINE_RE.match(original):
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     rendered = render_sample_text(original, context)
 
     if state is not None and stripped:
