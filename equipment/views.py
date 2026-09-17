@@ -105,7 +105,7 @@ class EquipmentBoardView(LoginRequiredMixin, ListView):
 
 
 class CameraWallView(LoginRequiredMixin, ListView):
-    """Сетка камер, распределённая по цехам и линиям."""
+    """Плитки цехов с камерами."""
 
     template_name = "equipment/cameras.html"
     context_object_name = "cameras"
@@ -134,27 +134,53 @@ class CameraWallView(LoginRequiredMixin, ListView):
                 group = {
                     "workshop": workshop,
                     "name": workshop.name if workshop else "Без цеха",
-                    "lines": [],
-                    "_lines": {},
                     "count": 0,
+                    "_lines": set(),
                 }
                 by_workshop[wkey] = group
                 groups.append(group)
             group = by_workshop[wkey]
             group["count"] += 1
-            line = camera.line
-            lkey = line.pk if line else 0
-            if lkey not in group["_lines"]:
-                line_group = {
-                    "line": line,
-                    "name": line.name if line else "Без линии",
-                    "cameras": [],
-                }
-                group["_lines"][lkey] = line_group
-                group["lines"].append(line_group)
-            group["_lines"][lkey]["cameras"].append(camera)
+            if camera.line_id:
+                group["_lines"].add(camera.line_id)
+        for group in groups:
+            group["lines_count"] = len(group["_lines"])
         ctx["groups"] = groups
         ctx["cameras_total"] = len(ctx["cameras"])
+        return ctx
+
+
+class CameraWorkshopView(LoginRequiredMixin, DetailView):
+    """Цех: линии с камерами."""
+
+    model = Workshop
+    template_name = "equipment/camera_workshop.html"
+    context_object_name = "workshop"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        cameras = (
+            Equipment.objects.filter(
+                is_active=True, camera_id__isnull=False, workshop=self.object
+            )
+            .select_related("line")
+            .order_by("line__sort_order", "line__name", "name")
+        )
+        lines = []
+        by_line = {}
+        for camera in cameras:
+            lkey = camera.line_id or 0
+            if lkey not in by_line:
+                group = {
+                    "line": camera.line,
+                    "name": camera.line.name if camera.line else "Без линии",
+                    "cameras": [],
+                }
+                by_line[lkey] = group
+                lines.append(group)
+            by_line[lkey]["cameras"].append(camera)
+        ctx["lines"] = lines
+        ctx["cameras_total"] = cameras.count()
         return ctx
 
 

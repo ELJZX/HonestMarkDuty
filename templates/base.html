@@ -48,8 +48,8 @@
         <div class="nav-items">
           <a class="nav-item {% if request.resolver_match.namespace == 'inventory' and request.resolver_match.url_name != 'location_list' and request.resolver_match.url_name != 'category_list' %}active{% endif %}" href="{% url 'inventory:item_list' %}">Склад</a>
           <a class="nav-item {% if request.resolver_match.url_name == 'location_list' %}active{% endif %}" href="{% url 'inventory:location_list' %}">Полки</a>
-          <a class="nav-item {% if request.resolver_match.namespace == 'equipment' and request.resolver_match.url_name != 'category_list' and request.resolver_match.url_name != 'cameras' %}active{% endif %}" href="{% url 'equipment:board' %}">Оборудование</a>
-          <a class="nav-item {% if request.resolver_match.url_name == 'cameras' %}active{% endif %}" href="{% url 'equipment:cameras' %}">Камеры</a>
+          <a class="nav-item {% if request.resolver_match.namespace == 'equipment' and request.resolver_match.url_name != 'category_list' and request.resolver_match.url_name != 'cameras' and request.resolver_match.url_name != 'camera_workshop' %}active{% endif %}" href="{% url 'equipment:board' %}">Оборудование</a>
+          <a class="nav-item {% if request.resolver_match.url_name == 'cameras' or request.resolver_match.url_name == 'camera_workshop' %}active{% endif %}" href="{% url 'equipment:cameras' %}">Камеры</a>
           <a class="nav-item {% if request.resolver_match.url_name == 'category_list' %}active{% endif %}" href="{% url 'equipment:category_list' %}">Категории</a>
         </div>
       </details>

@@ -14,53 +14,39 @@
 <div class="card">
   <div class="card-header">
     <div class="card-title">Камеры по цехам</div>
-    <div class="card-sub">Нажмите на кадр, чтобы открыть камеру · {{ cameras_total }} шт.</div>
+    <div class="card-sub">Выберите цех · {{ cameras_total }} камер</div>
   </div>
 
-  <div class="cam-workshops">
+  <div class="workshop-board">
     {% for group in groups %}
-    <div class="cam-workshop">
-      <div class="cam-workshop-head">
-        <img class="workshop-card-thumb" src="{% static 'img/workshop.svg' %}" alt="{{ group.name }}">
-        <div class="cam-workshop-name">{{ group.name }}</div>
-        <span class="badge badge-muted">{{ group.count }} камер</span>
-      </div>
-
-      {% for line in group.lines %}
-      <div class="camera-line">
-        <div class="camera-line-title">{{ line.name }}</div>
-        <div class="cam-wall">
-          {% for cam in line.cameras %}
-          <div class="cam-tile">
-            <div class="cam-tile-img" data-cam-open
-                 data-cam-ip="{{ cam.ip_address }}"
-                 data-cam-caption="{{ cam.name }} · {{ cam.ip_address|default:'—' }}"
-                 title="Открыть камеру">
-              <span class="cam-ph">ожидание кадра…</span>
-              <canvas></canvas>
-            </div>
-            <div class="cam-tile-cap">
-              <a href="{% url 'equipment:equipment_detail' cam.pk %}">{{ cam.name }}</a>
-              <span class="badge {% if cam.ip_address %}badge-ok{% else %}badge-muted{% endif %}">{% if cam.ip_address %}онлайн{% else %}нет IP{% endif %}</span>
-            </div>
-          </div>
-          {% endfor %}
+      {% if group.workshop %}
+      <a class="workshop-card cam-shop-card" href="{% url 'equipment:camera_workshop' group.workshop.pk %}">
+        <div class="workshop-card-head">
+          <img class="workshop-card-thumb" src="{% static 'img/workshop.svg' %}" alt="{{ group.name }}">
+          <div class="workshop-card-name">{{ group.name }}</div>
+        </div>
+        <div class="workshop-card-stats">
+          <div>Камер: <b>{{ group.count }}</b></div>
+          <div>Линий: <b>{{ group.lines_count }}</b></div>
+        </div>
+        <div class="workshop-card-actions">
+          <span class="btn workshop-card-btn">Подробнее</span>
+        </div>
+      </a>
+      {% else %}
+      <div class="workshop-card">
+        <div class="workshop-card-head">
+          <img class="workshop-card-thumb" src="{% static 'img/workshop.svg' %}" alt="{{ group.name }}">
+          <div class="workshop-card-name">{{ group.name }}</div>
+        </div>
+        <div class="workshop-card-stats">
+          <div>Камер: <b>{{ group.count }}</b></div>
         </div>
       </div>
-      {% endfor %}
-    </div>
+      {% endif %}
     {% empty %}
     <div class="empty">Камеры не добавлены</div>
     {% endfor %}
-  </div>
-</div>
-
-<div class="cam-lightbox" id="cam-lightbox" hidden>
-  <div class="cam-lightbox-backdrop" data-cam-close></div>
-  <div class="cam-lightbox-box">
-    <button class="cam-lightbox-close" type="button" data-cam-close title="Закрыть">&times;</button>
-    <iframe id="cam-lightbox-frame" title="Камера" allow="autoplay"></iframe>
-    <div class="cam-lightbox-cap" id="cam-lightbox-cap"></div>
   </div>
 </div>
 {% endblock %}

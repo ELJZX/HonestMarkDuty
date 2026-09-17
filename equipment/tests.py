@@ -552,8 +552,16 @@ class CameraTests(TestCase):
         self.client.force_login(self.specialist)
         response = self.client.get(reverse("equipment:cameras"))
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.workshop.name)
+
+    def test_camera_workshop_page(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("equipment:camera_workshop", args=[self.workshop.pk])
+        )
+        self.assertEqual(response.status_code, 200)
         self.assertContains(response, "AVE")
-        self.assertContains(response, "data-cam-ip=\"172.16.52.121\"")
+        self.assertContains(response, 'data-cam-ip="172.16.52.121"')
 
     def test_camera_detail_has_live_box(self):
         self.client.force_login(self.specialist)
