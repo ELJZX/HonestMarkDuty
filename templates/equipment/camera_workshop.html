@@ -20,6 +20,9 @@
   <div class="cam-wall">
     {% for cam in cameras %}
     <div class="cam-tile">
+      {% if user.is_admin %}
+      <a class="btn btn-danger btn-sm icon-btn cam-tile-del" href="{% url 'equipment:camera_delete' cam.pk %}" title="Удалить камеру">✕</a>
+      {% endif %}
       <div class="cam-tile-img" data-cam-open
            data-cam-ip="{{ cam.ip_address }}"
            data-cam-caption="{{ cam.name }} · {{ cam.ip_address|default:'—' }}"
@@ -41,6 +44,10 @@
   <div class="empty">В цехе нет камер</div>
   {% endif %}
 </div>
+
+{% if user.is_admin %}
+<a class="fab" href="{% url 'equipment:camera_create' %}?workshop={{ workshop.pk }}"><span class="fab-add">+</span> Добавить камеру</a>
+{% endif %}
 
 <div class="cam-lightbox" id="cam-lightbox" hidden>
   <div class="cam-lightbox-backdrop" data-cam-close></div>

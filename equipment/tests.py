@@ -544,6 +544,7 @@ class CameraTests(TestCase):
             workshop=self.workshop,
             line=self.line,
             ip_address="172.16.52.121",
+            is_camera=True,
             camera_id=5,
         )
         self.plain = Equipment.objects.create(name="Стол", workshop=self.workshop)
@@ -575,3 +576,45 @@ class CameraTests(TestCase):
         self.assertEqual(camera.workshop, self.workshop)
         self.assertEqual(camera.line, self.line)
         self.assertEqual(camera.ip_address, "172.16.52.121")
+        self.assertTrue(camera.is_camera)
+
+    def test_camera_not_in_equipment_registry(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("equipment:equipment_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "AVE")
+
+    def test_admin_can_create_camera(self):
+        admin = User.objects.create_user(
+            username="cam-admin", password="x", role=User.Role.ADMIN, is_superuser=True
+        )
+        self.client.force_login(admin)
+        response = self.client.post(
+            reverse("equipment:camera_create"),
+            {
+                "name": "Камера 2",
+                "workshop": self.workshop.pk,
+                "ip_address": "10.0.0.1",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        camera = Equipment.objects.get(name="Камера 2")
+        self.assertTrue(camera.is_camera)
+
+    def test_specialist_cannot_create_camera(self):
+        self.client.force_login(self.specialist)
+        self.assertEqual(self.client.get(reverse("equipment:camera_create")).status_code, 403)
+
+    def test_admin_can_delete_camera(self):
+        admin = User.objects.create_user(
+            username="cam-admin2", password="x", role=User.Role.ADMIN, is_superuser=True
+        )
+        self.client.force_login(admin)
+        response = self.client.post(reverse("equipment:camera_delete", args=[self.camera.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Equipment.objects.filter(pk=self.camera.pk).exists())
+
+    def test_specialist_cannot_delete_camera(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(reverse("equipment:camera_delete", args=[self.camera.pk]))
+        self.assertEqual(response.status_code, 403)

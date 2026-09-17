@@ -13,6 +13,7 @@ from core.mixins import AdminRequiredMixin, EditorRequiredMixin
 from core.models import ProductionLine, ProductionSite, Workshop
 from equipment.forms import (
     EQUIPMENT_PRESETS,
+    CameraForm,
     EquipmentCategoryForm,
     EquipmentForm,
     EquipmentStatusLogForm,
@@ -33,7 +34,7 @@ class EquipmentListView(LoginRequiredMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        qs = Equipment.objects.filter(camera_id__isnull=True).select_related(
+        qs = Equipment.objects.filter(is_camera=False).select_related(
             "site", "workshop", "line", "category", "responsible"
         )
         params = self.request.GET
@@ -66,7 +67,7 @@ class EquipmentListView(LoginRequiredMixin, ListView):
         ctx["statuses"] = EquipmentStatus.choices
         ctx["current"] = self.request.GET
         ctx["by_status"] = (
-            Equipment.objects.filter(camera_id__isnull=True)
+            Equipment.objects.filter(is_camera=False)
             .values("status")
             .annotate(total=Count("id"))
         )
@@ -87,18 +88,18 @@ class EquipmentBoardView(LoginRequiredMixin, ListView):
                 total_lines=Count("lines", distinct=True),
                 active_lines=Count("lines", filter=Q(lines__is_active=True), distinct=True),
                 total_equipment=Count(
-                    "equipment", filter=Q(equipment__camera_id__isnull=True), distinct=True
+                    "equipment", filter=Q(equipment__is_camera=False), distinct=True
                 ),
                 active_equipment=Count(
                     "equipment",
-                    filter=Q(equipment__is_active=True, equipment__camera_id__isnull=True),
+                    filter=Q(equipment__is_active=True, equipment__is_camera=False),
                     distinct=True,
                 ),
                 operational_equipment=Count(
                     "equipment",
                     filter=Q(
                         equipment__is_active=True,
-                        equipment__camera_id__isnull=True,
+                        equipment__is_camera=False,
                         equipment__status=EquipmentStatus.OPERATIONAL,
                     ),
                     distinct=True,
@@ -126,7 +127,7 @@ class CameraWallView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return (
-            Equipment.objects.filter(is_active=True, camera_id__isnull=False)
+            Equipment.objects.filter(is_active=True, is_camera=True)
             .select_related("workshop", "line")
             .order_by(
                 "workshop__sort_order",
@@ -175,7 +176,7 @@ class CameraWorkshopView(LoginRequiredMixin, DetailView):
         ctx = super().get_context_data(**kwargs)
         cameras = (
             Equipment.objects.filter(
-                is_active=True, camera_id__isnull=False, workshop=self.object
+                is_active=True, is_camera=True, workshop=self.object
             )
             .select_related("line")
             .order_by("line__sort_order", "line__name", "name")
@@ -199,6 +200,49 @@ class CameraWorkshopView(LoginRequiredMixin, DetailView):
         return ctx
 
 
+class CameraCreateView(AdminRequiredMixin, CreateView):
+    """Добавление камеры (только администратор)."""
+
+    model = Equipment
+    form_class = CameraForm
+    template_name = "core/generic_form.html"
+    extra_context = {"title": "Новая камера", "back_url": "equipment:cameras"}
+
+    def get_initial(self):
+        initial = super().get_initial()
+        workshop_id = self.request.GET.get("workshop")
+        if workshop_id:
+            initial["workshop"] = workshop_id
+        return initial
+
+    def form_valid(self, form):
+        form.instance.is_camera = True
+        messages.success(self.request, "Камера добавлена.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        workshop = self.object.workshop
+        if workshop:
+            return reverse("equipment:camera_workshop", args=[workshop.pk])
+        return reverse("equipment:cameras")
+
+
+class CameraDeleteView(AdminRequiredMixin, DeleteView):
+    """Удаление камеры (только администратор)."""
+
+    model = Equipment
+    template_name = "core/confirm_delete.html"
+
+    def get_queryset(self):
+        return Equipment.objects.filter(is_camera=True)
+
+    def get_success_url(self):
+        workshop = self.object.workshop
+        if workshop:
+            return reverse("equipment:camera_workshop", args=[workshop.pk])
+        return reverse("equipment:cameras")
+
+
 class WorkshopLinesView(LoginRequiredMixin, DetailView):
     """Список производственных линий выбранного цеха."""
 
@@ -213,14 +257,14 @@ class WorkshopLinesView(LoginRequiredMixin, DetailView):
             .annotate(
                 equipment_total=Count(
                     "equipment",
-                    filter=Q(equipment__is_active=True, equipment__camera_id__isnull=True),
+                    filter=Q(equipment__is_active=True, equipment__is_camera=False),
                 )
             )
             .order_by("sort_order", "name")
         )
         ctx["no_line_equipment"] = (
             self.object.equipment.filter(
-                is_active=True, line__isnull=True, camera_id__isnull=True
+                is_active=True, line__isnull=True, is_camera=False
             )
             .select_related("category")
         )
@@ -240,7 +284,7 @@ class LineEquipmentView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["equipment_list"] = (
-            self.object.equipment.filter(is_active=True, camera_id__isnull=True)
+            self.object.equipment.filter(is_active=True, is_camera=False)
             .select_related("category", "responsible")
             .order_by("name")
         )

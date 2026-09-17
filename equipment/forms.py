@@ -109,3 +109,20 @@ class ProductionLineForm(StyledModelForm):
         model = ProductionLine
         fields = ("workshop", "name", "code", "sort_order", "description", "is_active")
         widgets = {"description": forms.Textarea(attrs={"rows": 3})}
+
+
+class CameraForm(StyledModelForm):
+    class Meta:
+        model = Equipment
+        fields = ("name", "workshop", "line", "ip_address", "camera_id", "notes")
+        widgets = {
+            "notes": forms.Textarea(attrs={"rows": 3}),
+            "ip_address": forms.TextInput(attrs={"placeholder": "192.168.0.10"}),
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        line = cleaned.get("line")
+        if line and not cleaned.get("workshop"):
+            cleaned["workshop"] = line.workshop
+        return cleaned

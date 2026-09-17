@@ -49,4 +49,8 @@
     {% endfor %}
   </div>
 </div>
+
+{% if user.is_admin %}
+<a class="fab" href="{% url 'equipment:camera_create' %}"><span class="fab-add">+</span> Добавить камеру</a>
+{% endif %}
 {% endblock %}

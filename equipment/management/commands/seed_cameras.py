@@ -105,6 +105,7 @@ class Command(BaseCommand):
                 "workshop": workshop,
                 "line": line,
                 "ip_address": ip,
+                "is_camera": True,
                 "manufacturer": "Datalogic",
                 "model_name": "Matrix 220",
                 "is_active": True,
