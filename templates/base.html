@@ -82,8 +82,7 @@
       <div class="flex items-center gap-2">
         <button class="burger" id="burger" type="button">☰</button>
         <div class="topbar-title">
-          <a href="{% url 'analytics:dashboard' %}">{{ PROJECT_NAME }}</a>
-          <span class="crumb">/ {% block breadcrumb %}{{ PROJECT_NAME }}{% endblock %}</span>
+          {% block breadcrumb %}{% endblock %}
         </div>
       </div>
       <div class="topbar-user">

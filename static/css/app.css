@@ -155,7 +155,6 @@ code, .mono { font-family: var(--font-mono); }
   z-index: 30;
 }
 .topbar-title { font-family: var(--font-mono); font-size: 1.1rem; letter-spacing: .03em; }
-.topbar-title .crumb { color: var(--dim); }
 .back-arrow {
   display: inline-flex; align-items: center; justify-content: center;
   width: 2.44rem; height: 2.44rem; flex: none;

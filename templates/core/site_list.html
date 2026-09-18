@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Площадки{% endblock %}
-{% block breadcrumb %}Площадки{% endblock %}
+{% block breadcrumb %}Администрирование / Площадки{% endblock %}
 {% block topbar_actions %}
   {% if user.is_admin %}<a class="btn btn-primary btn-sm" href="{% url 'core:site_create' %}">+ Площадка</a>{% endif %}
 {% endblock %}

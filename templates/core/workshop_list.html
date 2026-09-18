@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Цеха{% endblock %}
-{% block breadcrumb %}Цеха{% endblock %}
+{% block breadcrumb %}Администрирование / Цеха{% endblock %}
 {% block topbar_actions %}
   {% if user.is_admin %}<a class="btn btn-primary btn-sm" href="{% url 'core:workshop_create' %}">+ Цех</a>{% endif %}
 {% endblock %}

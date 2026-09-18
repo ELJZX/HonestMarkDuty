@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ item.name }}{% endblock %}
-{% block breadcrumb %}Склад / {{ item.name }}{% endblock %}
+{% block breadcrumb %}Учет / Склад / {{ item.name }}{% endblock %}
 {% block topbar_actions %}
   <a class="btn btn-sm" href="{% url 'inventory:item_update' item.pk %}">Изменить</a>
 {% endblock %}
