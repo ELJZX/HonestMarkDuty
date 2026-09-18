@@ -165,7 +165,7 @@ class JournalViewTests(TestCase):
         self.assertEqual(created.shift, self.shift)
 
     def test_update_entry(self):
-        self.client.force_login(self.specialist)
+        self.client.force_login(self.admin)
         response = self.client.post(
             reverse("journal:entry_update", args=[self.entry.pk]),
             {
@@ -182,7 +182,7 @@ class JournalViewTests(TestCase):
         self.assertEqual(self.entry.action_task, "Обновлено")
 
     def test_delete_entry(self):
-        self.client.force_login(self.specialist)
+        self.client.force_login(self.admin)
         response = self.client.post(reverse("journal:entry_delete", args=[self.entry.pk]))
         self.assertEqual(response.status_code, 302)
         self.assertFalse(JournalEntry.objects.filter(pk=self.entry.pk).exists())

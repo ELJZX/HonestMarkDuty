@@ -160,13 +160,6 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!ip || !canvas) return;
     const proto = location.protocol === "https:" ? "wss://" : "ws://";
 
-    const ph = box.querySelector(".cam-ph");
-    setTimeout(function () {
-      if (!box.classList.contains("has-img") && ph) {
-        ph.textContent = "нет кадра — нажмите, чтобы открыть камеру";
-      }
-    }, 9000);
-
     function connect() {
       if (!box.isConnected) return;
       const uuid = camUuid();

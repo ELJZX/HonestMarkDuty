@@ -7,7 +7,7 @@ from __future__ import annotations
 from django.core.management.base import BaseCommand
 
 from core.models import ProductionLine, Workshop
-from equipment.models import Equipment, EquipmentCategory
+from equipment.models import Equipment
 
 # (id камеры в Camera Control, цех, линия, IP)
 CAMERAS = [
@@ -24,7 +24,7 @@ CAMERAS = [
     (20, "Творожный цех", "SignalPack4", "172.16.55.120"),
     (17, "Творожный цех", "Стабилобэг", "172.16.55.105"),
     (1, "ЦМЦ", "Хамба. Левая", "172.16.52.147"),
-    (2, "ЦСМ", "Хамба. Правая", "172.16.52.148"),
+    (2, "ЦМЦ", "Хамба. Правая", "172.16.52.148"),
     (22, "ЦСМ", "A3Flex", "172.16.54.10"),
     (3, "ЦСМ", "Ecolean 4", "172.16.54.33"),
     (21, "ЦСМ", "SeracAseptic1", "172.16.54.8"),
@@ -88,7 +88,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         verbose = options.get("verbosity", 1) > 0
-        category, _ = EquipmentCategory.objects.get_or_create(name="Камера")
         created = updated = 0
         for camera_id, workshop_hint, line_hint, ip in CAMERAS:
             canonical, workshop = self._resolve_workshop(workshop_hint)
@@ -101,7 +100,6 @@ class Command(BaseCommand):
                     ).first()
             defaults = {
                 "name": line_hint,
-                "category": category,
                 "workshop": workshop,
                 "line": line,
                 "ip_address": ip,

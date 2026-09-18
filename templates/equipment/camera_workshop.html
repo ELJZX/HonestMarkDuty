@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ workshop.name }} — камеры{% endblock %}
-{% block breadcrumb %}Учет / Оборудование / Камеры / {{ workshop.name }}{% endblock %}
+{% block breadcrumb %}<a href="{% url 'equipment:board' %}">Учет</a> / <a href="{% url 'equipment:board' %}">Оборудование</a> / <a href="{% url 'equipment:cameras' %}">Камеры</a> / {{ workshop.name }}{% endblock %}
 {% block topbar_actions %}
   <a class="btn btn-sm btn-ghost" href="{% url 'equipment:cameras' %}">Все цеха</a>
   <a class="btn btn-sm btn-ghost" href="{% url 'equipment:workshop_lines' workshop.pk %}">Оборудование цеха</a>

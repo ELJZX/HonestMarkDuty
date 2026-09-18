@@ -6,7 +6,6 @@ from core.forms import StyledModelForm
 from core.models import ProductionLine
 from equipment.models import (
     Equipment,
-    EquipmentCategory,
     EquipmentStatusLog,
     MaintenanceRecord,
 )
@@ -19,7 +18,6 @@ EQUIPMENT_PRESETS = [
         "name": "Терминал",
         "manufacturer": "ASUS",
         "model_name": "Tinkerboard 2S",
-        "category": "Терминал",
         "fields": "",
     },
     {
@@ -27,7 +25,6 @@ EQUIPMENT_PRESETS = [
         "name": "Камера",
         "manufacturer": "Datalogic",
         "model_name": "Matrix 220",
-        "category": "Камера",
         "fields": "ip_address",
     },
     {
@@ -35,7 +32,6 @@ EQUIPMENT_PRESETS = [
         "name": "Принтер",
         "manufacturer": "VideoJet",
         "model_name": "6330 / 6630",
-        "category": "Принтер",
         "fields": "ip_address,print_head",
     },
     {
@@ -43,7 +39,6 @@ EQUIPMENT_PRESETS = [
         "name": "Принтер",
         "manufacturer": "TSC",
         "model_name": "PEX",
-        "category": "Принтер",
         "fields": "ip_address",
     },
     {
@@ -51,7 +46,6 @@ EQUIPMENT_PRESETS = [
         "name": "Принтер",
         "manufacturer": "Markem Imaje",
         "model_name": "9450",
-        "category": "Принтер",
         "fields": "ip_address,slot",
     },
 ]
@@ -96,12 +90,6 @@ class MaintenanceRecordForm(StyledModelForm):
         model = MaintenanceRecord
         fields = ("kind", "performed_at", "description", "performer", "cost")
         widgets = {"description": forms.Textarea(attrs={"rows": 3})}
-
-
-class EquipmentCategoryForm(StyledModelForm):
-    class Meta:
-        model = EquipmentCategory
-        fields = ("name", "description")
 
 
 class ProductionLineForm(StyledModelForm):

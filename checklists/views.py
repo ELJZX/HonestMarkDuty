@@ -153,7 +153,7 @@ class ChecklistCreateView(EditorRequiredMixin, View):
         return _render_form(request, form)
 
 
-class ChecklistUpdateView(EditorRequiredMixin, View):
+class ChecklistUpdateView(AdminRequiredMixin, View):
     def get(self, request, pk):
         checklist = get_object_or_404(EquipmentChecklist, pk=pk)
         _ensure_editable(request.user, checklist)
@@ -261,7 +261,7 @@ class MarkemCreateView(EditorRequiredMixin, View):
         return _render_markem_form(request, form)
 
 
-class MarkemUpdateView(EditorRequiredMixin, View):
+class MarkemUpdateView(AdminRequiredMixin, View):
     def get(self, request, pk):
         checklist = get_object_or_404(MarkemChecklist, pk=pk)
         _ensure_markem_editable(request.user, checklist)

@@ -3,7 +3,7 @@
 {% block breadcrumb %}Сменная работа / Чеклисты / чеклист{% endblock %}
 {% block topbar_actions %}
   {% if checklist.file %}<a class="btn btn-sm" href="{{ checklist.file.url }}">Скачать XLSX</a>{% endif %}
-  {% if user.is_admin or checklist.status != "final" %}
+  {% if user.is_admin %}
     <a class="btn btn-sm" href="{% url 'checklists:checklist_update' checklist.pk %}">Изменить</a>
   {% endif %}
   {% if user.is_admin %}

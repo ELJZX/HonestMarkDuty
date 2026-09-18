@@ -1,11 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Камеры{% endblock %}
-{% block breadcrumb %}Учет / Оборудование / Камеры{% endblock %}
-{% block topbar_actions %}
-  <a class="btn btn-sm btn-ghost" href="{% url 'equipment:board' %}">К цехам</a>
-  <a class="btn btn-sm btn-ghost" href="{% url 'equipment:equipment_list' %}">Весь реестр</a>
-{% endblock %}
+{% block breadcrumb %}<a href="{% url 'equipment:board' %}">Учет</a> / <a href="{% url 'equipment:board' %}">Оборудование</a> / Камеры{% endblock %}
 {% block content %}
 <div class="page-back">
   <a class="back-arrow" href="{% url 'equipment:board' %}" title="Назад к цехам">←</a>

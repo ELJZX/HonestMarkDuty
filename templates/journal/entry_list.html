@@ -80,8 +80,10 @@
             <td class="mono">{{ row.mileage|default_if_none:"" }}</td>
             <td>
               <div class="row-actions">
+                {% if user.is_admin %}
                 <a class="btn btn-xs" href="{% url 'journal:entry_update' row.pk %}">Изменить</a>
                 <a class="btn btn-xs btn-danger" href="{% url 'journal:entry_delete' row.pk %}">Удалить</a>
+                {% endif %}
               </div>
             </td>
           </tr>

@@ -14,7 +14,6 @@ from core.models import ProductionLine, ProductionSite, Workshop
 from equipment.forms import (
     EQUIPMENT_PRESETS,
     CameraForm,
-    EquipmentCategoryForm,
     EquipmentForm,
     EquipmentStatusLogForm,
     MaintenanceRecordForm,
@@ -22,7 +21,6 @@ from equipment.forms import (
 )
 from equipment.models import (
     Equipment,
-    EquipmentCategory,
     EquipmentStatus,
 )
 
@@ -35,14 +33,13 @@ class EquipmentListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         qs = Equipment.objects.filter(is_camera=False).select_related(
-            "site", "workshop", "line", "category", "responsible"
+            "site", "workshop", "line", "responsible"
         )
         params = self.request.GET
         query = params.get("q")
         site = params.get("site")
         workshop = params.get("workshop")
         status = params.get("status")
-        category = params.get("category")
         if query:
             qs = qs.filter(
                 Q(name__icontains=query)
@@ -55,15 +52,12 @@ class EquipmentListView(LoginRequiredMixin, ListView):
             qs = qs.filter(workshop_id=workshop)
         if status:
             qs = qs.filter(status=status)
-        if category:
-            qs = qs.filter(category_id=category)
         return qs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["sites"] = ProductionSite.objects.all()
         ctx["workshops"] = Workshop.objects.all()
-        ctx["categories"] = EquipmentCategory.objects.all()
         ctx["statuses"] = EquipmentStatus.choices
         ctx["current"] = self.request.GET
         ctx["by_status"] = (
@@ -262,11 +256,8 @@ class WorkshopLinesView(LoginRequiredMixin, DetailView):
             )
             .order_by("sort_order", "name")
         )
-        ctx["no_line_equipment"] = (
-            self.object.equipment.filter(
-                is_active=True, line__isnull=True, is_camera=False
-            )
-            .select_related("category")
+        ctx["no_line_equipment"] = self.object.equipment.filter(
+            is_active=True, line__isnull=True, is_camera=False
         )
         return ctx
 
@@ -285,7 +276,7 @@ class LineEquipmentView(LoginRequiredMixin, DetailView):
         ctx = super().get_context_data(**kwargs)
         ctx["equipment_list"] = (
             self.object.equipment.filter(is_active=True, is_camera=False)
-            .select_related("category", "responsible")
+            .select_related("responsible")
             .order_by("name")
         )
         return ctx
@@ -297,7 +288,7 @@ class EquipmentDetailView(LoginRequiredMixin, DetailView):
     context_object_name = "equipment"
 
     def get_queryset(self):
-        return Equipment.objects.select_related("site", "workshop", "line", "category", "responsible")
+        return Equipment.objects.select_related("site", "workshop", "line", "responsible")
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -368,7 +359,7 @@ class ProductionLineCreateView(EditorRequiredMixin, CreateView):
         return reverse("equipment:workshop_lines", args=[self.object.workshop_id])
 
 
-class EquipmentUpdateView(EditorRequiredMixin, UpdateView):
+class EquipmentUpdateView(AdminRequiredMixin, UpdateView):
     model = Equipment
     form_class = EquipmentForm
     template_name = "equipment/equipment_form.html"
@@ -402,7 +393,7 @@ class ProductionLineDeleteView(AdminRequiredMixin, DeleteView):
         return reverse("equipment:workshop_lines", args=[self.object.workshop_id])
 
 
-class WorkshopReorderView(EditorRequiredMixin, View):
+class WorkshopReorderView(AdminRequiredMixin, View):
     """Сохранение порядка цехов на доске (drag & drop)."""
 
     def post(self, request):
@@ -422,7 +413,7 @@ class WorkshopReorderView(EditorRequiredMixin, View):
         return redirect("equipment:board")
 
 
-class ProductionLineReorderView(EditorRequiredMixin, View):
+class ProductionLineReorderView(AdminRequiredMixin, View):
     """Сохранение порядка линий внутри цеха (drag & drop)."""
 
     def post(self, request, pk):
@@ -443,7 +434,7 @@ class ProductionLineReorderView(EditorRequiredMixin, View):
         return redirect("equipment:workshop_lines", pk=workshop.pk)
 
 
-class ProductionLineUpdateView(EditorRequiredMixin, UpdateView):
+class ProductionLineUpdateView(AdminRequiredMixin, UpdateView):
     model = ProductionLine
     form_class = ProductionLineForm
     template_name = "equipment/line_form.html"
@@ -462,7 +453,7 @@ class ProductionLineUpdateView(EditorRequiredMixin, UpdateView):
         return reverse("equipment:workshop_lines", args=[self.object.workshop_id])
 
 
-class EquipmentStatusChangeView(EditorRequiredMixin, View):
+class EquipmentStatusChangeView(AdminRequiredMixin, View):
     def post(self, request, pk):
         equipment = get_object_or_404(Equipment, pk=pk)
         form = EquipmentStatusLogForm(request.POST)
@@ -505,25 +496,3 @@ class MaintenanceRecordCreateView(EditorRequiredMixin, View):
         else:
             messages.error(request, "Проверьте данные о работах.")
         return redirect("equipment:equipment_detail", pk=pk)
-
-
-class EquipmentCategoryListView(LoginRequiredMixin, ListView):
-    model = EquipmentCategory
-    template_name = "equipment/category_list.html"
-    context_object_name = "categories"
-
-
-class EquipmentCategoryCreateView(EditorRequiredMixin, CreateView):
-    model = EquipmentCategory
-    form_class = EquipmentCategoryForm
-    template_name = "equipment/category_form.html"
-    success_url = reverse_lazy("equipment:category_list")
-    extra_context = {"title": "Новая категория", "back_url": "equipment:category_list"}
-
-
-class EquipmentCategoryUpdateView(EditorRequiredMixin, UpdateView):
-    model = EquipmentCategory
-    form_class = EquipmentCategoryForm
-    template_name = "equipment/category_form.html"
-    success_url = reverse_lazy("equipment:category_list")
-    extra_context = {"title": "Редактирование категории", "back_url": "equipment:category_list"}

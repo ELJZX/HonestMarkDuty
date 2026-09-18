@@ -1,9 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ workshop.name }}{% endblock %}
-{% block breadcrumb %}Учет / Оборудование / {{ workshop.name }}{% endblock %}
-{% block topbar_actions %}
-  <a class="btn btn-sm btn-ghost" href="{% url 'equipment:equipment_list' %}?workshop={{ workshop.pk }}">Весь реестр</a>
-{% endblock %}
+{% block breadcrumb %}<a href="{% url 'equipment:board' %}">Учет</a> / <a href="{% url 'equipment:board' %}">Оборудование</a> / {{ workshop.name }}{% endblock %}
 {% block content %}
 <div class="page-back">
   <a class="back-arrow" href="{% url 'equipment:board' %}" title="Назад к цехам">←</a>
@@ -16,7 +13,7 @@
     </div>
     <div class="card-header-actions">
       <span class="badge badge-muted">{{ workshop.code|default:"—" }}</span>
-      {% if user.can_edit %}
+      {% if user.is_admin %}
       <button class="btn btn-sm" type="button" id="lines-edit-toggle">Изменить</button>
       <button class="btn btn-primary btn-sm lines-edit-action" type="submit" form="lines-reorder-form" hidden>Сохранить</button>
       <button class="btn btn-ghost btn-sm lines-edit-action" type="button" id="lines-edit-cancel" hidden>Отмена</button>
@@ -27,7 +24,7 @@
   <form method="post" action="{% url 'equipment:line_reorder' workshop.pk %}" id="lines-reorder-form">
     {% csrf_token %}
     <input type="hidden" name="order" id="lines-order" value="">
-    {% if user.can_edit %}
+    {% if user.is_admin %}
     <p class="drag-hint" id="lines-drag-hint" hidden>Перетащите карточки, чтобы изменить порядок, затем нажмите «Сохранить».</p>
     {% endif %}
     <div class="line-list" id="lines-sortable" data-sortable
@@ -50,7 +47,7 @@
           </span>
           <span class="line-card-meta">{{ line.equipment_total }} ед. →</span>
         </a>
-        {% if user.can_edit %}
+        {% if user.is_admin %}
         <a class="btn btn-sm icon-btn" href="{% url 'equipment:line_update' line.pk %}" title="Редактировать линию">✎</a>
         {% endif %}
         {% if user.is_admin %}
@@ -75,7 +72,7 @@
     <div class="equip-card">
       <a class="equip-card-main" href="{% url 'equipment:equipment_detail' e.pk %}">
         <span class="equip-card-name">{{ e.name }}</span>
-        <span class="equip-card-sub">{{ e.category|default:"—" }}</span>
+        <span class="equip-card-sub">{{ e.manufacturer|default:"" }} {{ e.model_name|default:"" }}</span>
         <span class="equip-card-foot">
           <span class="badge {{ e.status_badge }}">{{ e.get_status_display }}</span>
           <span class="equip-card-sub">Открыть →</span>

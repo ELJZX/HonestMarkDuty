@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ line.name }}{% endblock %}
-{% block breadcrumb %}Учет / Оборудование / {{ line.workshop.name }} / {{ line.name }}{% endblock %}
+{% block breadcrumb %}<a href="{% url 'equipment:board' %}">Учет</a> / <a href="{% url 'equipment:board' %}">Оборудование</a> / <a href="{% url 'equipment:workshop_lines' line.workshop.pk %}">{{ line.workshop.name }}</a> / {{ line.name }}{% endblock %}
 {% block content %}
 <div class="page-back">
   <a class="back-arrow" href="{% url 'equipment:workshop_lines' line.workshop.pk %}" title="Назад к линиям">←</a>
@@ -23,7 +23,6 @@
     <div class="equip-card">
       <a class="equip-card-main" href="{% url 'equipment:equipment_detail' e.pk %}">
         <span class="equip-card-name">{{ e.name }}</span>
-        <span class="equip-card-sub">{{ e.category|default:"—" }}</span>
         <span class="equip-card-sub">
           {{ e.manufacturer|default:"" }} {{ e.model_name|default:"" }}
         </span>
@@ -34,14 +33,8 @@
       </a>
       {% if user.is_admin %}
       <div class="equip-card-actions">
-        {% if user.can_edit %}
         <a class="btn btn-sm icon-btn" href="{% url 'equipment:equipment_update' e.pk %}" title="Редактировать оборудование">✎</a>
-        {% endif %}
         <a class="btn btn-danger btn-sm icon-btn" href="{% url 'equipment:equipment_delete' e.pk %}" title="Удалить оборудование">✕</a>
-      </div>
-      {% elif user.can_edit %}
-      <div class="equip-card-actions">
-        <a class="btn btn-sm icon-btn" href="{% url 'equipment:equipment_update' e.pk %}" title="Редактировать оборудование">✎</a>
       </div>
       {% endif %}
     </div>

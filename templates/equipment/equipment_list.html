@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Оборудование{% endblock %}
-{% block breadcrumb %}Учет / Оборудование{% endblock %}
+{% block breadcrumb %}<a href="{% url 'equipment:board' %}">Учет</a> / <a href="{% url 'equipment:board' %}">Оборудование</a>{% endblock %}
 {% block topbar_actions %}
   <a class="btn btn-primary btn-sm" href="{% url 'equipment:equipment_create' %}">+ Оборудование</a>
 {% endblock %}
@@ -19,7 +19,6 @@
 <div class="card">
   <div class="card-header">
     <div class="card-title">Оборудование на площадках</div>
-    <a class="btn btn-sm btn-ghost" href="{% url 'equipment:category_list' %}">Категории</a>
   </div>
 
   <form method="get" class="filters">
@@ -40,12 +39,6 @@
       <select class="field-input field-select" name="status">
         <option value="">Все</option>
         {% for v, l in statuses %}<option value="{{ v }}" {% if current.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
-      </select>
-    </div>
-    <div class="form-row"><label>Категория</label>
-      <select class="field-input field-select" name="category">
-        <option value="">Все</option>
-        {% for c in categories %}<option value="{{ c.pk }}" {% if current.category == c.pk|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
       </select>
     </div>
     <button class="btn" type="submit">Применить</button>

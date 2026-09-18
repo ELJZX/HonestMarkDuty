@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Категории{% endblock %}
-{% block breadcrumb %}Учет / Категории{% endblock %}
+{% block breadcrumb %}<a href="{% url 'inventory:item_list' %}">Учет</a> / <a href="{% url 'inventory:item_list' %}">Склад</a> / <a href="{% url 'inventory:category_list' %}">Категории</a>{% endblock %}
 {% block topbar_actions %}
   <a class="btn btn-primary btn-sm" href="{% url 'inventory:category_create' %}">+ Категория</a>
 {% endblock %}
@@ -16,7 +16,7 @@
           <td class="primary">{{ c.name }}</td>
           <td>{{ c.get_kind_display }}</td>
           <td class="mono">{{ c.items.count }}</td>
-          <td class="actions"><a class="btn btn-sm" href="{% url 'inventory:category_update' c.pk %}">Изменить</a></td>
+          <td class="actions">{% if user.is_admin %}<a class="btn btn-sm" href="{% url 'inventory:category_update' c.pk %}">Изменить</a>{% endif %}</td>
         </tr>
         {% empty %}
         <tr><td colspan="4" class="empty">Категории не добавлены</td></tr>

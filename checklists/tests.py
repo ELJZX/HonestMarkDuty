@@ -143,7 +143,7 @@ class ChecklistViewTests(ChecklistBaseTestCase):
             created_by=self.specialist,
             status=ChecklistStatus.FINAL,
         )
-        self.client.force_login(self.specialist)
+        self.client.force_login(self.admin)
         response = self.client.get(reverse("checklists:checklist_list"))
         self.assertEqual(response.context["current_checklist"], self.checklist)
         self.assertIn(final, list(response.context["archive_checklists"]))
@@ -267,7 +267,7 @@ class ChecklistViewTests(ChecklistBaseTestCase):
         self.assertEqual(created.status, ChecklistStatus.DRAFT)
 
     def test_update_with_finalize(self):
-        self.client.force_login(self.specialist)
+        self.client.force_login(self.admin)
         response = self.client.post(
             reverse("checklists:checklist_update", args=[self.checklist.pk]),
             {
@@ -310,7 +310,7 @@ class ChecklistViewTests(ChecklistBaseTestCase):
         self.assertIn("form", response.context)
 
     def test_update_checklist_get_and_post(self):
-        self.client.force_login(self.specialist)
+        self.client.force_login(self.admin)
         response = self.client.get(reverse("checklists:checklist_update", args=[self.checklist.pk]))
         self.assertEqual(response.status_code, 200)
         response = self.client.post(
@@ -469,7 +469,7 @@ class MarkemViewTests(MarkemBaseTestCase):
         self.assertEqual(created.status, ChecklistStatus.FINAL)
 
     def test_update_with_finalize(self):
-        self.client.force_login(self.specialist)
+        self.client.force_login(self.admin)
         response = self.client.post(
             reverse("checklists:markem_update", args=[self.checklist.pk]),
             {
@@ -548,7 +548,7 @@ class MarkemViewTests(MarkemBaseTestCase):
         )
 
     def test_update_markem_checklist_get_and_post(self):
-        self.client.force_login(self.specialist)
+        self.client.force_login(self.admin)
         self.assertEqual(
             self.client.get(
                 reverse("checklists:markem_update", args=[self.checklist.pk])
@@ -643,6 +643,9 @@ class ChecklistListBranchTests(TestCase):
         self.specialist = User.objects.create_user(
             username="cl-branch", password="x", role=User.Role.SPECIALIST
         )
+        self.admin = User.objects.create_user(
+            username="cl-branch-admin", password="x", role=User.Role.ADMIN, is_superuser=True
+        )
         self.shift = Shift.objects.create(
             opened_by=self.specialist, status=Shift.Status.OPEN
         )
@@ -685,7 +688,7 @@ class ChecklistListBranchTests(TestCase):
             performed_by=self.specialist,
             created_by=self.specialist,
         )
-        self.client.force_login(self.specialist)
+        self.client.force_login(self.admin)
         response = self.client.post(
             reverse("checklists:checklist_update", args=[checklist.pk]), {"date": "bad"}
         )
@@ -702,7 +705,7 @@ class ChecklistListBranchTests(TestCase):
             performed_by=self.specialist,
             created_by=self.specialist,
         )
-        self.client.force_login(self.specialist)
+        self.client.force_login(self.admin)
         response = self.client.post(
             reverse("checklists:markem_update", args=[checklist.pk]), {"date": "bad"}
         )

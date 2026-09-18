@@ -33,11 +33,13 @@
         <a class="btn" href="{% url 'documents:document_download' document.pk %}">Скачать DOCX</a>
         <a class="btn" href="{% url 'documents:document_print' document.pk %}">Версия для печати</a>
         {% if document.template %}
+          {% if user.is_admin %}
           <form method="post" action="{% url 'documents:document_regenerate' document.pk %}">
             {% csrf_token %}
             <button class="btn" type="submit">Пересформировать</button>
           </form>
-          {% if user.can_edit %}<a class="btn" href="{% url 'documents:document_update' document.pk %}">Изменить</a>{% endif %}
+          <a class="btn" href="{% url 'documents:document_update' document.pk %}">Изменить</a>
+          {% endif %}
         {% endif %}
       </div>
     </div>

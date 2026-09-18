@@ -22,7 +22,7 @@
     {% include "checklists/partials/matrix.html" with matrix=current_matrix %}
     <div class="form-actions">
       {% if current_checklist.file %}<a class="btn btn-sm" href="{{ current_checklist.file.url }}">Скачать XLSX</a>{% endif %}
-      {% if user.is_admin or current_checklist.status != "final" %}
+      {% if user.is_admin %}
         <a class="btn btn-primary btn-sm" href="{% url 'checklists:checklist_update' current_checklist.pk %}">Редактировать чеклист</a>
       {% endif %}
       {% if current_checklist.status != "final" %}

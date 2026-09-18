@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block title %}{{ equipment.name }}{% endblock %}
-{% block breadcrumb %}Учет / Оборудование / {{ equipment.name }}{% endblock %}
+{% block breadcrumb %}<a href="{% url 'equipment:board' %}">Учет</a> / <a href="{% url 'equipment:board' %}">Оборудование</a> / {{ equipment.name }}{% endblock %}
 {% block topbar_actions %}
-  <a class="btn btn-sm" href="{% url 'equipment:equipment_update' equipment.pk %}">Изменить</a>
   {% if user.is_admin %}
+  <a class="btn btn-sm" href="{% url 'equipment:equipment_update' equipment.pk %}">Изменить</a>
   <a class="btn btn-danger btn-sm" href="{% url 'equipment:equipment_delete' equipment.pk %}">Удалить</a>
   {% endif %}
 {% endblock %}
@@ -58,6 +58,7 @@
   </div>
 
   <div>
+    {% if user.is_admin %}
     <div class="card">
       <div class="card-header"><div class="card-title">Изменить состояние</div></div>
       <form method="post" action="{% url 'equipment:status_change' equipment.pk %}">
@@ -66,6 +67,7 @@
         <div class="form-actions"><button class="btn btn-primary" type="submit">Сохранить состояние</button></div>
       </form>
     </div>
+    {% endif %}
 
     <div class="card">
       <a class="btn btn-sm" href="{% url 'core:audit_list' %}?q={{ equipment.pk }}">История изменений</a>
