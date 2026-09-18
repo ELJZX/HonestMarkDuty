@@ -110,13 +110,6 @@ document.addEventListener("DOMContentLoaded", function () {
       setValue("id_name", btn.dataset.name);
       setValue("id_manufacturer", btn.dataset.manufacturer);
       setValue("id_model_name", btn.dataset.model);
-      const category = document.getElementById("id_category");
-      if (category && btn.dataset.category) {
-        const want = btn.dataset.category.toLowerCase();
-        Array.prototype.forEach.call(category.options, function (opt) {
-          if (opt.text.trim().toLowerCase() === want) category.value = opt.value;
-        });
-      }
       const visible = (btn.dataset.fields || "")
         .split(",")
         .map(function (s) { return s.trim(); });

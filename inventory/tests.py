@@ -251,3 +251,9 @@ class InventoryFilterAndEdgeTests(TestCase):
         form.cleaned_data = {"quantity": -3}
         with self.assertRaises(ValidationError):
             form.clean_quantity()
+
+    def test_breadcrumb_is_clickable(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("inventory:item_list"))
+        self.assertContains(response, f'href="{reverse("inventory:item_list")}"')
+        self.assertContains(response, ">Учет</a>")

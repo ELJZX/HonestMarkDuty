@@ -31,6 +31,11 @@ class UserModelTests(TestCase):
         self.assertFalse(viewer.is_admin)
         self.assertFalse(viewer.can_edit)
 
+    def test_is_staff_counts_as_admin(self):
+        user = User.objects.create_user(username="staffer", password="x", is_staff=True)
+        self.assertTrue(user.is_admin)
+        self.assertTrue(user.can_edit)
+
     def test_str_and_ordering(self):
         User.objects.create_user(username="zzz", password="x")
         User.objects.create_user(username="aaa", password="x")

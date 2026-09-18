@@ -5,7 +5,7 @@ from unittest import mock
 from django.core.management import call_command
 from django.db import IntegrityError
 from django.test import TestCase
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 
 from accounts.models import User
@@ -523,6 +523,52 @@ class SeedStructureEdgeTests(TestCase):
         with mock.patch.object(Workshop, "save", flaky_save):
             call_command("seed_structure", verbosity=0)
         self.assertTrue(Workshop.objects.filter(name="Цех №1", is_active=True).exists())
+
+
+class EquipmentPermissionAndBreadcrumbTests(TestCase):
+    """Права на изменение/удаление и кликабельные хлебные крошки."""
+
+    def setUp(self):
+        self.staff = User.objects.create_user(
+            username="perm-staff", password="x", role=User.Role.SPECIALIST, is_staff=True
+        )
+        self.specialist = User.objects.create_user(
+            username="perm-spec", password="x", role=User.Role.SPECIALIST
+        )
+        self.workshop = Workshop.objects.create(name="Цех П", code="ЦП")
+        self.equipment = Equipment.objects.create(name="Станок", workshop=self.workshop)
+
+    def test_is_staff_user_is_admin(self):
+        self.client.force_login(self.staff)
+        response = self.client.get(
+            reverse("equipment:equipment_update", args=[self.equipment.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_specialist_cannot_update_equipment(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("equipment:equipment_update", args=[self.equipment.pk])
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_specialist_can_still_create_equipment(self):
+        self.client.force_login(self.specialist)
+        self.assertEqual(
+            self.client.get(reverse("equipment:equipment_create")).status_code, 200
+        )
+
+    def test_breadcrumb_is_clickable(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("equipment:equipment_list"))
+        self.assertContains(response, f'href="{reverse("equipment:board")}"')
+        self.assertContains(response, ">Учет</a>")
+
+    def test_equipment_category_routes_removed(self):
+        with self.assertRaises(NoReverseMatch):
+            reverse("equipment:category_list")
+        with self.assertRaises(NoReverseMatch):
+            reverse("equipment:category_create")
 
 
 class CameraTests(TestCase):
