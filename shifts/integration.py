@@ -233,16 +233,23 @@ def _shift_for_date(day: date, fio: str = ""):
     if shift:
         return shift
     tz = timezone.get_current_timezone()
-    now = timezone.localtime()
-    closed = day < now.date() or (day == now.date() and now.time() >= time(20, 0))
+    today = timezone.localdate()
+    opened_at = timezone.make_aware(datetime.combine(day, time(8, 0)), tz)
+    if day > today:
+        status, closed_at = Shift.Status.PLANNED, None
+    elif day < today:
+        status = Shift.Status.CLOSED
+        closed_at = timezone.make_aware(datetime.combine(day, time(20, 0)), tz)
+    else:
+        status, closed_at = Shift.Status.OPEN, None
     return Shift.objects.create(
         external_id=external_id,
         date=day,
         kind=Shift.Kind.DAY,
         opened_by=user_for_fio(fio),
-        opened_at=timezone.make_aware(datetime.combine(day, time(8, 0)), tz),
-        closed_at=timezone.make_aware(datetime.combine(day, time(20, 0)), tz) if closed else None,
-        status=Shift.Status.CLOSED if closed else Shift.Status.OPEN,
+        opened_at=opened_at,
+        closed_at=closed_at,
+        status=status,
     )
 
 
@@ -264,12 +271,15 @@ def sync_window(days_back: int, days_ahead: int, opener=None, force: bool = Fals
     for workday in parse_schedule_html(fetch_schedule_html(opener)):
         if not (date_from <= workday.date <= date_to):
             continue
+        user = user_for_fio(workday.fio)
         shift = _shift_for_date(workday.date, workday.fio)
-        shift.opened_by = shift.opened_by or user_for_fio(workday.fio)
-        shift.closed_by = shift.closed_by or user_for_fio(workday.fio)
+        shift.opened_by = shift.opened_by or user
         shift.opened_at = timezone.make_aware(datetime.combine(workday.date, workday.start), tz)
-        shift.closed_at = timezone.make_aware(datetime.combine(workday.date, workday.end), tz)
-        shift.status = Shift.Status.CLOSED
+        if workday.date < today:
+            shift.closed_by = shift.closed_by or user
+            shift.closed_at = shift.closed_at or timezone.make_aware(
+                datetime.combine(workday.date, workday.end), tz
+            )
         shift.save()
         shifts[workday.date] = shift
         stats["workdays"] += 1
@@ -307,11 +317,18 @@ def sync_window(days_back: int, days_ahead: int, opener=None, force: bool = Fals
             )
             stats["entries"] += 1
 
-    # Итоговый статус по фактическому времени (порядок событий не важен)
+    # Итоговый статус: будущее — «Планируется», прошлое — «Закрыта», сегодня — по факту
     now = timezone.now()
+    today = timezone.localdate()
     for shift in shifts.values():
-        closed = bool(shift.closed_at and shift.closed_at <= now)
-        new_status = Shift.Status.CLOSED if closed else Shift.Status.OPEN
+        if shift.date > today:
+            new_status = Shift.Status.PLANNED
+        elif shift.date < today:
+            new_status = Shift.Status.CLOSED
+        elif shift.closed_at and shift.closed_at <= now:
+            new_status = Shift.Status.CLOSED
+        else:
+            new_status = Shift.Status.OPEN
         if shift.status != new_status:
             shift.status = new_status
             shift.save(update_fields=["status", "updated_at"])

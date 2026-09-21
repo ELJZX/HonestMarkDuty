@@ -59,7 +59,7 @@
           <td>{% firstof s.opened_by.full_name s.opened_by.username "—" %}</td>
           <td>{% firstof s.closed_by.full_name s.closed_by.username "—" %}</td>
           <td class="mono">{{ s.duration_display }}</td>
-          <td>{% if s.is_open %}<span class="badge badge-ok">открыта</span>{% else %}<span class="badge badge-muted">закрыта</span>{% endif %}</td>
+          <td><span class="badge {{ s.status_badge }}">{{ s.get_status_display }}</span></td>
           <td class="actions"><a class="btn btn-sm" href="{% url 'shifts:shift_detail' s.pk %}">Просмотр</a></td>
         </tr>
         {% empty %}

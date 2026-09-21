@@ -19,6 +19,7 @@ class Shift(AuditedModel):
     """Рабочая смена: приём в начале дня и сдача в конце."""
 
     class Status(models.TextChoices):
+        PLANNED = "planned", "Планируется"
         OPEN = "open", "Открыта"
         CLOSED = "closed", "Закрыта"
 
@@ -85,6 +86,14 @@ class Shift(AuditedModel):
     @property
     def is_open(self) -> bool:
         return self.status == self.Status.OPEN
+
+    @property
+    def status_badge(self) -> str:
+        return {
+            self.Status.PLANNED: "badge-info",
+            self.Status.OPEN: "badge-ok",
+            self.Status.CLOSED: "badge-muted",
+        }.get(self.status, "badge-muted")
 
     @property
     def duration(self):

@@ -6,7 +6,7 @@
 <div class="card">
   <div class="card-header">
     <div class="card-title">{{ shift }}</div>
-    {% if shift.is_open %}<span class="badge badge-ok">открыта</span>{% else %}<span class="badge badge-muted">закрыта</span>{% endif %}
+    <span class="badge {{ shift.status_badge }}">{{ shift.get_status_display }}</span>
   </div>
   <dl class="detail-grid">
     <dt>Дата</dt><dd>{{ shift.date|date:"d.m.Y" }}</dd>
