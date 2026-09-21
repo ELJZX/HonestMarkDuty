@@ -177,3 +177,12 @@ MESSAGE_STORAGE = "django.contrib.messages.storage.session.SessionStorage"
 # Название организации для документов (автозаполнение шаблонов)
 ORGANIZATION_NAME = env("ORGANIZATION_NAME", 'ООО "Пищевое производство"')
 ORGANIZATION_CITY = env("ORGANIZATION_CITY", "г. Москва")
+
+# Синхронизация смен/графика с внешней системой производства
+SHIFT_SYNC_URL = env("SHIFT_SYNC_URL", "http://172.16.16.26:8000")
+SHIFT_SYNC_USER = env("SHIFT_SYNC_USER", "")
+SHIFT_SYNC_PASSWORD = env("SHIFT_SYNC_PASSWORD", "")
+SHIFT_SYNC_ENABLED = env_bool("SHIFT_SYNC_ENABLED", False)
+SHIFT_SYNC_DAYS_BACK = int(env("SHIFT_SYNC_DAYS_BACK", "7") or "7")
+SHIFT_SYNC_DAYS_AHEAD = int(env("SHIFT_SYNC_DAYS_AHEAD", "7") or "7")
+SHIFT_SYNC_CREATE_USERS = env_bool("SHIFT_SYNC_CREATE_USERS", True)

@@ -28,6 +28,9 @@ class Shift(AuditedModel):
 
     date = models.DateField("Дата смены", default=timezone.localdate)
     kind = models.CharField("Тип смены", max_length=10, choices=Kind.choices, default=Kind.DAY)
+    external_id = models.CharField(
+        "Внешний ID", max_length=120, null=True, blank=True, unique=True
+    )
     workshop = models.ForeignKey(
         "core.Workshop",
         verbose_name="Цех",

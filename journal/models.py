@@ -19,6 +19,10 @@ class JournalEntry(AuditedModel):
         SHIFT_END = "shift_end", "Смена сдана"
         WORK = "work", "Работа"
 
+    external_id = models.CharField(
+        "Внешний ID", max_length=120, null=True, blank=True, unique=True
+    )
+
     shift = models.ForeignKey(
         "shifts.Shift",
         verbose_name="Смена",

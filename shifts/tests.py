@@ -279,3 +279,102 @@ class ShiftOpenEdgeTests(TestCase):
             response = self.client.post(reverse("shifts:shift_open"))
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("shifts:shift_list"))
+
+
+class ShiftIntegrationParseTests(TestCase):
+    def test_parse_schedule_html(self):
+        from shifts.integration import parse_schedule_html
+
+        html = (
+            "<table><tbody>"
+            "<tr><th>День</th><th>ФИО</th><th>Начало</th><th>Конец</th></tr>"
+            "<tr><td>18 сентября 2026 г.</td><td>Бородин Александр Владимирович</td>"
+            "<td>8:00</td><td>20:00</td><td>+7</td><td></td></tr>"
+            "</tbody></table>"
+        )
+        workdays = parse_schedule_html(html)
+        self.assertEqual(len(workdays), 1)
+        self.assertEqual(workdays[0].date.isoformat(), "2026-09-18")
+        self.assertEqual(workdays[0].fio, "Бородин Александр Владимирович")
+        self.assertEqual(workdays[0].start.hour, 8)
+        self.assertEqual(workdays[0].end.hour, 20)
+
+    def test_parse_work_comment(self):
+        from shifts.integration import parse_work_comment
+
+        data = parse_work_comment("16:49\tFinnah\t\tнастроил датчик\tпроверил")
+        self.assertEqual(data["equipment_line"], "Finnah")
+        self.assertEqual(data["action_task"], "настроил датчик")
+        self.assertEqual(data["solution"], "проверил")
+        self.assertEqual(data["downtime"], "16:49")
+
+    def test_parse_events_xlsx(self):
+        import io
+
+        from openpyxl import Workbook
+
+        from shifts.integration import parse_events_xlsx
+
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.append(["Дата и время", "ФИО", "Тип события", "Комментарий"])
+        sheet.append(["18.09.2026 08:21:13", "Бородин Александр Владимирович", "Начало смены", "Смена принята"])
+        sheet.append(["18.09.2026 19:59:40", "Бородин Александр Владимирович", "Запись", "16:49\tFinnah\t\tнастроил\tок"])
+        sheet.append(["18.09.2026 20:02:00", "Бородин Александр Владимирович", "Конец смены", "Смена сдана"])
+        buffer = io.BytesIO()
+        workbook.save(buffer)
+
+        events = parse_events_xlsx(buffer.getvalue())
+        self.assertEqual(len(events), 3)
+        self.assertEqual(events[0].kind, "start")
+        self.assertEqual(events[1].kind, "work")
+        self.assertEqual(events[2].kind, "end")
+
+
+class ShiftIntegrationSyncTests(TestCase):
+    def _xlsx(self, day):
+        import io
+
+        from openpyxl import Workbook
+
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.append(["Дата и время", "ФИО", "Тип события", "Комментарий"])
+        sheet.append([f"{day:%d.%m.%Y} 08:21:13", "Бородин Александр Владимирович", "Начало смены", "принят"])
+        sheet.append([f"{day:%d.%m.%Y} 19:59:40", "Бородин Александр Владимирович", "Запись", "16:49\tFinnah\t\tнастроил\tок"])
+        sheet.append([f"{day:%d.%m.%Y} 20:02:00", "Бородин Александр Владимирович", "Конец смены", "сдан"])
+        buffer = io.BytesIO()
+        workbook.save(buffer)
+        return buffer.getvalue()
+
+    def _schedule_html(self, day):
+        from shifts.integration import MONTHS
+
+        month_name = {v: k for k, v in MONTHS.items()}[day.month]
+        return (
+            "<table><tr><td>"
+            f"{day.day} {month_name} {day.year} г."
+            "</td><td>Бородин Александр Владимирович</td><td>8:00</td><td>20:00</td>"
+            "<td>+7</td><td></td></tr></table>"
+        )
+
+    def test_sync_creates_shift_and_journal(self):
+        from shifts.integration import sync_window
+
+        day = timezone.localdate() - timedelta(days=2)
+        with mock.patch("shifts.integration.fetch_schedule_html", return_value=self._schedule_html(day)), \
+                mock.patch("shifts.integration.fetch_events_xlsx", return_value=self._xlsx(day)):
+            result = sync_window(30, 7, opener=object(), force=True)
+
+        shift = Shift.objects.get(external_id=f"workday:{day.isoformat()}")
+        self.assertEqual(shift.opened_by.last_name, "Бородин")
+        self.assertEqual(shift.status, Shift.Status.CLOSED)
+        self.assertIsNotNone(shift.closed_at)
+        self.assertEqual(result["entries"], 1)
+        self.assertTrue(JournalEntry.objects.filter(equipment_line="Finnah").exists())
+
+    def test_sync_disabled_is_skipped(self):
+        from shifts.integration import sync_window
+
+        result = sync_window(7, 7, opener=object())
+        self.assertIn("skipped", result)
