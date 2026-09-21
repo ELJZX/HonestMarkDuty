@@ -96,14 +96,23 @@ class Shift(AuditedModel):
         }.get(self.status, "badge-muted")
 
     @property
+    def is_planned(self) -> bool:
+        return self.status == self.Status.PLANNED
+
+    @property
     def duration(self):
+        if self.is_planned or (self.opened_at and self.opened_at > timezone.now()):
+            return None
         end = self.closed_at or timezone.now()
         return end - self.opened_at
 
     @property
     def duration_display(self) -> str:
-        """Длительность в формате чч:мм:сс (без микросекунд)."""
-        total = int(self.duration.total_seconds())
+        """Длительность в формате чч:мм:сс (для будущей/планируемой — прочерк)."""
+        duration = self.duration
+        if duration is None:
+            return "—"
+        total = int(duration.total_seconds())
         hours, remainder = divmod(total, 3600)
         minutes, seconds = divmod(remainder, 60)
         return f"{hours:02d}:{minutes:02d}:{seconds:02d}"

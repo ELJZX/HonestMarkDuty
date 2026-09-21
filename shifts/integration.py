@@ -280,6 +280,10 @@ def sync_window(days_back: int, days_ahead: int, opener=None, force: bool = Fals
             shift.closed_at = shift.closed_at or timezone.make_aware(
                 datetime.combine(workday.date, workday.end), tz
             )
+        else:
+            # сегодня/будущее — плановые: сдачу проставит событие «Конец смены»
+            shift.closed_by = None
+            shift.closed_at = None
         shift.save()
         shifts[workday.date] = shift
         stats["workdays"] += 1
