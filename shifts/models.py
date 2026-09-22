@@ -41,6 +41,7 @@ class Shift(AuditedModel):
         related_name="shifts",
     )
     status = models.CharField("Статус", max_length=10, choices=Status.choices, default=Status.OPEN)
+    accepted = models.BooleanField("Смена принята", default=False)
 
     opened_by = models.ForeignKey(
         "accounts.User",

@@ -248,12 +248,13 @@ def _shift_for_date(day: date, fio: str = ""):
     today = timezone.localdate()
     opened_at = timezone.make_aware(datetime.combine(day, time(8, 0)), tz)
     if day > today:
-        status, closed_at = Shift.Status.PLANNED, None
+        status, closed_at, accepted = Shift.Status.PLANNED, None, False
     elif day < today:
         status = Shift.Status.CLOSED
         closed_at = timezone.make_aware(datetime.combine(day, time(20, 0)), tz)
+        accepted = True
     else:
-        status, closed_at = Shift.Status.OPEN, None
+        status, closed_at, accepted = Shift.Status.PLANNED, None, False
     return Shift.objects.create(
         external_id=external_id,
         date=day,
@@ -262,6 +263,7 @@ def _shift_for_date(day: date, fio: str = ""):
         opened_at=opened_at,
         closed_at=closed_at,
         status=status,
+        accepted=accepted,
     )
 
 
@@ -292,8 +294,9 @@ def sync_window(days_back: int, days_ahead: int, opener=None, force: bool = Fals
             shift.closed_at = shift.closed_at or timezone.make_aware(
                 datetime.combine(workday.date, workday.end), tz
             )
+            shift.accepted = True
         else:
-            # сегодня/будущее — плановые: сдачу проставит событие «Конец смены»
+            # сегодня/будущее — плановые: приём/сдачу проставят события
             shift.closed_by = None
             shift.closed_at = None
         shift.save()
@@ -314,13 +317,17 @@ def sync_window(days_back: int, days_ahead: int, opener=None, force: bool = Fals
             if actual:
                 shift.opened_by = actual
             shift.opened_at = event.occurred_at
+            shift.accepted = True
             shift.save(
-                update_fields=["opened_by", "opened_at", "opening_notes", "updated_at"]
+                update_fields=["opened_by", "opened_at", "accepted", "opening_notes", "updated_at"]
             )
         elif event.kind == "end":
             shift.closed_by = user_for_fio(event.fio)
             shift.closed_at = event.occurred_at
-            shift.save(update_fields=["closed_by", "closed_at", "updated_at"])
+            shift.accepted = True
+            shift.save(
+                update_fields=["closed_by", "closed_at", "accepted", "updated_at"]
+            )
         else:
             data = parse_work_comment(event.comment)
             digest = hashlib.sha1(
@@ -349,6 +356,8 @@ def sync_window(days_back: int, days_ahead: int, opener=None, force: bool = Fals
             new_status = Shift.Status.PLANNED
         elif shift.date < today:
             new_status = Shift.Status.CLOSED
+        elif not shift.accepted:
+            new_status = Shift.Status.PLANNED
         elif shift.closed_at and shift.closed_at <= now:
             new_status = Shift.Status.CLOSED
         else:
@@ -375,6 +384,25 @@ def quick_sync(force: bool = False) -> dict:
         return {"error": str(exc)}
 
     if not on_duty:
+        # дежурного нет — если смена была принята и открыта, значит сдали
+        from shifts.models import Shift
+
+        today = timezone.localdate()
+        shift = Shift.objects.filter(
+            external_id=f"workday:{today.isoformat()}",
+            status=Shift.Status.OPEN,
+            accepted=True,
+        ).first()
+        if shift:
+            user = user_for_fio(fio)
+            shift.status = Shift.Status.CLOSED
+            shift.closed_at = timezone.now()
+            if user:
+                shift.closed_by = user
+            shift.save(
+                update_fields=["status", "closed_at", "closed_by", "updated_at"]
+            )
+            return {"on_duty": False, "closed": True}
         return {"on_duty": False}
 
     from shifts.models import Shift
@@ -391,12 +419,16 @@ def quick_sync(force: bool = False) -> dict:
             opened_by=user,
             opened_at=timezone.now(),
             status=Shift.Status.OPEN,
+            accepted=True,
         )
     else:
         fields = []
         if user and shift.opened_by_id != user.pk:
             shift.opened_by = user
             fields.append("opened_by")
+        if not shift.accepted:
+            shift.accepted = True
+            fields.append("accepted")
         if shift.status != Shift.Status.OPEN:
             shift.status = Shift.Status.OPEN
             fields.append("status")

@@ -407,6 +407,29 @@ class ShiftIntegrationSyncTests(TestCase):
         result = quick_sync()
         self.assertIn("skipped", result)
 
+    def test_quick_sync_closes_shift_when_off_duty(self):
+        from django.core.cache import cache
+
+        from shifts.integration import quick_sync
+
+        cache.clear()
+        today = timezone.localdate()
+        shift = Shift.objects.create(
+            external_id=f"workday:{today.isoformat()}",
+            date=today,
+            status=Shift.Status.OPEN,
+            accepted=True,
+        )
+        with mock.patch("shifts.integration.login", return_value=object()), mock.patch(
+            "shifts.integration.fetch_current_duty",
+            return_value=(False, "Бородин Александрович"),
+        ):
+            result = quick_sync(force=True)
+        self.assertFalse(result["on_duty"])
+        shift.refresh_from_db()
+        self.assertEqual(shift.status, Shift.Status.CLOSED)
+        self.assertIsNotNone(shift.closed_at)
+
     def test_shift_list_triggers_quick_sync(self):
         from django.core.cache import cache
 
