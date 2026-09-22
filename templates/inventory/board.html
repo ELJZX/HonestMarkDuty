@@ -2,16 +2,18 @@
 {% load static %}
 {% block title %}Склад{% endblock %}
 {% block breadcrumb %}<a href="{% url 'inventory:board' %}">Учет</a> / Склад{% endblock %}
-{% block topbar_actions %}
-  <a class="btn btn-sm btn-ghost" href="{% url 'inventory:item_list' %}">Весь склад</a>
-  <a class="btn btn-sm btn-ghost" href="{% url 'inventory:kind_list' %}">Типы</a>
-  {% if user.is_admin %}<a class="btn btn-primary btn-sm" href="{% url 'inventory:kind_create' %}">+ Тип</a>{% endif %}
-{% endblock %}
 {% block content %}
 <div class="card">
   <div class="card-header">
-    <div class="card-title">Склад по типам</div>
-    <div class="card-sub">Всего позиций: {{ items_total }}</div>
+    <div>
+      <div class="card-title">Склад по типам</div>
+      <div class="card-sub">Всего позиций: {{ items_total }}</div>
+    </div>
+    <div class="card-header-actions">
+      <a class="btn btn-sm btn-ghost" href="{% url 'inventory:item_list' %}">Весь склад</a>
+      <a class="btn btn-sm btn-ghost" href="{% url 'inventory:kind_list' %}">Типы</a>
+      {% if user.is_admin %}<a class="btn btn-primary btn-sm" href="{% url 'inventory:kind_create' %}">+ Тип</a>{% endif %}
+    </div>
   </div>
 
   <div class="workshop-board">

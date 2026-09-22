@@ -1,12 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Типы позиций{% endblock %}
 {% block breadcrumb %}<a href="{% url 'inventory:board' %}">Учет</a> / <a href="{% url 'inventory:board' %}">Склад</a> / <a href="{% url 'inventory:kind_list' %}">Типы</a>{% endblock %}
-{% block topbar_actions %}
-  {% if user.is_admin %}<a class="btn btn-primary btn-sm" href="{% url 'inventory:kind_create' %}">+ Тип</a>{% endif %}
-{% endblock %}
 {% block content %}
 <div class="card">
-  <div class="card-header"><div class="card-title">Типы позиций</div></div>
+  <div class="card-header">
+    <div class="card-title">Типы позиций</div>
+    <div class="card-header-actions">
+      {% if user.is_admin %}<a class="btn btn-primary btn-sm" href="{% url 'inventory:kind_create' %}">+ Тип</a>{% endif %}
+    </div>
+  </div>
   <div class="table-wrap">
     <table class="data">
       <thead><tr><th>Иконка</th><th>Тип</th><th>Порядок</th><th>Позиций</th><th></th></tr></thead>
