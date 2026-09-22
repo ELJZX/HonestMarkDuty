@@ -87,6 +87,15 @@ class ShiftListView(LoginRequiredMixin, ListView):
     context_object_name = "shifts"
     paginate_by = 25
 
+    def get(self, request, *args, **kwargs):
+        from shifts.integration import quick_sync
+
+        try:
+            quick_sync()
+        except Exception:  # синк не должен ломать страницу
+            pass
+        return super().get(request, *args, **kwargs)
+
     def get_queryset(self):
         qs = Shift.objects.select_related("opened_by", "closed_by", "workshop")
         status = self.request.GET.get("status")

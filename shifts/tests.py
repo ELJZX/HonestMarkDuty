@@ -379,6 +379,46 @@ class ShiftIntegrationSyncTests(TestCase):
         result = sync_window(7, 7, opener=object())
         self.assertIn("skipped", result)
 
+    def test_quick_sync_marks_today_open(self):
+        from django.core.cache import cache
+
+        from shifts.integration import quick_sync
+
+        cache.clear()
+        with mock.patch("shifts.integration.login", return_value=object()), mock.patch(
+            "shifts.integration.fetch_current_duty",
+            return_value=(True, "Бородин Александр Владимирович"),
+        ):
+            result = quick_sync(force=True)
+        self.assertTrue(result["on_duty"])
+        shift = Shift.objects.get(
+            external_id=f"workday:{timezone.localdate().isoformat()}"
+        )
+        self.assertEqual(shift.status, Shift.Status.OPEN)
+        self.assertEqual(shift.opened_by.last_name, "Бородин")
+
+    def test_quick_sync_throttled(self):
+        from django.core.cache import cache
+
+        from shifts.integration import quick_sync
+
+        cache.clear()
+        cache.set("shift_quick_sync", 1, 120)
+        result = quick_sync()
+        self.assertIn("skipped", result)
+
+    def test_shift_list_triggers_quick_sync(self):
+        from django.core.cache import cache
+
+        cache.clear()
+        specialist = User.objects.create_user(
+            username="quick-sync-user", password="x", role=User.Role.SPECIALIST
+        )
+        self.client.force_login(specialist)
+        with mock.patch("shifts.integration.quick_sync") as patched:
+            self.client.get(reverse("shifts:shift_list"))
+        patched.assert_called_once()
+
     def test_sync_reflects_substitute(self):
         from shifts.integration import MONTHS, sync_window
 

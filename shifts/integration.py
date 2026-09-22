@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 
 from django.conf import settings
+from django.core.cache import cache
 from django.utils import timezone
 
 MONTHS = {
@@ -127,6 +128,17 @@ def fetch_schedule_html(opener, base_url: str | None = None) -> str:
     base = (base_url or settings.SHIFT_SYNC_URL).rstrip("/")
     with opener.open(f"{base}/main/shift/", timeout=30) as response:
         return response.read().decode("utf-8", "replace")
+
+
+def fetch_current_duty(opener, base_url: str | None = None) -> tuple[bool, str]:
+    """Один запрос к главной: кто сейчас на смене и работает ли он."""
+    base = (base_url or settings.SHIFT_SYNC_URL).rstrip("/")
+    with opener.open(f"{base}/main/", timeout=15) as response:
+        html = response.read().decode("utf-8", "replace")
+    on_duty = "duty-on-work" in html
+    match = re.search(r'current-duty-chz-fio[^>]*>([^<]*)<', html)
+    fio = (match.group(1) if match else "").strip().rstrip(":").strip()
+    return on_duty, fio
 
 
 # ------------------------------------------------------------------------ parse
@@ -346,3 +358,49 @@ def sync_window(days_back: int, days_ahead: int, opener=None, force: bool = Fals
             shift.save(update_fields=["status", "updated_at"])
 
     return stats
+
+
+def quick_sync(force: bool = False) -> dict:
+    """Лёгкий синк: один запрос к главной — обновляет статус текущей смены."""
+    if not settings.SHIFT_SYNC_ENABLED and not force:
+        return {"skipped": "SHIFT_SYNC_ENABLED is off"}
+    if not force and cache.get("shift_quick_sync"):
+        return {"skipped": "throttled"}
+    cache.set("shift_quick_sync", 1, settings.SHIFT_SYNC_QUICK_TTL)
+
+    try:
+        opener = login()
+        on_duty, fio = fetch_current_duty(opener)
+    except Exception as exc:  # сеть/авторизация — не мешаем странице
+        return {"error": str(exc)}
+
+    if not on_duty:
+        return {"on_duty": False}
+
+    from shifts.models import Shift
+
+    today = timezone.localdate()
+    external_id = f"workday:{today.isoformat()}"
+    shift = Shift.objects.filter(external_id=external_id).first()
+    user = user_for_fio(fio)
+    if shift is None:
+        Shift.objects.create(
+            external_id=external_id,
+            date=today,
+            kind=Shift.Kind.DAY,
+            opened_by=user,
+            opened_at=timezone.now(),
+            status=Shift.Status.OPEN,
+        )
+    else:
+        fields = []
+        if user and shift.opened_by_id != user.pk:
+            shift.opened_by = user
+            fields.append("opened_by")
+        if shift.status != Shift.Status.OPEN:
+            shift.status = Shift.Status.OPEN
+            fields.append("status")
+        if fields:
+            fields.append("updated_at")
+            shift.save(update_fields=fields)
+    return {"on_duty": True, "fio": fio}
