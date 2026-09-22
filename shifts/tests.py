@@ -378,3 +378,34 @@ class ShiftIntegrationSyncTests(TestCase):
 
         result = sync_window(7, 7, opener=object())
         self.assertIn("skipped", result)
+
+    def test_sync_reflects_substitute(self):
+        from shifts.integration import MONTHS, sync_window
+
+        day = timezone.localdate() - timedelta(days=2)
+        month_name = {v: k for k, v in MONTHS.items()}[day.month]
+        schedule = (
+            "<table><tr><td>"
+            f"{day.day} {month_name} {day.year} г."
+            "</td><td>Иванов Иван Иванович</td><td>8:00</td><td>20:00</td></tr></table>"
+        )
+        import io
+
+        from openpyxl import Workbook
+
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.append(["Дата и время", "ФИО", "Тип события", "Комментарий"])
+        sheet.append([f"{day:%d.%m.%Y} 08:05:00", "Петров Пётр Петрович", "Начало смены", "принят"])
+        sheet.append([f"{day:%d.%m.%Y} 20:01:00", "Петров Пётр Петрович", "Конец смены", "сдан"])
+        buffer = io.BytesIO()
+        workbook.save(buffer)
+
+        with mock.patch("shifts.integration.fetch_schedule_html", return_value=schedule), \
+                mock.patch("shifts.integration.fetch_events_xlsx", return_value=buffer.getvalue()):
+            sync_window(30, 7, opener=object(), force=True)
+
+        shift = Shift.objects.get(external_id=f"workday:{day.isoformat()}")
+        self.assertEqual(shift.opened_by.last_name, "Петров")
+        self.assertIn("Иванов", shift.opening_notes)
+        self.assertEqual(shift.closed_by.last_name, "Петров")

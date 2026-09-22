@@ -294,9 +294,17 @@ def sync_window(days_back: int, days_ahead: int, opener=None, force: bool = Fals
         shift = shifts.get(day) or _shift_for_date(day, event.fio)
         shifts[day] = shift
         if event.kind == "start":
-            shift.opened_by = shift.opened_by or user_for_fio(event.fio)
+            actual = user_for_fio(event.fio)
+            if actual and shift.opened_by_id and shift.opened_by_id != actual.pk:
+                # принял не тот, кто по графику (например, ведущий инженер подменил)
+                if not shift.opening_notes:
+                    shift.opening_notes = f"По графику: {shift.opened_by.full_name}"
+            if actual:
+                shift.opened_by = actual
             shift.opened_at = event.occurred_at
-            shift.save(update_fields=["opened_by", "opened_at", "updated_at"])
+            shift.save(
+                update_fields=["opened_by", "opened_at", "opening_notes", "updated_at"]
+            )
         elif event.kind == "end":
             shift.closed_by = user_for_fio(event.fio)
             shift.closed_at = event.occurred_at
