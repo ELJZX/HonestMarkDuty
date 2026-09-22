@@ -257,3 +257,31 @@ class InventoryFilterAndEdgeTests(TestCase):
         response = self.client.get(reverse("inventory:item_list"))
         self.assertContains(response, f'href="{reverse("inventory:item_list")}"')
         self.assertContains(response, ">Учет</a>")
+
+
+class SeedSkladCommandTests(TestCase):
+    def test_seed_sklad_creates_items_and_location(self):
+        from django.core.management import call_command
+
+        from inventory.models import InventoryItem, StorageLocation
+        from inventory.sklad_data import LOCATION_SHELF, SKLAD
+
+        call_command("seed_sklad", verbosity=0)
+        self.assertTrue(StorageLocation.objects.filter(shelf_code=LOCATION_SHELF).exists())
+        self.assertEqual(
+            InventoryItem.objects.filter(location__shelf_code=LOCATION_SHELF).count(),
+            len(SKLAD),
+        )
+
+    def test_seed_sklad_is_idempotent(self):
+        from django.core.management import call_command
+
+        from inventory.models import InventoryItem
+        from inventory.sklad_data import LOCATION_SHELF, SKLAD
+
+        call_command("seed_sklad", verbosity=0)
+        call_command("seed_sklad", verbosity=0)
+        self.assertEqual(
+            InventoryItem.objects.filter(location__shelf_code=LOCATION_SHELF).count(),
+            len(SKLAD),
+        )
