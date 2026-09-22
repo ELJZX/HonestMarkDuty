@@ -811,3 +811,27 @@ class CameraExtraTests(TestCase):
         equipment = list(response.context["equipment_list"])
         self.assertIn(self.line_plain, equipment)
         self.assertNotIn(self.cam1, equipment)
+
+
+class EquipmentFormLineTests(TestCase):
+    def test_workshop_defaults_from_line(self):
+        workshop = Workshop.objects.create(name="Цех", code="Ц")
+        line = ProductionLine.objects.create(workshop=workshop, name="Линия")
+        form = EquipmentForm(
+            data={
+                "name": "Обор",
+                "inventory_number": "EQ-700",
+                "line": line.pk,
+                "status": EquipmentStatus.OPERATIONAL,
+                "criticality": Criticality.MEDIUM,
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["workshop"], workshop)
+
+
+class SeedCamerasVerboseTests(TestCase):
+    def test_verbose_output(self):
+        out = StringIO()
+        call_command("seed_cameras", stdout=out)
+        self.assertTrue(out.getvalue().strip())

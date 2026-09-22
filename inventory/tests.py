@@ -394,3 +394,29 @@ class SeedSkladCommandTests(TestCase):
             InventoryItem.objects.filter(location__shelf_code=LOCATION_SHELF).count(),
             len(SKLAD),
         )
+
+
+class InventoryStorageFilterTests(TestCase):
+    def setUp(self):
+        self.specialist = User.objects.create_user(
+            username="inv-filter", password="x", role=User.Role.SPECIALIST
+        )
+        self.storage = Storage.objects.create(name="Новый склад")
+        self.item_type = ItemType.objects.create(name="Прибор")
+        self.item = InventoryItem.objects.create(
+            name="Позиция",
+            kind=self.item_type,
+            storage=self.storage,
+            quantity=1,
+            min_quantity=1,
+        )
+
+    def test_storage_no_kind_no_storage_filters(self):
+        self.client.force_login(self.specialist)
+        for params in (
+            {"storage": self.storage.pk},
+            {"no_kind": "1"},
+            {"no_storage": "1"},
+        ):
+            response = self.client.get(reverse("inventory:item_list"), params)
+            self.assertEqual(response.status_code, 200)

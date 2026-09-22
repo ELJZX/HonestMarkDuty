@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -84,12 +83,6 @@ class MarkemChecklistView(CurrentArchiveMixin):
         return markem_matrix(checklist)
 
 
-def _ensure_editable(user, checklist: EquipmentChecklist) -> None:
-    """Закрытый (сформированный) чеклист редактирует только администратор."""
-    if checklist.status == ChecklistStatus.FINAL and not getattr(user, "is_admin", False):
-        raise PermissionDenied("Закрытый чеклист может изменять только администратор.")
-
-
 class ChecklistListView(CurrentArchiveMixin):
     """Чеклист технического осмотра оборудования «Честный знак»."""
 
@@ -156,13 +149,11 @@ class ChecklistCreateView(EditorRequiredMixin, View):
 class ChecklistUpdateView(AdminRequiredMixin, View):
     def get(self, request, pk):
         checklist = get_object_or_404(EquipmentChecklist, pk=pk)
-        _ensure_editable(request.user, checklist)
         form = ChecklistForm(instance=checklist)
         return _render_form(request, form, checklist)
 
     def post(self, request, pk):
         checklist = get_object_or_404(EquipmentChecklist, pk=pk)
-        _ensure_editable(request.user, checklist)
         form = ChecklistForm(request.POST, instance=checklist)
         if form.is_valid():
             checklist = form.save()
@@ -217,11 +208,6 @@ class ChecklistDeleteView(AdminRequiredMixin, DeleteView):
 # --- Чеклист принтеров Markem Image 9450 -----------------------------------
 
 
-def _ensure_markem_editable(user, checklist: MarkemChecklist) -> None:
-    if checklist.status == ChecklistStatus.FINAL and not getattr(user, "is_admin", False):
-        raise PermissionDenied("Закрытый чеклист может изменять только администратор.")
-
-
 def _render_markem_form(request, form, checklist=None):
     context = {
         "form": form,
@@ -264,13 +250,11 @@ class MarkemCreateView(EditorRequiredMixin, View):
 class MarkemUpdateView(AdminRequiredMixin, View):
     def get(self, request, pk):
         checklist = get_object_or_404(MarkemChecklist, pk=pk)
-        _ensure_markem_editable(request.user, checklist)
         form = MarkemForm(instance=checklist)
         return _render_markem_form(request, form, checklist)
 
     def post(self, request, pk):
         checklist = get_object_or_404(MarkemChecklist, pk=pk)
-        _ensure_markem_editable(request.user, checklist)
         form = MarkemForm(request.POST, instance=checklist)
         if form.is_valid():
             checklist = form.save()

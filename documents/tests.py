@@ -885,3 +885,148 @@ class WorkshopDocsFunctionTests(TestCase):
         text = "\n".join(p.text for p in DocxDocument(stream).paragraphs)
         self.assertIn("Служебная записка", text)
         self.assertIn("Малыш сырки", text)
+
+
+class WorkshopDocsEdgeTests(TestCase):
+    def test_replace_quoted_empty_value(self):
+        from documents.workshop_docs import _replace_quoted
+
+        self.assertEqual(_replace_quoted("«ФИО»", "ФИО", ""), "«ФИО»")
+
+    def test_signature_line_no_match(self):
+        from documents.workshop_docs import _render_signature_line
+
+        self.assertEqual(
+            _render_signature_line("обычный текст", "Позиция", "ФИО"), "обычный текст"
+        )
+
+    def test_signature_line_after_without_specialist(self):
+        from documents.workshop_docs import _render_signature_line
+
+        self.assertEqual(_render_signature_line("_______ Петров", "", ""), "_______ Петров")
+
+    def test_signature_line_only_underscores(self):
+        from documents.workshop_docs import _render_signature_line
+
+        self.assertEqual(_render_signature_line("_______", "Позиция", "ФИО"), "_______")
+
+    def test_render_sample_text_empty(self):
+        from documents.workshop_docs import render_sample_text
+
+        self.assertEqual(render_sample_text("", {}), "")
+
+
+class DocumentArchiveHelperTests(TestCase):
+    def test_parse_date_from_name_formats(self):
+        from documents.views import parse_date_from_name
+
+        self.assertEqual(parse_date_from_name("ceh1_tz_16.09.2026").isoformat(), "2026-09-16")
+        self.assertEqual(parse_date_from_name("doc_16_09_26").isoformat(), "2026-09-16")
+        self.assertEqual(parse_date_from_name("doc_16/09/2026").isoformat(), "2026-09-16")
+        self.assertIsNone(parse_date_from_name("no-date"))
+        self.assertIsNone(parse_date_from_name("99.99.2026"))
+
+    def test_kind_from_name(self):
+        from documents.views import kind_from_name
+
+        self.assertEqual(kind_from_name("ceh1_tz_16.09.2026"), "tz")
+        self.assertEqual(kind_from_name("csm_sl_16.09.2026"), "sl")
+        self.assertEqual(kind_from_name("ceh1_16.09.2026"), "")
+
+    def test_workshop_from_name(self):
+        from documents.views import workshop_from_name
+
+        Workshop.objects.create(name="Цех №1", code="ЦЕХ1")
+        self.assertEqual(workshop_from_name("ceh1_tz_16.09.2026").name, "Цех №1")
+        self.assertIsNone(workshop_from_name("zzz_tz_16.09.2026"))
+
+    def test_kind_from_content(self):
+        from documents.views import kind_from_content
+
+        docx = DocxDocument()
+        docx.add_paragraph("Служебная записка по заявкам")
+        buffer = BytesIO()
+        docx.save(buffer)
+        self.assertEqual(
+            kind_from_content(SimpleUploadedFile("a.docx", buffer.getvalue())),
+            DocumentKind.SERVICE_NOTE,
+        )
+
+        docx_table = DocxDocument()
+        docx_table.add_table(rows=1, cols=1).cell(0, 0).text = "Техническое заключение"
+        table_buffer = BytesIO()
+        docx_table.save(table_buffer)
+        self.assertEqual(
+            kind_from_content(SimpleUploadedFile("b.docx", table_buffer.getvalue())),
+            DocumentKind.TECHNICAL_REPORT,
+        )
+
+        self.assertEqual(
+            kind_from_content(
+                SimpleUploadedFile("c.txt", "техническое заключение".encode("utf-8"))
+            ),
+            DocumentKind.TECHNICAL_REPORT,
+        )
+        self.assertEqual(kind_from_content(SimpleUploadedFile("d.docx", b"not-a-zip")), "")
+
+    def test_kind_from_template_none(self):
+        from documents.views import kind_from_template
+
+        self.assertEqual(kind_from_template(None), "")
+
+    def test_next_document_number(self):
+        from documents.views import next_document_number
+
+        self.assertEqual(next_document_number("tz"), "ТЗ-0001")
+        Document.objects.create(kind="tz", number="ТЗ-0001")
+        self.assertEqual(next_document_number("tz"), "ТЗ-0002")
+        Document.objects.create(kind="sl", number="СЛ-0004")
+        self.assertEqual(next_document_number("sl"), "СЛ-0005")
+
+
+class DocumentUploadBehaviorTests(TestCase):
+    def setUp(self):
+        self.specialist = User.objects.create_user(
+            username="upload-spec", password="x", role=User.Role.SPECIALIST
+        )
+        Workshop.objects.create(name="Цех №1", code="ЦЕХ1")
+
+    def _upload(self, name, content=b"content"):
+        self.client.force_login(self.specialist)
+        return self.client.post(
+            reverse("documents:document_upload"),
+            {"file": SimpleUploadedFile(name, content)},
+        )
+
+    def test_no_file_rejected(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(reverse("documents:document_upload"), {})
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Document.objects.exists())
+
+    def test_bad_date_rejected(self):
+        self._upload("ceh1_tz.docx")
+        self.assertFalse(Document.objects.exists())
+
+    def test_kind_by_name_and_numbering(self):
+        self._upload("ceh1_tz_16.09.2026.docx")
+        self._upload("csm_sl_17.09.2026.docx")
+        numbers = list(Document.objects.order_by("id").values_list("number", flat=True))
+        self.assertEqual(numbers, ["ТЗ-0001", "СЛ-0001"])
+        first = Document.objects.order_by("id").first()
+        self.assertEqual(first.workshop.name, "Цех №1")
+        self.assertEqual(first.created_by, self.specialist)
+
+    def test_unknown_kind_has_empty_number(self):
+        self._upload("ceh_16.09.2026.docx")
+        document = Document.objects.get()
+        self.assertEqual(document.kind, "")
+        self.assertEqual(document.number, "")
+
+    def test_download_missing_file_returns_404(self):
+        document = Document.objects.create(number="", doc_date=timezone.localdate())
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("documents:document_download", args=[document.pk])
+        )
+        self.assertEqual(response.status_code, 404)
