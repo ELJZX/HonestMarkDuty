@@ -17,6 +17,7 @@
     <div class="card-title">Каталог склада</div>
     <a class="btn btn-sm btn-ghost" href="{% url 'inventory:location_list' %}">Полки</a>
     <a class="btn btn-sm btn-ghost" href="{% url 'inventory:category_list' %}">Категории</a>
+    <a class="btn btn-sm btn-ghost" href="{% url 'inventory:kind_list' %}">Типы</a>
   </div>
 
   <form method="get" class="filters">
@@ -26,7 +27,7 @@
     <div class="form-row"><label>Тип</label>
       <select class="field-input field-select" name="kind">
         <option value="">Все</option>
-        {% for v, l in kinds %}<option value="{{ v }}" {% if current.kind == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+        {% for k in kinds %}<option value="{{ k.pk }}" {% if current.kind == k.pk|stringformat:'s' %}selected{% endif %}>{{ k.name }}</option>{% endfor %}
       </select>
     </div>
     <div class="form-row"><label>Состояние</label>
@@ -66,7 +67,7 @@
             {% if item.inventory_number %}<div class="dim mono" style="font-size:.7rem">{{ item.inventory_number }}</div>{% endif %}
             {% if item.is_low_stock %}<span class="badge badge-danger">пополнить</span>{% endif %}
           </td>
-          <td>{{ item.get_kind_display }}</td>
+          <td>{{ item.kind|default:"—" }}</td>
           <td>{{ item.location|default:"—" }}</td>
           <td class="mono nowrap">{{ item.quantity }} {{ item.unit }}</td>
           <td><span class="badge {{ item.condition_badge }}">{{ item.get_condition_display }}</span></td>

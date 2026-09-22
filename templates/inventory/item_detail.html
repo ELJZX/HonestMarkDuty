@@ -15,7 +15,7 @@
         <span class="badge {{ item.condition_badge }}">{{ item.get_condition_display }}</span>
       </div>
       <dl class="detail-grid">
-        <dt>Тип</dt><dd>{{ item.get_kind_display }}</dd>
+        <dt>Тип</dt><dd>{{ item.kind|default:"—" }}</dd>
         <dt>Категория</dt><dd>{{ item.category|default:"—" }}</dd>
         <dt>Место хранения</dt><dd>{{ item.location|default:"—" }}</dd>
         <dt>Инвентарный номер</dt><dd class="mono">{{ item.inventory_number|default:"—" }}</dd>

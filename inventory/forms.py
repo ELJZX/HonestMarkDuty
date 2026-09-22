@@ -3,7 +3,13 @@ from __future__ import annotations
 from django import forms
 
 from core.forms import StyledModelForm
-from inventory.models import InventoryItem, InventoryMovement, ItemCategory, StorageLocation
+from inventory.models import (
+    InventoryItem,
+    InventoryMovement,
+    ItemCategory,
+    ItemType,
+    StorageLocation,
+)
 
 
 class InventoryItemForm(StyledModelForm):
@@ -59,3 +65,9 @@ class ItemCategoryForm(StyledModelForm):
     class Meta:
         model = ItemCategory
         fields = ("name", "kind")
+
+
+class ItemTypeForm(StyledModelForm):
+    class Meta:
+        model = ItemType
+        fields = ("name", "sort_order")

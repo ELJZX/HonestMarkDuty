@@ -19,13 +19,14 @@ from inventory.forms import (
     InventoryItemForm,
     InventoryMovementForm,
     ItemCategoryForm,
+    ItemTypeForm,
     StorageLocationForm,
 )
 from inventory.models import (
     Condition,
     InventoryItem,
     ItemCategory,
-    ItemKind,
+    ItemType,
     StorageLocation,
 )
 
@@ -65,7 +66,7 @@ class InventoryItemListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["kinds"] = ItemKind.choices
+        ctx["kinds"] = ItemType.objects.all()
         ctx["conditions"] = Condition.choices
         ctx["locations"] = StorageLocation.objects.select_related("workshop")
         ctx["categories"] = ItemCategory.objects.all()
@@ -192,3 +193,31 @@ class ItemCategoryUpdateView(AdminRequiredMixin, UpdateView):
     template_name = "inventory/category_form.html"
     success_url = reverse_lazy("inventory:category_list")
     extra_context = {"title": "Редактирование категории", "back_url": "inventory:category_list"}
+
+
+class ItemTypeListView(LoginRequiredMixin, ListView):
+    model = ItemType
+    template_name = "inventory/kind_list.html"
+    context_object_name = "types"
+
+
+class ItemTypeCreateView(AdminRequiredMixin, CreateView):
+    model = ItemType
+    form_class = ItemTypeForm
+    template_name = "inventory/kind_form.html"
+    success_url = reverse_lazy("inventory:kind_list")
+    extra_context = {"title": "Новый тип", "back_url": "inventory:kind_list"}
+
+
+class ItemTypeUpdateView(AdminRequiredMixin, UpdateView):
+    model = ItemType
+    form_class = ItemTypeForm
+    template_name = "inventory/kind_form.html"
+    success_url = reverse_lazy("inventory:kind_list")
+    extra_context = {"title": "Редактирование типа", "back_url": "inventory:kind_list"}
+
+
+class ItemTypeDeleteView(AdminRequiredMixin, DeleteView):
+    model = ItemType
+    template_name = "core/confirm_delete.html"
+    success_url = reverse_lazy("inventory:kind_list")

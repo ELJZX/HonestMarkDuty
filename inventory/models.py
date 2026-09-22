@@ -5,11 +5,19 @@ from django.db import models
 from core.models import AuditedModel
 
 
-class ItemKind(models.TextChoices):
-    TOOL = "tool", "Инструмент"
-    SPARE = "spare", "Запасная часть"
-    CONSUMABLE = "consumable", "Расходный материал"
-    DEVICE = "device", "Прибор/средство"
+class ItemType(AuditedModel):
+    """Тип позиции склада (редактируемый список)."""
+
+    name = models.CharField("Тип", max_length=100, unique=True)
+    sort_order = models.PositiveIntegerField("Порядок", default=0)
+
+    class Meta:
+        verbose_name = "Тип позиции"
+        verbose_name_plural = "Типы позиций"
+        ordering = ("sort_order", "name")
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class Condition(models.TextChoices):
@@ -47,12 +55,19 @@ class StorageLocation(AuditedModel):
 
 class ItemCategory(AuditedModel):
     name = models.CharField("Категория", max_length=150, unique=True)
-    kind = models.CharField("Тип", max_length=20, choices=ItemKind.choices, default=ItemKind.TOOL)
+    kind = models.ForeignKey(
+        ItemType,
+        verbose_name="Тип",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="categories",
+    )
 
     class Meta:
         verbose_name = "Категория"
         verbose_name_plural = "Категории"
-        ordering = ("kind", "name")
+        ordering = ("name",)
 
     def __str__(self) -> str:
         return self.name
@@ -63,7 +78,14 @@ class InventoryItem(AuditedModel):
 
     name = models.CharField("Наименование", max_length=250)
     inventory_number = models.CharField("Инвентарный номер", max_length=60, blank=True)
-    kind = models.CharField("Тип", max_length=20, choices=ItemKind.choices, default=ItemKind.TOOL)
+    kind = models.ForeignKey(
+        ItemType,
+        verbose_name="Тип",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="items",
+    )
     category = models.ForeignKey(
         ItemCategory,
         verbose_name="Категория",
@@ -96,7 +118,6 @@ class InventoryItem(AuditedModel):
         verbose_name_plural = "Склад инструментов и запчастей"
         ordering = ("name",)
         indexes = [
-            models.Index(fields=("kind", "condition")),
             models.Index(fields=("location",)),
         ]
 

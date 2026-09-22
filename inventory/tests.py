@@ -9,7 +9,7 @@ from inventory.models import (
     InventoryItem,
     InventoryMovement,
     ItemCategory,
-    ItemKind,
+    ItemType,
     MovementType,
     StorageLocation,
 )
@@ -27,8 +27,9 @@ def make_users():
 
 class InventoryModelTests(TestCase):
     def setUp(self):
+        self.type_device = ItemType.objects.create(name="Прибор/средство")
         self.item = InventoryItem.objects.create(
-            name="Сканер", kind=ItemKind.DEVICE, quantity=5, min_quantity=2
+            name="Сканер", kind=self.type_device, quantity=5, min_quantity=2
         )
 
     def test_is_low_stock(self):
@@ -99,15 +100,17 @@ class InventoryMovementTests(TestCase):
 
 class InventoryFormTests(TestCase):
     def test_wear_percent_over_100_invalid(self):
-        form = InventoryItemForm(data={"name": "X", "kind": ItemKind.TOOL, "quantity": 1, "wear_percent": 150})
+        item_type = ItemType.objects.create(name="Инструмент")
+        form = InventoryItemForm(data={"name": "X", "kind": item_type.pk, "quantity": 1, "wear_percent": 150})
         self.assertFalse(form.is_valid())
         self.assertIn("wear_percent", form.errors)
 
     def test_item_form_valid(self):
+        item_type = ItemType.objects.create(name="Инструмент")
         form = InventoryItemForm(
             data={
                 "name": "X",
-                "kind": ItemKind.TOOL,
+                "kind": item_type.pk,
                 "quantity": 1,
                 "min_quantity": 0,
                 "unit": "шт",
@@ -128,8 +131,10 @@ class InventoryViewTests(TestCase):
         self.workshop = Workshop.objects.create(name="Цех", code="Ц")
         self.location = StorageLocation.objects.create(name="Стеллаж", shelf_code="A-01", workshop=self.workshop)
         self.category = ItemCategory.objects.create(name="Сканеры")
+        self.type_device = ItemType.objects.create(name="Прибор/средство")
+        self.type_tool = ItemType.objects.create(name="Инструмент")
         self.item = InventoryItem.objects.create(
-            name="Сканер", kind=ItemKind.DEVICE, location=self.location, category=self.category,
+            name="Сканер", kind=self.type_device, location=self.location, category=self.category,
             quantity=1, min_quantity=2, wear_percent=90, condition=Condition.WORN,
         )
 
@@ -150,7 +155,7 @@ class InventoryViewTests(TestCase):
         self.client.force_login(self.specialist)
         response = self.client.post(
             reverse("inventory:item_create"),
-            {"name": "Новый инструмент", "kind": ItemKind.TOOL, "quantity": 3, "min_quantity": 1, "unit": "шт", "condition": Condition.GOOD, "wear_percent": 0},
+            {"name": "Новый инструмент", "kind": self.type_tool.pk, "quantity": 3, "min_quantity": 1, "unit": "шт", "condition": Condition.GOOD, "wear_percent": 0},
         )
         self.assertEqual(response.status_code, 302)
         self.assertTrue(InventoryItem.objects.filter(name="Новый инструмент").exists())
@@ -164,7 +169,7 @@ class InventoryViewTests(TestCase):
         self.client.force_login(self.admin)
         response = self.client.post(
             reverse("inventory:item_update", args=[self.item.pk]),
-            {"name": "Сканер обновлён", "kind": ItemKind.DEVICE, "quantity": 1, "min_quantity": 2, "unit": "шт", "condition": Condition.WORN, "wear_percent": 90},
+            {"name": "Сканер обновлён", "kind": self.type_device.pk, "quantity": 1, "min_quantity": 2, "unit": "шт", "condition": Condition.WORN, "wear_percent": 90},
         )
         self.assertEqual(response.status_code, 302)
         self.item.refresh_from_db()
@@ -201,7 +206,7 @@ class InventoryViewTests(TestCase):
         self.client.force_login(self.specialist)
         self.assertEqual(self.client.get(reverse("inventory:category_list")).status_code, 200)
         response = self.client.post(
-            reverse("inventory:category_create"), {"name": "Новая категория", "kind": ItemKind.SPARE}
+            reverse("inventory:category_create"), {"name": "Новая категория", "kind": self.type_tool.pk}
         )
         self.assertEqual(response.status_code, 302)
         self.assertTrue(ItemCategory.objects.filter(name="Новая категория").exists())
@@ -215,9 +220,10 @@ class InventoryFilterAndEdgeTests(TestCase):
             name="Ст", shelf_code="A-01", workshop=self.workshop
         )
         self.category = ItemCategory.objects.create(name="Кат")
+        self.type_device = ItemType.objects.create(name="Прибор/средство")
         self.item = InventoryItem.objects.create(
             name="Сканер",
-            kind=ItemKind.DEVICE,
+            kind=self.type_device,
             location=self.location,
             category=self.category,
             quantity=1,
@@ -229,7 +235,7 @@ class InventoryFilterAndEdgeTests(TestCase):
         response = self.client.get(
             reverse("inventory:item_list"),
             {
-                "kind": ItemKind.DEVICE,
+                "kind": self.type_device.pk,
                 "location": self.location.pk,
                 "category": self.category.pk,
             },
@@ -257,6 +263,51 @@ class InventoryFilterAndEdgeTests(TestCase):
         response = self.client.get(reverse("inventory:item_list"))
         self.assertContains(response, f'href="{reverse("inventory:item_list")}"')
         self.assertContains(response, ">Учет</a>")
+
+
+class ItemTypeTests(TestCase):
+    def setUp(self):
+        self.admin, self.specialist, self.viewer = make_users()
+
+    def test_kind_list_renders(self):
+        self.client.force_login(self.specialist)
+        self.assertEqual(self.client.get(reverse("inventory:kind_list")).status_code, 200)
+
+    def test_admin_can_create_and_delete_type(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse("inventory:kind_create"), {"name": "Новый тип", "sort_order": 0}
+        )
+        self.assertEqual(response.status_code, 302)
+        item_type = ItemType.objects.get(name="Новый тип")
+        response = self.client.post(reverse("inventory:kind_delete", args=[item_type.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(ItemType.objects.filter(name="Новый тип").exists())
+
+    def test_specialist_cannot_create_type(self):
+        self.client.force_login(self.specialist)
+        self.assertEqual(self.client.get(reverse("inventory:kind_create")).status_code, 403)
+
+    def test_admin_can_change_item_type(self):
+        old = ItemType.objects.create(name="Инструмент")
+        new = ItemType.objects.create(name="Прибор/средство")
+        item = InventoryItem.objects.create(name="X", kind=old, quantity=1)
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse("inventory:item_update", args=[item.pk]),
+            {
+                "name": "X",
+                "kind": new.pk,
+                "quantity": 1,
+                "min_quantity": 0,
+                "unit": "шт",
+                "condition": Condition.GOOD,
+                "wear_percent": 0,
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        item.refresh_from_db()
+        self.assertEqual(item.kind, new)
 
 
 class SeedSkladCommandTests(TestCase):

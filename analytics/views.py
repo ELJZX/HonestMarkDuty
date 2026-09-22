@@ -13,7 +13,7 @@ from checklists.models import EquipmentChecklist
 from core.models import Workshop
 from documents.models import Document, DocumentStatus
 from equipment.models import Equipment, EquipmentStatus
-from inventory.models import Condition, InventoryItem, ItemKind
+from inventory.models import Condition, InventoryItem, ItemType
 from journal.models import JournalEntry
 from shifts.models import Shift
 
@@ -65,9 +65,9 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             Equipment.objects.filter(is_camera=False, status=c).count() for c in status_labels
         ]
 
-        kind_labels = dict(ItemKind.choices)
-        ctx["inventory_labels"] = [kind_labels[k] for k in kind_labels]
-        ctx["inventory_values"] = [InventoryItem.objects.filter(kind=k).count() for k in kind_labels]
+        item_types = list(ItemType.objects.all())
+        ctx["inventory_labels"] = [t.name for t in item_types]
+        ctx["inventory_values"] = [InventoryItem.objects.filter(kind=t).count() for t in item_types]
 
         ctx["specialists"] = (
             User.objects.filter(is_active=True)

@@ -30,7 +30,7 @@ from inventory.models import (
     InventoryItem,
     InventoryMovement,
     ItemCategory,
-    ItemKind,
+    ItemType,
     MovementType,
     StorageLocation,
 )
@@ -136,14 +136,17 @@ class Command(BaseCommand):
 
     # -------------------------------------------------------------- inventory
     def _inventory(self, workshops, admin):
+        type_device, _ = ItemType.objects.get_or_create(name="Прибор/средство")
+        type_tool, _ = ItemType.objects.get_or_create(name="Инструмент")
+        type_spare, _ = ItemType.objects.get_or_create(name="Запасная часть")
         device_cat, _ = ItemCategory.objects.get_or_create(
-            name="Сканеры Честного знака", defaults={"kind": ItemKind.DEVICE}
+            name="Сканеры Честного знака", defaults={"kind": type_device}
         )
         tool_cat, _ = ItemCategory.objects.get_or_create(
-            name="Пневмоинструмент", defaults={"kind": ItemKind.TOOL}
+            name="Пневмоинструмент", defaults={"kind": type_tool}
         )
         spare_cat, _ = ItemCategory.objects.get_or_create(
-            name="Запчасти упаковщика", defaults={"kind": ItemKind.SPARE}
+            name="Запчасти упаковщика", defaults={"kind": type_spare}
         )
         locations = []
         for workshop, shelf in [(workshops[0], "A-01"), (workshops[1], "B-02"), (workshops[2], "C-03")]:
@@ -155,11 +158,11 @@ class Command(BaseCommand):
             locations.append(location)
 
         items_data = [
-            ("Сканер 2D Honeywell", "INV-1001", ItemKind.DEVICE, device_cat, locations[0], 4, 2, Condition.GOOD, 20),
-            ("Сканер Zebra DS2208", "INV-1002", ItemKind.DEVICE, device_cat, locations[1], 1, 2, Condition.WORN, 65),
-            ("Гайковёрт пневматический", "INV-2001", ItemKind.TOOL, tool_cat, locations[0], 3, 1, Condition.GOOD, 35),
-            ("Ремень привода упаковщика", "ZAP-3001", ItemKind.SPARE, spare_cat, locations[2], 8, 4, Condition.NEW, 0),
-            ("Нож упаковочной машины", "ZAP-3002", ItemKind.SPARE, spare_cat, locations[2], 2, 3, Condition.NEEDS_REPAIR, 80),
+            ("Сканер 2D Honeywell", "INV-1001", type_device, device_cat, locations[0], 4, 2, Condition.GOOD, 20),
+            ("Сканер Zebra DS2208", "INV-1002", type_device, device_cat, locations[1], 1, 2, Condition.WORN, 65),
+            ("Гайковёрт пневматический", "INV-2001", type_tool, tool_cat, locations[0], 3, 1, Condition.GOOD, 35),
+            ("Ремень привода упаковщика", "ZAP-3001", type_spare, spare_cat, locations[2], 8, 4, Condition.NEW, 0),
+            ("Нож упаковочной машины", "ZAP-3002", type_spare, spare_cat, locations[2], 2, 3, Condition.NEEDS_REPAIR, 80),
         ]
         items = []
         for name, inv, kind, category, location, qty, minqty, condition, wear in items_data:

@@ -14,7 +14,7 @@
         {% for c in categories %}
         <tr>
           <td class="primary">{{ c.name }}</td>
-          <td>{{ c.get_kind_display }}</td>
+          <td>{{ c.kind|default:"—" }}</td>
           <td class="mono">{{ c.items.count }}</td>
           <td class="actions">{% if user.is_admin %}<a class="btn btn-sm" href="{% url 'inventory:category_update' c.pk %}">Изменить</a>{% endif %}</td>
         </tr>

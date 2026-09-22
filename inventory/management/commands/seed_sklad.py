@@ -6,19 +6,32 @@ from __future__ import annotations
 
 from django.core.management.base import BaseCommand
 
-from inventory.models import InventoryItem, ItemCategory, StorageLocation
+from inventory.models import InventoryItem, ItemCategory, ItemType, StorageLocation
 from inventory.sklad_data import CATEGORIES, LOCATION_DESC, LOCATION_NAME, LOCATION_SHELF, SKLAD
 
 NOTES = "Загружено из sklad.xlsx (конечный остаток)"
+
+TYPE_NAMES = {
+    "tool": "Инструмент",
+    "spare": "Запасная часть",
+    "consumable": "Расходный материал",
+    "device": "Прибор/средство",
+}
 
 
 class Command(BaseCommand):
     help = "Загружает и обновляет позиции склада отдела «Честный знак»"
 
     def handle(self, *args, **options):
+        types = {
+            code: ItemType.objects.get_or_create(name=name, defaults={"sort_order": order})[0]
+            for order, (code, name) in enumerate(TYPE_NAMES.items())
+        }
         categories = {
-            kind: ItemCategory.objects.get_or_create(name=name, defaults={"kind": kind})[0]
-            for kind, name in CATEGORIES.items()
+            code: ItemCategory.objects.update_or_create(
+                name=name, defaults={"kind": types[code]}
+            )[0]
+            for code, name in CATEGORIES.items()
         }
         location, _ = StorageLocation.objects.update_or_create(
             name=LOCATION_NAME,
@@ -31,7 +44,7 @@ class Command(BaseCommand):
                 name=name,
                 location=location,
                 defaults={
-                    "kind": kind,
+                    "kind": types[kind],
                     "category": categories[kind],
                     "quantity": quantity,
                     "min_quantity": 0,

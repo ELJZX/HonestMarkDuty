@@ -4,8 +4,15 @@ from inventory.models import (
     InventoryItem,
     InventoryMovement,
     ItemCategory,
+    ItemType,
     StorageLocation,
 )
+
+
+@admin.register(ItemType)
+class ItemTypeAdmin(admin.ModelAdmin):
+    list_display = ("name", "sort_order")
+    search_fields = ("name",)
 
 
 @admin.register(StorageLocation)
