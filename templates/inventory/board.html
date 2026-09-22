@@ -18,7 +18,11 @@
     {% for t in types %}
     <a class="workshop-card cam-shop-card" href="{% url 'inventory:item_list' %}?kind={{ t.pk }}">
       <div class="workshop-card-head">
+        {% if t.image %}
+        <img class="workshop-card-thumb" src="{{ t.image.url }}" alt="{{ t.name }}">
+        {% else %}
         <img class="workshop-card-thumb" src="{% static 'img/workshop.svg' %}" alt="{{ t.name }}">
+        {% endif %}
         <div class="workshop-card-name">{{ t.name }}</div>
       </div>
       <div class="workshop-card-stats">

@@ -294,6 +294,24 @@ class ItemTypeTests(TestCase):
         self.client.force_login(self.specialist)
         self.assertEqual(self.client.get(reverse("inventory:kind_create")).status_code, 403)
 
+    def test_admin_can_upload_type_icon(self):
+        import io
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image
+
+        buffer = io.BytesIO()
+        Image.new("RGB", (2, 2), (0, 0, 0)).save(buffer, format="PNG")
+        image = SimpleUploadedFile("icon.png", buffer.getvalue(), content_type="image/png")
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse("inventory:kind_create"),
+            {"name": "С иконкой", "sort_order": 0, "image": image},
+        )
+        self.assertEqual(response.status_code, 302)
+        item_type = ItemType.objects.get(name="С иконкой")
+        self.assertTrue(item_type.image)
+
     def test_admin_can_change_type_from_list(self):
         old = ItemType.objects.create(name="Инструмент")
         new = ItemType.objects.create(name="Прибор/средство")

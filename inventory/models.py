@@ -10,6 +10,7 @@ class ItemType(AuditedModel):
 
     name = models.CharField("Тип", max_length=100, unique=True)
     sort_order = models.PositiveIntegerField("Порядок", default=0)
+    image = models.ImageField("Иконка", upload_to="item_types/", blank=True)
 
     class Meta:
         verbose_name = "Тип позиции"

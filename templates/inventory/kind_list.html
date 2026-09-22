@@ -9,10 +9,11 @@
   <div class="card-header"><div class="card-title">Типы позиций</div></div>
   <div class="table-wrap">
     <table class="data">
-      <thead><tr><th>Тип</th><th>Порядок</th><th>Позиций</th><th></th></tr></thead>
+      <thead><tr><th>Иконка</th><th>Тип</th><th>Порядок</th><th>Позиций</th><th></th></tr></thead>
       <tbody>
         {% for t in types %}
         <tr>
+          <td>{% if t.image %}<img src="{{ t.image.url }}" alt="{{ t.name }}" style="width:56px;height:36px;object-fit:cover;border-radius:.3rem">{% else %}—{% endif %}</td>
           <td class="primary">{{ t.name }}</td>
           <td class="mono">{{ t.sort_order }}</td>
           <td class="mono">{{ t.items.count }}</td>
@@ -24,7 +25,7 @@
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="4" class="empty">Типы не добавлены</td></tr>
+        <tr><td colspan="5" class="empty">Типы не добавлены</td></tr>
         {% endfor %}
       </tbody>
     </table>

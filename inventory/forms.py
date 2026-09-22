@@ -70,4 +70,4 @@ class ItemCategoryForm(StyledModelForm):
 class ItemTypeForm(StyledModelForm):
     class Meta:
         model = ItemType
-        fields = ("name", "sort_order")
+        fields = ("name", "sort_order", "image")
