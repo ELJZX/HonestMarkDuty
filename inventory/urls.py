@@ -5,7 +5,8 @@ from inventory import views
 app_name = "inventory"
 
 urlpatterns = [
-    path("", views.InventoryItemListView.as_view(), name="item_list"),
+    path("", views.InventoryBoardView.as_view(), name="board"),
+    path("list/", views.InventoryItemListView.as_view(), name="item_list"),
     path("new/", views.InventoryItemCreateView.as_view(), name="item_create"),
     path("<int:pk>/", views.InventoryItemDetailView.as_view(), name="item_detail"),
     path("<int:pk>/edit/", views.InventoryItemUpdateView.as_view(), name="item_update"),

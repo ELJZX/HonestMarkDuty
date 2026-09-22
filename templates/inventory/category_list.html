@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Категории{% endblock %}
-{% block breadcrumb %}<a href="{% url 'inventory:item_list' %}">Учет</a> / <a href="{% url 'inventory:item_list' %}">Склад</a> / <a href="{% url 'inventory:category_list' %}">Категории</a>{% endblock %}
+{% block breadcrumb %}<a href="{% url 'inventory:board' %}">Учет</a> / <a href="{% url 'inventory:board' %}">Склад</a> / <a href="{% url 'inventory:category_list' %}">Категории</a>{% endblock %}
 {% block topbar_actions %}
   <a class="btn btn-primary btn-sm" href="{% url 'inventory:category_create' %}">+ Категория</a>
 {% endblock %}

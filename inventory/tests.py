@@ -261,8 +261,14 @@ class InventoryFilterAndEdgeTests(TestCase):
     def test_breadcrumb_is_clickable(self):
         self.client.force_login(self.specialist)
         response = self.client.get(reverse("inventory:item_list"))
-        self.assertContains(response, f'href="{reverse("inventory:item_list")}"')
+        self.assertContains(response, f'href="{reverse("inventory:board")}"')
         self.assertContains(response, ">Учет</a>")
+
+    def test_board_renders_types(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("inventory:board"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.type_device.name)
 
 
 class ItemTypeTests(TestCase):

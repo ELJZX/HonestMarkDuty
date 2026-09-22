@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import F, Q
+from django.db.models import Count, F, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.views.generic import (
@@ -29,6 +29,30 @@ from inventory.models import (
     ItemType,
     StorageLocation,
 )
+
+
+class InventoryBoardView(LoginRequiredMixin, ListView):
+    """Доска склада: плитки типов позиций."""
+
+    model = ItemType
+    template_name = "inventory/board.html"
+    context_object_name = "types"
+
+    def get_queryset(self):
+        return (
+            ItemType.objects.annotate(
+                items_total=Count("items", filter=Q(items__is_active=True))
+            )
+            .order_by("sort_order", "name")
+        )
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["items_total"] = InventoryItem.objects.filter(is_active=True).count()
+        ctx["no_type_total"] = InventoryItem.objects.filter(
+            is_active=True, kind__isnull=True
+        ).count()
+        return ctx
 
 
 class InventoryItemListView(LoginRequiredMixin, ListView):
@@ -62,6 +86,8 @@ class InventoryItemListView(LoginRequiredMixin, ListView):
             qs = qs.filter(category_id=category)
         if low:
             qs = qs.filter(quantity__lte=F("min_quantity"))
+        if params.get("no_kind"):
+            qs = qs.filter(kind__isnull=True)
         return qs
 
     def get_context_data(self, **kwargs):

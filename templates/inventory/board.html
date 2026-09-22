@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Склад{% endblock %}
+{% block breadcrumb %}<a href="{% url 'inventory:board' %}">Учет</a> / Склад{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-sm btn-ghost" href="{% url 'inventory:item_list' %}">Весь склад</a>
+  <a class="btn btn-sm btn-ghost" href="{% url 'inventory:kind_list' %}">Типы</a>
+  {% if user.is_admin %}<a class="btn btn-primary btn-sm" href="{% url 'inventory:kind_create' %}">+ Тип</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Склад по типам</div>
+    <div class="card-sub">Всего позиций: {{ items_total }}</div>
+  </div>
+
+  <div class="workshop-board">
+    {% for t in types %}
+    <a class="workshop-card cam-shop-card" href="{% url 'inventory:item_list' %}?kind={{ t.pk }}">
+      <div class="workshop-card-head">
+        <img class="workshop-card-thumb" src="{% static 'img/workshop.svg' %}" alt="{{ t.name }}">
+        <div class="workshop-card-name">{{ t.name }}</div>
+      </div>
+      <div class="workshop-card-stats">
+        <div>Позиций: <b>{{ t.items_total }}</b></div>
+      </div>
+      <div class="workshop-card-actions">
+        <span class="btn workshop-card-btn">Подробнее</span>
+      </div>
+    </a>
+    {% endfor %}
+
+    {% if no_type_total %}
+    <a class="workshop-card cam-shop-card" href="{% url 'inventory:item_list' %}?no_kind=1">
+      <div class="workshop-card-head">
+        <img class="workshop-card-thumb" src="{% static 'img/workshop.svg' %}" alt="Без типа">
+        <div class="workshop-card-name">Без типа</div>
+      </div>
+      <div class="workshop-card-stats">
+        <div>Позиций: <b>{{ no_type_total }}</b></div>
+      </div>
+      <div class="workshop-card-actions">
+        <span class="btn workshop-card-btn">Подробнее</span>
+      </div>
+    </a>
+    {% endif %}
+
+    {% if not types and not no_type_total %}
+    <div class="empty">Типы не добавлены</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

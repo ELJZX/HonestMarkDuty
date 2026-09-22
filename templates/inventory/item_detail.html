@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ item.name }}{% endblock %}
-{% block breadcrumb %}<a href="{% url 'inventory:item_list' %}">Учет</a> / <a href="{% url 'inventory:item_list' %}">Склад</a> / {{ item.name }}{% endblock %}
+{% block breadcrumb %}<a href="{% url 'inventory:board' %}">Учет</a> / <a href="{% url 'inventory:board' %}">Склад</a> / {{ item.name }}{% endblock %}
 {% block topbar_actions %}
   {% if user.is_admin %}
   <a class="btn btn-sm" href="{% url 'inventory:item_update' item.pk %}">Изменить</a>

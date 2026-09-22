@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Склад{% endblock %}
-{% block breadcrumb %}<a href="{% url 'inventory:item_list' %}">Учет</a> / <a href="{% url 'inventory:item_list' %}">Склад</a>{% endblock %}
+{% block breadcrumb %}<a href="{% url 'inventory:board' %}">Учет</a> / <a href="{% url 'inventory:board' %}">Склад</a>{% endblock %}
 {% block topbar_actions %}
   <a class="btn btn-primary btn-sm" href="{% url 'inventory:item_create' %}">+ Позиция</a>
 {% endblock %}
