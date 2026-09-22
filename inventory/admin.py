@@ -5,8 +5,15 @@ from inventory.models import (
     InventoryMovement,
     ItemCategory,
     ItemType,
+    Storage,
     StorageLocation,
 )
+
+
+@admin.register(Storage)
+class StorageAdmin(admin.ModelAdmin):
+    list_display = ("name", "sort_order")
+    search_fields = ("name",)
 
 
 @admin.register(ItemType)
@@ -36,8 +43,8 @@ class InventoryMovementInline(admin.TabularInline):
 
 @admin.register(InventoryItem)
 class InventoryItemAdmin(admin.ModelAdmin):
-    list_display = ("name", "kind", "location", "quantity", "unit", "condition", "wear_percent")
-    list_filter = ("kind", "condition", "location", "is_active")
+    list_display = ("name", "kind", "storage", "location", "quantity", "unit", "condition", "wear_percent")
+    list_filter = ("kind", "condition", "storage", "location", "is_active")
     search_fields = ("name", "inventory_number", "serial_number")
     inlines = (InventoryMovementInline,)
 

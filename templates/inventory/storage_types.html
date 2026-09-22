@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ storage.name }}{% endblock %}
+{% block breadcrumb %}<a href="{% url 'inventory:board' %}">Учет</a> / <a href="{% url 'inventory:board' %}">Склад</a> / {{ storage.name }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">{{ storage.name }}</div>
+      <div class="card-sub">Позиций: {{ items_total }}</div>
+    </div>
+    <div class="card-header-actions">
+      <a class="btn btn-sm btn-ghost" href="{% url 'inventory:item_list' %}?storage={{ storage.pk }}">Весь склад</a>
+    </div>
+  </div>
+
+  <div class="workshop-board">
+    {% for t in types %}
+    <a class="workshop-card cam-shop-card" href="{% url 'inventory:item_list' %}?storage={{ storage.pk }}&kind={{ t.pk }}">
+      <div class="workshop-card-head">
+        {% if t.image %}
+        <img class="workshop-card-thumb" src="{{ t.image.url }}" alt="{{ t.name }}">
+        {% else %}
+        <img class="workshop-card-thumb" src="{% static 'img/workshop.svg' %}" alt="{{ t.name }}">
+        {% endif %}
+        <div class="workshop-card-name">{{ t.name }}</div>
+      </div>
+      <div class="workshop-card-stats">
+        <div>Позиций: <b>{{ t.items_total }}</b></div>
+      </div>
+      <div class="workshop-card-actions">
+        <span class="btn workshop-card-btn">Подробнее</span>
+      </div>
+    </a>
+    {% endfor %}
+
+    {% if not types %}
+    <div class="empty">На складе нет позиций</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -8,6 +8,7 @@ from inventory.models import (
     InventoryMovement,
     ItemCategory,
     ItemType,
+    Storage,
     StorageLocation,
 )
 
@@ -21,6 +22,7 @@ class InventoryItemForm(StyledModelForm):
             "kind",
             "category",
             "location",
+            "storage",
             "quantity",
             "min_quantity",
             "unit",
@@ -70,4 +72,10 @@ class ItemCategoryForm(StyledModelForm):
 class ItemTypeForm(StyledModelForm):
     class Meta:
         model = ItemType
+        fields = ("name", "sort_order", "image")
+
+
+class StorageForm(StyledModelForm):
+    class Meta:
+        model = Storage
         fields = ("name", "sort_order", "image")

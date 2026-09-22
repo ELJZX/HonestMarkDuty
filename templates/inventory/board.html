@@ -6,53 +6,51 @@
 <div class="card">
   <div class="card-header">
     <div>
-      <div class="card-title">Склад по типам</div>
+      <div class="card-title">Склады</div>
       <div class="card-sub">Всего позиций: {{ items_total }}</div>
     </div>
     <div class="card-header-actions">
       <a class="btn btn-sm btn-ghost" href="{% url 'inventory:item_list' %}">Весь склад</a>
+      <a class="btn btn-sm btn-ghost" href="{% url 'inventory:storage_list' %}">Склады</a>
       <a class="btn btn-sm btn-ghost" href="{% url 'inventory:kind_list' %}">Типы</a>
-      {% if user.is_admin %}<a class="btn btn-primary btn-sm" href="{% url 'inventory:kind_create' %}">+ Тип</a>{% endif %}
     </div>
   </div>
 
   <div class="workshop-board">
-    {% for t in types %}
-    <a class="workshop-card cam-shop-card" href="{% url 'inventory:item_list' %}?kind={{ t.pk }}">
+    {% for s in storages %}
+    <a class="workshop-card cam-shop-card" href="{% url 'inventory:storage_types' s.pk %}">
       <div class="workshop-card-head">
-        {% if t.image %}
-        <img class="workshop-card-thumb" src="{{ t.image.url }}" alt="{{ t.name }}">
+        {% if s.image %}
+        <img class="workshop-card-thumb" src="{{ s.image.url }}" alt="{{ s.name }}">
         {% else %}
-        <img class="workshop-card-thumb" src="{% static 'img/workshop.svg' %}" alt="{{ t.name }}">
+        <img class="workshop-card-thumb" src="{% static 'img/workshop.svg' %}" alt="{{ s.name }}">
         {% endif %}
-        <div class="workshop-card-name">{{ t.name }}</div>
+        <div class="workshop-card-name">{{ s.name }}</div>
       </div>
       <div class="workshop-card-stats">
-        <div>Позиций: <b>{{ t.items_total }}</b></div>
+        <div>Позиций: <b>{{ s.items_total }}</b></div>
       </div>
       <div class="workshop-card-actions">
         <span class="btn workshop-card-btn">Подробнее</span>
       </div>
     </a>
+    {% empty %}
+    <div class="empty">Склады не добавлены</div>
     {% endfor %}
 
-    {% if no_type_total %}
-    <a class="workshop-card cam-shop-card" href="{% url 'inventory:item_list' %}?no_kind=1">
+    {% if no_storage_total %}
+    <a class="workshop-card cam-shop-card" href="{% url 'inventory:item_list' %}?no_storage=1">
       <div class="workshop-card-head">
-        <img class="workshop-card-thumb" src="{% static 'img/workshop.svg' %}" alt="Без типа">
-        <div class="workshop-card-name">Без типа</div>
+        <img class="workshop-card-thumb" src="{% static 'img/workshop.svg' %}" alt="Без склада">
+        <div class="workshop-card-name">Без склада</div>
       </div>
       <div class="workshop-card-stats">
-        <div>Позиций: <b>{{ no_type_total }}</b></div>
+        <div>Позиций: <b>{{ no_storage_total }}</b></div>
       </div>
       <div class="workshop-card-actions">
         <span class="btn workshop-card-btn">Подробнее</span>
       </div>
     </a>
-    {% endif %}
-
-    {% if not types and not no_type_total %}
-    <div class="empty">Типы не добавлены</div>
     {% endif %}
   </div>
 </div>

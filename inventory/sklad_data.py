@@ -7,6 +7,7 @@ from __future__ import annotations
 LOCATION_NAME = "НС07П01Я15 Ящик15"
 LOCATION_SHELF = "НС07П01Я15"
 LOCATION_DESC = "Отдел «Честный знак»"
+STORAGE_NAME = "Новый склад"
 
 CATEGORIES = {
     "device": "ЧЗ · Устройства",

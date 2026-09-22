@@ -5,6 +5,22 @@ from django.db import models
 from core.models import AuditedModel
 
 
+class Storage(AuditedModel):
+    """Склад (помещение/зона хранения)."""
+
+    name = models.CharField("Склад", max_length=150, unique=True)
+    sort_order = models.PositiveIntegerField("Порядок", default=0)
+    image = models.ImageField("Иконка", upload_to="storages/", blank=True)
+
+    class Meta:
+        verbose_name = "Склад"
+        verbose_name_plural = "Склады"
+        ordering = ("sort_order", "name")
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class ItemType(AuditedModel):
     """Тип позиции склада (редактируемый список)."""
 
@@ -98,6 +114,14 @@ class InventoryItem(AuditedModel):
     location = models.ForeignKey(
         StorageLocation,
         verbose_name="Место хранения",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="items",
+    )
+    storage = models.ForeignKey(
+        Storage,
+        verbose_name="Склад",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

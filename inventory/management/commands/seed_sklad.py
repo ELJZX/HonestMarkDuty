@@ -6,8 +6,15 @@ from __future__ import annotations
 
 from django.core.management.base import BaseCommand
 
-from inventory.models import InventoryItem, ItemCategory, ItemType, StorageLocation
-from inventory.sklad_data import CATEGORIES, LOCATION_DESC, LOCATION_NAME, LOCATION_SHELF, SKLAD
+from inventory.models import InventoryItem, ItemCategory, ItemType, Storage, StorageLocation
+from inventory.sklad_data import (
+    CATEGORIES,
+    LOCATION_DESC,
+    LOCATION_NAME,
+    LOCATION_SHELF,
+    SKLAD,
+    STORAGE_NAME,
+)
 
 NOTES = "Загружено из sklad.xlsx (конечный остаток)"
 
@@ -37,6 +44,7 @@ class Command(BaseCommand):
             name=LOCATION_NAME,
             defaults={"shelf_code": LOCATION_SHELF, "description": LOCATION_DESC},
         )
+        storage, _ = Storage.objects.get_or_create(name=STORAGE_NAME, defaults={"sort_order": 0})
 
         created = updated = 0
         for name, quantity, unit, kind in SKLAD:
@@ -46,6 +54,7 @@ class Command(BaseCommand):
                 defaults={
                     "kind": types[kind],
                     "category": categories[kind],
+                    "storage": storage,
                     "quantity": quantity,
                     "min_quantity": 0,
                     "unit": unit,

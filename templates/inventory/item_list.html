@@ -15,6 +15,7 @@
 <div class="card">
   <div class="card-header">
     <div class="card-title">Каталог склада</div>
+    <a class="btn btn-sm btn-ghost" href="{% url 'inventory:board' %}">Склады</a>
     <a class="btn btn-sm btn-ghost" href="{% url 'inventory:location_list' %}">Полки</a>
     <a class="btn btn-sm btn-ghost" href="{% url 'inventory:category_list' %}">Категории</a>
     <a class="btn btn-sm btn-ghost" href="{% url 'inventory:kind_list' %}">Типы</a>
@@ -23,6 +24,12 @@
   <form method="get" class="filters">
     <div class="form-row"><label>Поиск</label>
       <input class="field-input" name="q" value="{{ current.q }}" placeholder="наименование, №">
+    </div>
+    <div class="form-row"><label>Склад</label>
+      <select class="field-input field-select" name="storage">
+        <option value="">Все</option>
+        {% for s in storages %}<option value="{{ s.pk }}" {% if current.storage == s.pk|stringformat:'s' %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+      </select>
     </div>
     <div class="form-row"><label>Тип</label>
       <select class="field-input field-select" name="kind">

@@ -11,6 +11,7 @@ from inventory.models import (
     ItemCategory,
     ItemType,
     MovementType,
+    Storage,
     StorageLocation,
 )
 from core.models import Workshop
@@ -264,9 +265,21 @@ class InventoryFilterAndEdgeTests(TestCase):
         self.assertContains(response, f'href="{reverse("inventory:board")}"')
         self.assertContains(response, ">Учет</a>")
 
-    def test_board_renders_types(self):
+    def test_board_renders_storages(self):
+        storage = Storage.objects.create(name="Новый склад")
+        self.item.storage = storage
+        self.item.save()
         self.client.force_login(self.specialist)
         response = self.client.get(reverse("inventory:board"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Новый склад")
+
+    def test_storage_types_page(self):
+        storage = Storage.objects.create(name="Новый склад")
+        self.item.storage = storage
+        self.item.save()
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("inventory:storage_types", args=[storage.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.type_device.name)
 

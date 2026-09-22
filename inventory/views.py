@@ -20,6 +20,7 @@ from inventory.forms import (
     InventoryMovementForm,
     ItemCategoryForm,
     ItemTypeForm,
+    StorageForm,
     StorageLocationForm,
 )
 from inventory.models import (
@@ -27,20 +28,21 @@ from inventory.models import (
     InventoryItem,
     ItemCategory,
     ItemType,
+    Storage,
     StorageLocation,
 )
 
 
 class InventoryBoardView(LoginRequiredMixin, ListView):
-    """Доска склада: плитки типов позиций."""
+    """Доска складов."""
 
-    model = ItemType
+    model = Storage
     template_name = "inventory/board.html"
-    context_object_name = "types"
+    context_object_name = "storages"
 
     def get_queryset(self):
         return (
-            ItemType.objects.annotate(
+            Storage.objects.annotate(
                 items_total=Count("items", filter=Q(items__is_active=True))
             )
             .order_by("sort_order", "name")
@@ -49,8 +51,31 @@ class InventoryBoardView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["items_total"] = InventoryItem.objects.filter(is_active=True).count()
-        ctx["no_type_total"] = InventoryItem.objects.filter(
-            is_active=True, kind__isnull=True
+        ctx["no_storage_total"] = InventoryItem.objects.filter(
+            is_active=True, storage__isnull=True
+        ).count()
+        return ctx
+
+
+class InventoryStorageTypesView(LoginRequiredMixin, DetailView):
+    """Типы позиций внутри склада."""
+
+    model = Storage
+    template_name = "inventory/storage_types.html"
+    context_object_name = "storage"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["types"] = (
+            ItemType.objects.annotate(
+                items_total=Count(
+                    "items",
+                    filter=Q(items__is_active=True, items__storage=self.object),
+                )
+            ).order_by("sort_order", "name")
+        )
+        ctx["items_total"] = InventoryItem.objects.filter(
+            is_active=True, storage=self.object
         ).count()
         return ctx
 
@@ -62,13 +87,16 @@ class InventoryItemListView(LoginRequiredMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        qs = InventoryItem.objects.select_related("category", "location", "location__workshop")
+        qs = InventoryItem.objects.select_related(
+            "category", "location", "location__workshop", "storage", "kind"
+        )
         params = self.request.GET
         query = params.get("q")
         kind = params.get("kind")
         condition = params.get("condition")
         location = params.get("location")
         category = params.get("category")
+        storage = params.get("storage")
         low = params.get("low")
         if query:
             qs = qs.filter(
@@ -84,15 +112,20 @@ class InventoryItemListView(LoginRequiredMixin, ListView):
             qs = qs.filter(location_id=location)
         if category:
             qs = qs.filter(category_id=category)
+        if storage:
+            qs = qs.filter(storage_id=storage)
         if low:
             qs = qs.filter(quantity__lte=F("min_quantity"))
         if params.get("no_kind"):
             qs = qs.filter(kind__isnull=True)
+        if params.get("no_storage"):
+            qs = qs.filter(storage__isnull=True)
         return qs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["kinds"] = ItemType.objects.all()
+        ctx["storages"] = Storage.objects.all()
         ctx["conditions"] = Condition.choices
         ctx["locations"] = StorageLocation.objects.select_related("workshop")
         ctx["categories"] = ItemCategory.objects.all()
@@ -231,6 +264,34 @@ class ItemCategoryUpdateView(AdminRequiredMixin, UpdateView):
     template_name = "inventory/category_form.html"
     success_url = reverse_lazy("inventory:category_list")
     extra_context = {"title": "Редактирование категории", "back_url": "inventory:category_list"}
+
+
+class StorageListView(LoginRequiredMixin, ListView):
+    model = Storage
+    template_name = "inventory/storage_list.html"
+    context_object_name = "storages"
+
+
+class StorageCreateView(AdminRequiredMixin, CreateView):
+    model = Storage
+    form_class = StorageForm
+    template_name = "inventory/storage_form.html"
+    success_url = reverse_lazy("inventory:board")
+    extra_context = {"title": "Новый склад", "back_url": "inventory:board"}
+
+
+class StorageUpdateView(AdminRequiredMixin, UpdateView):
+    model = Storage
+    form_class = StorageForm
+    template_name = "inventory/storage_form.html"
+    success_url = reverse_lazy("inventory:board")
+    extra_context = {"title": "Редактирование склада", "back_url": "inventory:board"}
+
+
+class StorageDeleteView(AdminRequiredMixin, DeleteView):
+    model = Storage
+    template_name = "core/confirm_delete.html"
+    success_url = reverse_lazy("inventory:board")
 
 
 class ItemTypeListView(LoginRequiredMixin, ListView):

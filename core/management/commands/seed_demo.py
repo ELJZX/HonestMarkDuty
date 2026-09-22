@@ -32,6 +32,7 @@ from inventory.models import (
     ItemCategory,
     ItemType,
     MovementType,
+    Storage,
     StorageLocation,
 )
 from journal.models import JournalEntry
@@ -148,6 +149,7 @@ class Command(BaseCommand):
         spare_cat, _ = ItemCategory.objects.get_or_create(
             name="Запчасти упаковщика", defaults={"kind": type_spare}
         )
+        storage, _ = Storage.objects.get_or_create(name="Новый склад", defaults={"sort_order": 0})
         locations = []
         for workshop, shelf in [(workshops[0], "A-01"), (workshops[1], "B-02"), (workshops[2], "C-03")]:
             location, _ = StorageLocation.objects.get_or_create(
@@ -173,6 +175,7 @@ class Command(BaseCommand):
                     "kind": kind,
                     "category": category,
                     "location": location,
+                    "storage": storage,
                     "quantity": qty,
                     "min_quantity": minqty,
                     "condition": condition,
