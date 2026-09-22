@@ -67,7 +67,19 @@
             {% if item.inventory_number %}<div class="dim mono" style="font-size:.7rem">{{ item.inventory_number }}</div>{% endif %}
             {% if item.is_low_stock %}<span class="badge badge-danger">пополнить</span>{% endif %}
           </td>
-          <td>{{ item.kind|default:"—" }}</td>
+          <td>
+            {% if user.is_admin %}
+            <form method="post" action="{% url 'inventory:item_kind_change' item.pk %}">
+              {% csrf_token %}
+              <select name="kind" class="kind-select" data-auto-submit>
+                <option value="">—</option>
+                {% for k in kinds %}<option value="{{ k.pk }}" {% if item.kind_id == k.pk %}selected{% endif %}>{{ k.name }}</option>{% endfor %}
+              </select>
+            </form>
+            {% else %}
+            {{ item.kind|default:"—" }}
+            {% endif %}
+          </td>
           <td>{{ item.location|default:"—" }}</td>
           <td class="mono nowrap">{{ item.quantity }} {{ item.unit }}</td>
           <td><span class="badge {{ item.condition_badge }}">{{ item.get_condition_display }}</span></td>

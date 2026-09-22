@@ -288,6 +288,27 @@ class ItemTypeTests(TestCase):
         self.client.force_login(self.specialist)
         self.assertEqual(self.client.get(reverse("inventory:kind_create")).status_code, 403)
 
+    def test_admin_can_change_type_from_list(self):
+        old = ItemType.objects.create(name="Инструмент")
+        new = ItemType.objects.create(name="Прибор/средство")
+        item = InventoryItem.objects.create(name="X", kind=old, quantity=1)
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse("inventory:item_kind_change", args=[item.pk]), {"kind": new.pk}
+        )
+        self.assertEqual(response.status_code, 302)
+        item.refresh_from_db()
+        self.assertEqual(item.kind, new)
+
+    def test_specialist_cannot_change_type_from_list(self):
+        old = ItemType.objects.create(name="Инструмент")
+        item = InventoryItem.objects.create(name="X", kind=old, quantity=1)
+        self.client.force_login(self.specialist)
+        response = self.client.post(
+            reverse("inventory:item_kind_change", args=[item.pk]), {"kind": old.pk}
+        )
+        self.assertEqual(response.status_code, 403)
+
     def test_admin_can_change_item_type(self):
         old = ItemType.objects.create(name="Инструмент")
         new = ItemType.objects.create(name="Прибор/средство")

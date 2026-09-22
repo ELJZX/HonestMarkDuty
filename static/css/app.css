@@ -797,3 +797,12 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
 .cam-lightbox-box iframe { display: block; width: min(94vw, 70rem); height: 78vh; border: none; border-radius: .3rem; background: #000; }
 .cam-lightbox-cap { font-family: var(--font-mono); font-size: .82rem; color: var(--muted); padding: .4rem .3rem .1rem; }
 .cam-lightbox-close { position: absolute; top: -1rem; right: -1rem; width: 2rem; height: 2rem; border-radius: 50%; border: none; background: #fff; color: #111; font-size: 1.1rem; line-height: 1; cursor: pointer; }
+
+/* Быстрая смена типа позиции склада */
+.kind-select {
+  padding: .3rem .5rem; font-size: .85rem; min-width: 10rem;
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: var(--radius);
+  font-family: var(--font-mono);
+}
+.kind-select:focus { border-color: var(--accent); outline: none; }

@@ -11,6 +11,7 @@ urlpatterns = [
     path("<int:pk>/edit/", views.InventoryItemUpdateView.as_view(), name="item_update"),
     path("<int:pk>/delete/", views.InventoryItemDeleteView.as_view(), name="item_delete"),
     path("<int:pk>/movement/", views.InventoryMovementCreateView.as_view(), name="movement_create"),
+    path("<int:pk>/kind/", views.InventoryItemTypeChangeView.as_view(), name="item_kind_change"),
     path("locations/", views.StorageLocationListView.as_view(), name="location_list"),
     path("locations/new/", views.StorageLocationCreateView.as_view(), name="location_create"),
     path("locations/<int:pk>/edit/", views.StorageLocationUpdateView.as_view(), name="location_update"),

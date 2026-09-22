@@ -124,6 +124,18 @@ class InventoryItemUpdateView(AdminRequiredMixin, UpdateView):
         return reverse("inventory:item_detail", args=[self.object.pk])
 
 
+class InventoryItemTypeChangeView(AdminRequiredMixin, View):
+    """Быстрая смена типа позиции прямо из списка (только администратор)."""
+
+    def post(self, request, pk):
+        item = get_object_or_404(InventoryItem, pk=pk)
+        kind_id = request.POST.get("kind")
+        item.kind = ItemType.objects.filter(pk=kind_id).first() if kind_id else None
+        item.save(update_fields=["kind", "updated_at"])
+        messages.success(request, "Тип обновлён.")
+        return redirect(request.META.get("HTTP_REFERER") or reverse("inventory:item_list"))
+
+
 class InventoryItemDeleteView(AdminRequiredMixin, DeleteView):
     model = InventoryItem
     template_name = "core/confirm_delete.html"
