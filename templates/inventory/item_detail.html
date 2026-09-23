@@ -21,7 +21,6 @@
         <dt>Инвентарный номер</dt><dd class="mono">{{ item.inventory_number|default:"—" }}</dd>
         <dt>Серийный номер</dt><dd class="mono">{{ item.serial_number|default:"—" }}</dd>
         <dt>Количество</dt><dd class="mono">{{ item.quantity }} {{ item.unit }} {% if item.is_low_stock %}<span class="badge badge-danger">ниже минимума {{ item.min_quantity }}</span>{% endif %}</dd>
-        <dt>Износ</dt><dd class="mono">{{ item.wear_percent }}%</dd>
         <dt>Произведено</dt><dd>{{ item.manufactured_at|date:"d.m.Y"|default:"—" }}</dd>
         <dt>Проверка</dt><dd>{{ item.last_verified_at|date:"d.m.Y"|default:"—" }}</dd>
         <dt>Примечания</dt><dd>{{ item.notes|default:"—"|linebreaksbr }}</dd>

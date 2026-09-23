@@ -14,6 +14,7 @@ urlpatterns = [
     path("documents/", include("documents.urls")),
     path("equipment/", include("equipment.urls")),
     path("analytics/", include("analytics.urls")),
+    path("services/", include("services.urls")),
 ]
 
 handler403 = "core.views.forbidden"

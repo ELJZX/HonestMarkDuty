@@ -23,4 +23,4 @@ class ShiftCloseForm(StyledModelForm):
 class ShiftCheckForm(StyledModelForm):
     class Meta:
         model = ShiftCheck
-        fields = ("item", "condition", "wear_percent", "comment")
+        fields = ("item", "condition", "comment")

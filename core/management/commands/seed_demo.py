@@ -160,14 +160,14 @@ class Command(BaseCommand):
             locations.append(location)
 
         items_data = [
-            ("Сканер 2D Honeywell", "INV-1001", type_device, device_cat, locations[0], 4, 2, Condition.GOOD, 20),
-            ("Сканер Zebra DS2208", "INV-1002", type_device, device_cat, locations[1], 1, 2, Condition.WORN, 65),
-            ("Гайковёрт пневматический", "INV-2001", type_tool, tool_cat, locations[0], 3, 1, Condition.GOOD, 35),
-            ("Ремень привода упаковщика", "ZAP-3001", type_spare, spare_cat, locations[2], 8, 4, Condition.NEW, 0),
-            ("Нож упаковочной машины", "ZAP-3002", type_spare, spare_cat, locations[2], 2, 3, Condition.NEEDS_REPAIR, 80),
+            ("Сканер 2D Honeywell", "INV-1001", type_device, device_cat, locations[0], 4, 2, Condition.NEW),
+            ("Сканер Zebra DS2208", "INV-1002", type_device, device_cat, locations[1], 1, 2, Condition.USED),
+            ("Гайковёрт пневматический", "INV-2001", type_tool, tool_cat, locations[0], 3, 1, Condition.NEW),
+            ("Ремень привода упаковщика", "ZAP-3001", type_spare, spare_cat, locations[2], 8, 4, Condition.NEW),
+            ("Нож упаковочной машины", "ZAP-3002", type_spare, spare_cat, locations[2], 2, 3, Condition.USED),
         ]
         items = []
-        for name, inv, kind, category, location, qty, minqty, condition, wear in items_data:
+        for name, inv, kind, category, location, qty, minqty, condition in items_data:
             item, _ = InventoryItem.objects.get_or_create(
                 inventory_number=inv,
                 defaults={
@@ -179,7 +179,6 @@ class Command(BaseCommand):
                     "quantity": qty,
                     "min_quantity": minqty,
                     "condition": condition,
-                    "wear_percent": wear,
                     "unit": "шт",
                 },
             )

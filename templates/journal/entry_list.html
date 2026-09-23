@@ -1,13 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Сменный журнал{% endblock %}
 {% block breadcrumb %}Сменная работа / Сменный журнал{% endblock %}
-{% block topbar_actions %}
-  <a class="btn btn-primary btn-sm" href="{% url 'journal:entry_create' %}">+ Добавить запись</a>
-{% endblock %}
 {% block content %}
 <div class="card">
   <div class="card-header">
     <div class="card-title">Сменный журнал специалистов по цифровой маркировке</div>
+    <a class="btn btn-primary btn-sm" href="{% url 'journal:entry_create' %}">+ Добавить запись</a>
   </div>
 
   <form method="get" class="filters">

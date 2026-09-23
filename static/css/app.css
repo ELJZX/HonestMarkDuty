@@ -798,7 +798,7 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
 .cam-lightbox-cap { font-family: var(--font-mono); font-size: .82rem; color: var(--muted); padding: .4rem .3rem .1rem; }
 .cam-lightbox-close { position: absolute; top: -1rem; right: -1rem; width: 2rem; height: 2rem; border-radius: 50%; border: none; background: #fff; color: #111; font-size: 1.1rem; line-height: 1; cursor: pointer; }
 
-/* Быстрая смена типа позиции склада */
+/* пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ */
 .kind-select {
   padding: .3rem .5rem; font-size: .85rem; min-width: 10rem;
   background: var(--surface-2); color: var(--text);
@@ -806,3 +806,9 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
   font-family: var(--font-mono);
 }
 .kind-select:focus { border-color: var(--accent); outline: none; }
+
+/* ---------- РЎРµСЂРІРёСЃС‹ РњРѕР»РІРµСЃС‚.РњР°СЂРєРёСЂРѕРІРєР° ---------- */
+.service-links { display: flex; flex-wrap: wrap; gap: .67rem; }
+.service-item { display: inline-flex; align-items: center; gap: .33rem; }
+.service-item form { display: inline-flex; margin: 0; }
+.service-links .empty { width: 100%; }

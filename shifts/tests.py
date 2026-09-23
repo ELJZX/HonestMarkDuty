@@ -96,8 +96,8 @@ class ShiftModelTests(TestCase):
     def test_shiftcheck_str(self):
         shift = Shift.objects.create()
         item = InventoryItem.objects.create(name="Сканер")
-        check = ShiftCheck.objects.create(shift=shift, item=item, wear_percent=10)
-        self.assertIn("10", str(check))
+        check = ShiftCheck.objects.create(shift=shift, item=item, condition=Condition.USED)
+        self.assertIn("Б/у", str(check))
 
 
 class ShiftViewTests(TestCase):
@@ -173,7 +173,7 @@ class ShiftViewTests(TestCase):
         self.client.force_login(self.specialist)
         response = self.client.post(
             reverse("shifts:check_create", args=[shift.pk]),
-            {"item": self.item.pk, "condition": Condition.GOOD, "wear_percent": 10, "comment": "ок"},
+            {"item": self.item.pk, "condition": Condition.NEW, "comment": "ок"},
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(shift.checks.count(), 1)
@@ -183,12 +183,12 @@ class ShiftViewTests(TestCase):
         self.client.force_login(self.specialist)
         self.client.post(
             reverse("shifts:check_create", args=[shift.pk]),
-            {"item": self.item.pk, "condition": Condition.GOOD, "wear_percent": 10},
+            {"item": self.item.pk, "condition": Condition.NEW},
         )
         self.assertEqual(shift.checks.count(), 0)
 
     def test_check_form_valid(self):
-        form = ShiftCheckForm(data={"item": self.item.pk, "condition": Condition.NEW, "wear_percent": 0})
+        form = ShiftCheckForm(data={"item": self.item.pk, "condition": Condition.NEW})
         self.assertTrue(form.is_valid())
 
     def test_detail_and_close_pages_render(self):

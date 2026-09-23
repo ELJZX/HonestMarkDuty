@@ -43,7 +43,7 @@ class InventoryMovementInline(admin.TabularInline):
 
 @admin.register(InventoryItem)
 class InventoryItemAdmin(admin.ModelAdmin):
-    list_display = ("name", "kind", "storage", "location", "quantity", "unit", "condition", "wear_percent")
+    list_display = ("name", "kind", "storage", "location", "quantity", "unit", "condition")
     list_filter = ("kind", "condition", "storage", "location", "is_active")
     search_fields = ("name", "inventory_number", "serial_number")
     inlines = (InventoryMovementInline,)

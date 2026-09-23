@@ -1,24 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Склад{% endblock %}
 {% block breadcrumb %}<a href="{% url 'inventory:board' %}">Учет</a> / <a href="{% url 'inventory:board' %}">Склад</a>{% endblock %}
-{% block topbar_actions %}
-  <a class="btn btn-primary btn-sm" href="{% url 'inventory:item_create' %}">+ Позиция</a>
-{% endblock %}
 {% block content %}
-<div class="grid grid-4 mb-3">
-  <div class="stat"><div class="stat-label">Всего позиций</div><div class="stat-value">{{ stats.total }}</div></div>
-  <div class="stat {% if stats.low %}danger{% endif %}"><div class="stat-label">Ниже минимума</div><div class="stat-value">{{ stats.low }}</div></div>
-  <div class="stat {% if stats.worn %}warn{% endif %}"><div class="stat-label">Износ / ремонт</div><div class="stat-value">{{ stats.worn }}</div></div>
-  <div class="stat"><div class="stat-label">Полок</div><div class="stat-value">{{ locations|length }}</div></div>
-</div>
-
 <div class="card">
   <div class="card-header">
     <div class="card-title">Каталог склада</div>
-    <a class="btn btn-sm btn-ghost" href="{% url 'inventory:board' %}">Склады</a>
-    <a class="btn btn-sm btn-ghost" href="{% url 'inventory:location_list' %}">Полки</a>
-    <a class="btn btn-sm btn-ghost" href="{% url 'inventory:category_list' %}">Категории</a>
-    <a class="btn btn-sm btn-ghost" href="{% url 'inventory:kind_list' %}">Типы</a>
+    <a class="btn btn-primary btn-sm" href="{% url 'inventory:item_create' %}">+ Позиция</a>
   </div>
 
   <form method="get" class="filters">
@@ -55,16 +42,13 @@
         {% for c in categories %}<option value="{{ c.pk }}" {% if current.category == c.pk|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
       </select>
     </div>
-    <div class="form-row"><label>&nbsp;</label>
-      <label class="flex items-center gap-1" style="text-transform:none"><input type="checkbox" class="field-checkbox" name="low" value="1" {% if current.low %}checked{% endif %}> только ниже минимума</label>
-    </div>
     <button class="btn" type="submit">Применить</button>
   </form>
 
   <div class="table-wrap">
     <table class="data">
       <thead>
-        <tr><th>Наименование</th><th>Тип</th><th>Полка</th><th>Кол-во</th><th>Состояние</th><th>Износ</th><th></th></tr>
+        <tr><th>Наименование</th><th>Тип</th><th>Полка</th><th>Кол-во</th><th>Состояние</th><th></th></tr>
       </thead>
       <tbody>
         {% for item in items %}
@@ -90,11 +74,10 @@
           <td>{{ item.location|default:"—" }}</td>
           <td class="mono nowrap">{{ item.quantity }} {{ item.unit }}</td>
           <td><span class="badge {{ item.condition_badge }}">{{ item.get_condition_display }}</span></td>
-          <td class="mono">{{ item.wear_percent }}%</td>
           <td class="actions"><a class="btn btn-sm" href="{% url 'inventory:item_detail' item.pk %}">Открыть</a></td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" class="empty">Позиции не найдены</td></tr>
+        <tr><td colspan="6" class="empty">Позиции не найдены</td></tr>
         {% endfor %}
       </tbody>
     </table>

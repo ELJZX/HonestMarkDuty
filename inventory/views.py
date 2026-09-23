@@ -130,13 +130,6 @@ class InventoryItemListView(LoginRequiredMixin, ListView):
         ctx["locations"] = StorageLocation.objects.select_related("workshop")
         ctx["categories"] = ItemCategory.objects.all()
         ctx["current"] = self.request.GET
-        ctx["stats"] = {
-            "total": InventoryItem.objects.count(),
-            "low": InventoryItem.objects.filter(quantity__lte=F("min_quantity")).count(),
-            "worn": InventoryItem.objects.filter(
-                condition__in=[Condition.WORN, Condition.NEEDS_REPAIR, Condition.BROKEN]
-            ).count(),
-        }
         return ctx
 
 

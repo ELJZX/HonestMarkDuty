@@ -18,5 +18,5 @@ class ShiftAdmin(admin.ModelAdmin):
 
 @admin.register(ShiftCheck)
 class ShiftCheckAdmin(admin.ModelAdmin):
-    list_display = ("shift", "item", "condition", "wear_percent")
+    list_display = ("shift", "item", "condition")
     list_filter = ("condition",)

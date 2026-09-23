@@ -42,10 +42,7 @@ class InventoryModelTests(TestCase):
     def test_condition_badge_mapping(self):
         expectations = {
             Condition.NEW: "badge-ok",
-            Condition.GOOD: "badge-ok",
-            Condition.WORN: "badge-warn",
-            Condition.NEEDS_REPAIR: "badge-warn",
-            Condition.BROKEN: "badge-danger",
+            Condition.USED: "badge-warn",
         }
         for condition, badge in expectations.items():
             self.item.condition = condition
@@ -100,12 +97,6 @@ class InventoryMovementTests(TestCase):
 
 
 class InventoryFormTests(TestCase):
-    def test_wear_percent_over_100_invalid(self):
-        item_type = ItemType.objects.create(name="Инструмент")
-        form = InventoryItemForm(data={"name": "X", "kind": item_type.pk, "quantity": 1, "wear_percent": 150})
-        self.assertFalse(form.is_valid())
-        self.assertIn("wear_percent", form.errors)
-
     def test_item_form_valid(self):
         item_type = ItemType.objects.create(name="Инструмент")
         form = InventoryItemForm(
@@ -115,8 +106,7 @@ class InventoryFormTests(TestCase):
                 "quantity": 1,
                 "min_quantity": 0,
                 "unit": "шт",
-                "condition": Condition.GOOD,
-                "wear_percent": 10,
+                "condition": Condition.NEW,
             }
         )
         self.assertTrue(form.is_valid())
@@ -136,7 +126,7 @@ class InventoryViewTests(TestCase):
         self.type_tool = ItemType.objects.create(name="Инструмент")
         self.item = InventoryItem.objects.create(
             name="Сканер", kind=self.type_device, location=self.location, category=self.category,
-            quantity=1, min_quantity=2, wear_percent=90, condition=Condition.WORN,
+            quantity=1, min_quantity=2, condition=Condition.USED,
         )
 
     def test_list_renders_and_filters(self):
@@ -144,7 +134,7 @@ class InventoryViewTests(TestCase):
         self.assertEqual(self.client.get(reverse("inventory:item_list")).status_code, 200)
         response = self.client.get(reverse("inventory:item_list"), {"q": "Сканер", "low": "1"})
         self.assertContains(response, "Сканер")
-        response = self.client.get(reverse("inventory:item_list"), {"condition": Condition.WORN})
+        response = self.client.get(reverse("inventory:item_list"), {"condition": Condition.USED})
         self.assertEqual(response.status_code, 200)
 
     def test_detail_renders(self):
@@ -156,7 +146,7 @@ class InventoryViewTests(TestCase):
         self.client.force_login(self.specialist)
         response = self.client.post(
             reverse("inventory:item_create"),
-            {"name": "Новый инструмент", "kind": self.type_tool.pk, "quantity": 3, "min_quantity": 1, "unit": "шт", "condition": Condition.GOOD, "wear_percent": 0},
+            {"name": "Новый инструмент", "kind": self.type_tool.pk, "quantity": 3, "min_quantity": 1, "unit": "шт", "condition": Condition.NEW},
         )
         self.assertEqual(response.status_code, 302)
         self.assertTrue(InventoryItem.objects.filter(name="Новый инструмент").exists())
@@ -170,7 +160,7 @@ class InventoryViewTests(TestCase):
         self.client.force_login(self.admin)
         response = self.client.post(
             reverse("inventory:item_update", args=[self.item.pk]),
-            {"name": "Сканер обновлён", "kind": self.type_device.pk, "quantity": 1, "min_quantity": 2, "unit": "шт", "condition": Condition.WORN, "wear_percent": 90},
+            {"name": "Сканер обновлён", "kind": self.type_device.pk, "quantity": 1, "min_quantity": 2, "unit": "шт", "condition": Condition.USED},
         )
         self.assertEqual(response.status_code, 302)
         self.item.refresh_from_db()
@@ -359,8 +349,7 @@ class ItemTypeTests(TestCase):
                 "quantity": 1,
                 "min_quantity": 0,
                 "unit": "шт",
-                "condition": Condition.GOOD,
-                "wear_percent": 0,
+                "condition": Condition.NEW,
             },
         )
         self.assertEqual(response.status_code, 302)

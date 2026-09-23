@@ -7,16 +7,15 @@
   <div class="stat">
     <div class="stat-label">Позиций на складе</div>
     <div class="stat-value">{{ kpi.items }}</div>
-    <div class="stat-hint">износ в среднем {{ avg_wear|floatformat:0 }}%</div>
   </div>
   <div class="stat {% if kpi.low_stock %}danger{% endif %}">
     <div class="stat-label">Ниже минимума</div>
     <div class="stat-value">{{ kpi.low_stock }}</div>
     <div class="stat-hint">требуют пополнения</div>
   </div>
-  <div class="stat {% if kpi.worn %}warn{% endif %}">
-    <div class="stat-label">Износ / ремонт</div>
-    <div class="stat-value">{{ kpi.worn }}</div>
+  <div class="stat {% if kpi.used %}warn{% endif %}">
+    <div class="stat-label">Б/у</div>
+    <div class="stat-value">{{ kpi.used }}</div>
     <div class="stat-hint">позиций склада</div>
   </div>
   <div class="stat">

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Avg, Count, F, Q
+from django.db.models import Count, F, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from django.views.generic import TemplateView
@@ -29,9 +29,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         ctx["kpi"] = {
             "items": InventoryItem.objects.count(),
             "low_stock": InventoryItem.objects.filter(quantity__lte=F("min_quantity")).count(),
-            "worn": InventoryItem.objects.filter(
-                condition__in=[Condition.WORN, Condition.NEEDS_REPAIR, Condition.BROKEN]
-            ).count(),
+            "used": InventoryItem.objects.filter(condition=Condition.USED).count(),
             "equipment": Equipment.objects.filter(is_camera=False).count(),
             "equipment_repair": Equipment.objects.filter(
                 is_camera=False,
@@ -102,8 +100,6 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             )
             .order_by("-equipment_count")[:10]
         )
-
-        ctx["avg_wear"] = InventoryItem.objects.aggregate(avg=Avg("wear_percent"))["avg"] or 0
         return ctx
 
 

@@ -39,10 +39,7 @@ class ItemType(AuditedModel):
 
 class Condition(models.TextChoices):
     NEW = "new", "Новое"
-    GOOD = "good", "Хорошее"
-    WORN = "worn", "Изношенное"
-    NEEDS_REPAIR = "needs_repair", "Требует ремонта"
-    BROKEN = "broken", "Неисправно"
+    USED = "used", "Б/у"
 
 
 class StorageLocation(AuditedModel):
@@ -130,8 +127,7 @@ class InventoryItem(AuditedModel):
     quantity = models.PositiveIntegerField("Количество", default=0)
     min_quantity = models.PositiveIntegerField("Минимальный остаток", default=0)
     unit = models.CharField("Ед. изм.", max_length=20, default="шт")
-    condition = models.CharField("Состояние", max_length=20, choices=Condition.choices, default=Condition.GOOD)
-    wear_percent = models.PositiveSmallIntegerField("Износ, %", default=0)
+    condition = models.CharField("Состояние", max_length=20, choices=Condition.choices, default=Condition.NEW)
     serial_number = models.CharField("Серийный номер", max_length=100, blank=True)
     manufactured_at = models.DateField("Дата производства", null=True, blank=True)
     last_verified_at = models.DateField("Дата поверки/проверки", null=True, blank=True)
@@ -157,10 +153,7 @@ class InventoryItem(AuditedModel):
     def condition_badge(self) -> str:
         return {
             Condition.NEW: "badge-ok",
-            Condition.GOOD: "badge-ok",
-            Condition.WORN: "badge-warn",
-            Condition.NEEDS_REPAIR: "badge-warn",
-            Condition.BROKEN: "badge-danger",
+            Condition.USED: "badge-warn",
         }.get(self.condition, "badge-muted")
 
 

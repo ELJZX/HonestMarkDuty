@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Сервисы Молвест.Маркировка{% endblock %}
+{% block breadcrumb %}Сменная работа / Сервисы Молвест.Маркировка{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Сервисы Молвест.Маркировка</div>
+    {% if user.can_edit %}<a class="btn btn-primary btn-sm" href="{% url 'services:service_create' %}">Добавить сервис</a>{% endif %}
+  </div>
+  <div class="service-links">
+    {% for s in services %}
+      <span class="service-item">
+        <a class="btn" href="{{ s.url }}" target="_blank" rel="noopener noreferrer">{{ s.name }}</a>
+        {% if user.is_admin %}
+          <form method="post" action="{% url 'services:service_delete' s.pk %}">
+            {% csrf_token %}
+            <button class="btn btn-xs btn-danger" type="submit" title="Удалить сервис">Удалить</button>
+          </form>
+        {% endif %}
+      </span>
+    {% empty %}
+      <p class="empty">Сервисы ещё не добавлены. Нажмите «Добавить сервис».</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

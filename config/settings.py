@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     "documents",
     "equipment",
     "analytics",
+    "services",
 ]
 
 MIDDLEWARE = [
