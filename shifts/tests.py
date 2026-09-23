@@ -374,9 +374,12 @@ class ShiftIntegrationSyncTests(TestCase):
         self.assertTrue(JournalEntry.objects.filter(equipment_line="Finnah").exists())
 
     def test_sync_disabled_is_skipped(self):
+        from django.test import override_settings
+
         from shifts.integration import sync_window
 
-        result = sync_window(7, 7, opener=object())
+        with override_settings(SHIFT_SYNC_ENABLED=False):
+            result = sync_window(7, 7, opener=object())
         self.assertIn("skipped", result)
 
     def test_quick_sync_marks_today_open(self):
