@@ -3,7 +3,7 @@ from __future__ import annotations
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count, F, Q
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.generic import (
     CreateView,
@@ -85,6 +85,14 @@ class InventoryItemListView(LoginRequiredMixin, ListView):
     template_name = "inventory/item_list.html"
     context_object_name = "items"
     paginate_by = 25
+
+    def get(self, request, *args, **kwargs):
+        # живой поиск: отдаём только результаты без перезагрузки страницы
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            self.object_list = self.get_queryset()
+            context = self.get_context_data()
+            return render(request, "inventory/partials/items_results.html", context)
+        return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
         qs = InventoryItem.objects.select_related(

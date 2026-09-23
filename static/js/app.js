@@ -92,6 +92,27 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
+  // Живой поиск по складу (AJAX, без перезагрузки, фокус не теряется)
+  document.querySelectorAll("[data-live-search]").forEach(function (el) {
+    let timer = null;
+    el.addEventListener("input", function () {
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        const form = el.form;
+        if (!form) return;
+        const params = new URLSearchParams(new FormData(form)).toString();
+        const url = window.location.pathname + (params ? "?" + params : "");
+        fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+          .then(function (r) { return r.text(); })
+          .then(function (html) {
+            const box = document.getElementById("items-results");
+            if (box) box.innerHTML = html;
+          })
+          .catch(function () {});
+      }, 250);
+    });
+  });
+
   // Шаблоны быстрого добавления оборудования
   const OPTIONAL_FIELDS = ["print_head"];
   const presetButtons = document.querySelectorAll("[data-preset]");

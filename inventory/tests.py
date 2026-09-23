@@ -265,6 +265,17 @@ class InventoryFilterAndEdgeTests(TestCase):
         self.assertContains(response, f'href="{reverse("inventory:board")}"')
         self.assertContains(response, ">Учет</a>")
 
+    def test_live_search_ajax_returns_partial(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("inventory:item_list"),
+            {"q": "Ска"},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Сканер")
+        self.assertNotContains(response, "<html")
+
     def test_board_renders_storages(self):
         storage = Storage.objects.create(name="Новый склад")
         self.item.storage = storage

@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -187,3 +188,7 @@ SHIFT_SYNC_DAYS_BACK = int(env("SHIFT_SYNC_DAYS_BACK", "7") or "7")
 SHIFT_SYNC_DAYS_AHEAD = int(env("SHIFT_SYNC_DAYS_AHEAD", "7") or "7")
 SHIFT_SYNC_CREATE_USERS = env_bool("SHIFT_SYNC_CREATE_USERS", True)
 SHIFT_SYNC_QUICK_TTL = int(env("SHIFT_SYNC_QUICK_TTL", "120") or "120")
+
+# В тестах не обращаемся к внешней системе
+if "test" in sys.argv:
+    SHIFT_SYNC_ENABLED = False

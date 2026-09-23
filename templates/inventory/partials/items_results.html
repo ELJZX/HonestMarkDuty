@@ -1,0 +1,39 @@
+<div class="table-wrap">
+  <table class="data">
+    <thead>
+      <tr><th>Наименование</th><th>Тип</th><th>Полка</th><th>Кол-во</th><th>Состояние</th><th>Износ</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td class="primary">
+          <a href="{% url 'inventory:item_detail' item.pk %}">{{ item.name }}</a>
+          {% if item.inventory_number %}<div class="dim mono" style="font-size:.7rem">{{ item.inventory_number }}</div>{% endif %}
+          {% if item.is_low_stock %}<span class="badge badge-danger">пополнить</span>{% endif %}
+        </td>
+        <td>
+          {% if user.is_admin %}
+          <form method="post" action="{% url 'inventory:item_kind_change' item.pk %}">
+            {% csrf_token %}
+            <select name="kind" class="kind-select" data-auto-submit>
+              <option value="">—</option>
+              {% for k in kinds %}<option value="{{ k.pk }}" {% if item.kind_id == k.pk %}selected{% endif %}>{{ k.name }}</option>{% endfor %}
+            </select>
+          </form>
+          {% else %}
+          {{ item.kind|default:"—" }}
+          {% endif %}
+        </td>
+        <td>{{ item.location|default:"—" }}</td>
+        <td class="mono nowrap">{{ item.quantity }} {{ item.unit }}</td>
+        <td><span class="badge {{ item.condition_badge }}">{{ item.get_condition_display }}</span></td>
+        <td class="mono">{{ item.wear_percent }}%</td>
+        <td class="actions"><a class="btn btn-sm" href="{% url 'inventory:item_detail' item.pk %}">Открыть</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="empty">Позиции не найдены</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "partials/pagination.html" %}
