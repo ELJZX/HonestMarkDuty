@@ -265,6 +265,12 @@ class InventoryFilterAndEdgeTests(TestCase):
         self.assertContains(response, f'href="{reverse("inventory:board")}"')
         self.assertContains(response, ">Учет</a>")
 
+    def test_search_is_case_insensitive_cyrillic(self):
+        InventoryItem.objects.create(name="Печатающая головка", quantity=1)
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("inventory:item_list"), {"q": "печ"})
+        self.assertContains(response, "Печатающая головка")
+
     def test_live_search_ajax_returns_partial(self):
         self.client.force_login(self.specialist)
         response = self.client.get(
