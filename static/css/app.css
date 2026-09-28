@@ -520,36 +520,6 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
 .archive-group > summary:hover { background: var(--surface-3); }
 .archive-group .filters { padding: 1.11rem; margin-bottom: 0; }
 
-/* ---------- Всплывающие уведомления ---------- */
-.toast-stack {
-  position: fixed; top: 5.56rem; right: 1.11rem; z-index: 200;
-  display: flex; flex-direction: column; gap: .56rem;
-  max-width: min(25.56rem, calc(100vw - 2.22rem));
-}
-.toast {
-  display: flex; align-items: flex-start; gap: .67rem;
-  background: var(--surface); border: 1px solid var(--border-strong);
-  border-left-width: 4px; border-radius: var(--radius);
-  padding: .67rem .78rem; font-family: var(--font-mono); font-size: .88rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
-  animation: toast-in .2s ease;
-}
-.toast.success { border-left-color: var(--ok); }
-.toast.error { border-left-color: var(--danger); }
-.toast.warning { border-left-color: var(--warn); }
-.toast.info { border-left-color: var(--info); }
-.toast.hide { opacity: 0; transform: translateX(16px); transition: opacity .25s, transform .25s; }
-.toast-text { flex: 1; }
-.toast-close {
-  background: none; border: none; color: var(--dim);
-  font-size: 1.25rem; line-height: 1; cursor: pointer; padding: 0 2px;
-}
-.toast-close:hover { color: var(--accent); }
-@keyframes toast-in {
-  from { opacity: 0; transform: translateX(16px); }
-  to { opacity: 1; transform: none; }
-}
-
 /* ---------- Модальное окно подтверждения ---------- */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0, 0, 0, .65);
@@ -576,7 +546,9 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
   padding: .56rem .67rem; background: var(--surface-2);
   border: 1px solid var(--border); border-radius: var(--radius); font-size: .95rem;
 }
-@media print { .toast-stack, .modal-overlay { display: none !important; } }
+.events-list li.event-ok { color: var(--ok); }
+.events-list li.event-danger { color: var(--danger); }
+@media print { .modal-overlay { display: none !important; } }
 
 /* ---------- Открытая смена в шапке ---------- */
 .topbar-shift {

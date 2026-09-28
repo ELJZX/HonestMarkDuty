@@ -10,7 +10,6 @@ urlpatterns = [
     path("registry/", views.EquipmentListView.as_view(), name="equipment_list"),
     path("cameras/", views.CameraWallView.as_view(), name="cameras"),
     path("cameras/new/", views.CameraCreateView.as_view(), name="camera_create"),
-    path("cameras/<int:pk>/delete/", views.CameraDeleteView.as_view(), name="camera_delete"),
     path("cameras/workshops/<int:pk>/", views.CameraWorkshopView.as_view(), name="camera_workshop"),
     path("printers/", views.PrinterWallView.as_view(), name="printers"),
     path("printers/new/", views.PrinterCreateView.as_view(), name="printer_create"),

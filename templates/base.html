@@ -31,7 +31,7 @@
           <a class="nav-item {% if request.resolver_match.namespace == 'shifts' %}active{% endif %}" href="{% url 'shifts:shift_list' %}">Смены</a>
           <a class="nav-item {% if request.resolver_match.namespace == 'journal' and request.resolver_match.url_name != 'export_list' %}active{% endif %}" href="{% url 'journal:entry_list' %}">Сменный журнал</a>
           <a class="nav-item {% if request.resolver_match.namespace == 'checklists' %}active{% endif %}" href="{% url 'checklists:hub' %}">Чеклисты</a>
-          <a class="nav-item {% if request.resolver_match.namespace == 'services' %}active{% endif %}" href="{% url 'services:service_list' %}">Сервисы Молвест.Маркировка</a>
+          <a class="nav-item {% if request.resolver_match.namespace == 'services' %}active{% endif %}" href="{% url 'services:service_list' %}">Молвест.Маркировка</a>
           <a class="nav-item {% if request.resolver_match.url_name == 'export_list' %}active{% endif %}" href="{% url 'journal:export_list' %}">Архив Excel</a>
         </div>
       </details>
@@ -45,7 +45,7 @@
       </details>
 
       <details class="nav-group" {% if request.resolver_match.namespace == 'inventory' or request.resolver_match.namespace == 'equipment' and request.resolver_match.url_name != 'cameras' and request.resolver_match.url_name != 'camera_workshop' and request.resolver_match.url_name != 'printers' and request.resolver_match.url_name != 'printer_workshop' %}open{% endif %}>
-        <summary class="nav-label">Учет</summary>
+        <summary class="nav-label">Запчасти и оборудование</summary>
         <div class="nav-items">
           <a class="nav-item {% if request.resolver_match.namespace == 'inventory' and request.resolver_match.url_name != 'location_list' and request.resolver_match.url_name != 'category_list' and request.resolver_match.url_name != 'kind_list' %}active{% endif %}" href="{% url 'inventory:board' %}">Склад</a>
           <a class="nav-item {% if request.resolver_match.namespace == 'equipment' and request.resolver_match.url_name != 'cameras' and request.resolver_match.url_name != 'camera_workshop' and request.resolver_match.url_name != 'printers' and request.resolver_match.url_name != 'printer_workshop' %}active{% endif %}" href="{% url 'equipment:board' %}">Оборудование</a>
@@ -106,7 +106,6 @@
     </header>
 
     <main class="content">
-      {% include "partials/messages.html" %}
       {% block content %}{% endblock %}
     </main>
   </div>

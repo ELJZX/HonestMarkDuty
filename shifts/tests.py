@@ -820,20 +820,52 @@ class PreviousShiftEventsTests(TestCase):
         from services.models import Service
         from shifts.events import previous_shift_events
 
-        item = InventoryItem.objects.create(name="Новый сканер")
+        item = InventoryItem.objects.create(name="Новый сканер", quantity=3)
         InventoryMovement.objects.create(
             item=item, movement_type=MovementType.OUT, quantity=2
+        )
+        InventoryMovement.objects.create(
+            item=item, movement_type=MovementType.IN, quantity=5
         )
         Equipment.objects.create(name="Камера 1", is_camera=True)
         Equipment.objects.create(name="Принтер 1", is_printer=True)
         Service.objects.create(name="Сервис 1", url="http://example.com")
 
-        joined = "\n".join(previous_shift_events())
-        self.assertIn("Новая позиция склада: Новый сканер", joined)
-        self.assertIn("Расход", joined)
-        self.assertIn("Добавлена камера: Камера 1", joined)
-        self.assertIn("Добавлен принтер: Принтер 1", joined)
-        self.assertIn("Добавлен сервис: Сервис 1", joined)
+        tones = {e["text"]: e["tone"] for e in previous_shift_events()}
+        self.assertEqual(tones.get("Новая позиция склада: Новый сканер (3 шт)"), "")
+        self.assertEqual(tones.get("Склад: Новый сканер -2"), "danger")
+        self.assertEqual(tones.get("Склад: Новый сканер +5"), "ok")
+        self.assertEqual(tones.get("Добавлена камера: Камера 1"), "")
+        self.assertEqual(tones.get("Добавлен принтер: Принтер 1"), "")
+        self.assertEqual(tones.get("Добавлен сервис: Сервис 1"), "")
+
+    def test_includes_journal_entries(self):
+        from journal.models import JournalEntry
+        from shifts.events import previous_shift_events
+
+        JournalEntry.objects.create(
+            shift=self.shift,
+            specialist=self.specialist,
+            action_task="Проверка печати",
+            equipment_line="AVE",
+        )
+        texts = [e["text"] for e in previous_shift_events()]
+        self.assertTrue(any("Проверка печати" in text for text in texts))
+        self.assertTrue(any("AVE" in text for text in texts))
+
+    def test_includes_archived_documents(self):
+        from core.models import Workshop
+        from documents.models import Document, DocumentKind
+        from shifts.events import previous_shift_events
+
+        workshop = Workshop.objects.create(name="Цех Д", code="ЦД")
+        Document.objects.create(
+            kind=DocumentKind.SERVICE_NOTE, number="СЛ-0007", workshop=workshop
+        )
+        texts = [e["text"] for e in previous_shift_events()]
+        self.assertTrue(
+            any("СЛ-0007" in text and "Цех Д" in text for text in texts)
+        )
 
     def test_empty_without_closed_shift(self):
         from shifts.events import previous_shift_events

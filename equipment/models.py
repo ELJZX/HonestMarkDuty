@@ -117,6 +117,22 @@ class Equipment(AuditedModel):
             )
 
 
+class CameraManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_camera=True)
+
+
+class Camera(Equipment):
+    """Прокси-модель для управления камерами в Django-админке."""
+
+    objects = CameraManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = "Камера"
+        verbose_name_plural = "Камеры"
+
+
 class EquipmentStatusLog(AuditedModel):
     """История изменения состояния оборудования."""
 

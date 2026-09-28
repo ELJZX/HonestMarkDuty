@@ -726,19 +726,18 @@ class CameraTests(TestCase):
         self.client.force_login(self.specialist)
         self.assertEqual(self.client.get(reverse("equipment:camera_create")).status_code, 403)
 
-    def test_admin_can_delete_camera(self):
-        admin = User.objects.create_user(
-            username="cam-admin2", password="x", role=User.Role.ADMIN, is_superuser=True
-        )
-        self.client.force_login(admin)
-        response = self.client.post(reverse("equipment:camera_delete", args=[self.camera.pk]))
-        self.assertEqual(response.status_code, 302)
-        self.assertFalse(Equipment.objects.filter(pk=self.camera.pk).exists())
+    def test_camera_delete_route_removed(self):
+        with self.assertRaises(NoReverseMatch):
+            reverse("equipment:camera_delete", args=[self.camera.pk])
 
-    def test_specialist_cannot_delete_camera(self):
-        self.client.force_login(self.specialist)
-        response = self.client.post(reverse("equipment:camera_delete", args=[self.camera.pk]))
-        self.assertEqual(response.status_code, 403)
+    def test_cameras_managed_in_django_admin(self):
+        from django.contrib import admin
+
+        from equipment.models import Camera
+
+        self.assertIn(Camera, admin.site._registry)
+        self.assertIn(self.camera, Camera.objects.all())
+        self.assertNotIn(self.plain, Camera.objects.all())
 
 
 class CameraExtraTests(TestCase):
@@ -837,30 +836,6 @@ class CameraExtraTests(TestCase):
             reverse("equipment:camera_create"), {"name": "Камера без цеха"}
         )
         self.assertRedirects(response, reverse("equipment:cameras"))
-
-    def test_camera_delete_redirects_to_workshop(self):
-        self.client.force_login(self.admin)
-        response = self.client.post(
-            reverse("equipment:camera_delete", args=[self.cam1.pk])
-        )
-        self.assertRedirects(
-            response, reverse("equipment:camera_workshop", args=[self.kmc.pk])
-        )
-
-    def test_camera_delete_without_workshop_redirects_to_wall(self):
-        self.client.force_login(self.admin)
-        response = self.client.post(
-            reverse("equipment:camera_delete", args=[self.cam4.pk])
-        )
-        self.assertRedirects(response, reverse("equipment:cameras"))
-
-    def test_camera_delete_rejects_non_camera(self):
-        self.client.force_login(self.admin)
-        response = self.client.post(
-            reverse("equipment:camera_delete", args=[self.plain.pk])
-        )
-        self.assertEqual(response.status_code, 404)
-        self.assertTrue(Equipment.objects.filter(pk=self.plain.pk).exists())
 
     def test_seed_cameras_is_idempotent(self):
         call_command("seed_cameras", verbosity=0)

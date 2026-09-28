@@ -541,7 +541,12 @@ class DocumentUploadArchiveTests(TestCase):
             follow=True,
         )
         self.assertFalse(Document.objects.exists())
-        self.assertContains(response, "В названии файла должна быть указана дата в формате")
+        self.assertTrue(
+            any(
+                "В названии файла должна быть указана дата" in str(m)
+                for m in response.context["messages"]
+            )
+        )
 
     def test_viewer_cannot_upload(self):
         viewer = User.objects.create_user(

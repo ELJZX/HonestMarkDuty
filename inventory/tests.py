@@ -111,6 +111,11 @@ class InventoryFormTests(TestCase):
         )
         self.assertTrue(form.is_valid())
 
+    def test_item_form_excludes_dates(self):
+        fields = InventoryItemForm().fields
+        self.assertNotIn("manufactured_at", fields)
+        self.assertNotIn("last_verified_at", fields)
+
     def test_movement_form_valid(self):
         form = InventoryMovementForm(data={"movement_type": MovementType.IN, "quantity": 2})
         self.assertTrue(form.is_valid())

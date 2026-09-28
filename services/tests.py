@@ -40,6 +40,35 @@ class ServiceViewTests(TestCase):
         self.assertContains(response, "https://mdlp.example")
         self.assertContains(response, "Добавить сервис")
 
+    def test_page_has_sites_widget(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("services:service_list"))
+        self.assertContains(response, "Сайты Молвест.Маркировка")
+        self.assertContains(response, reverse("services:site_create"))
+
+    def test_create_service_sets_kind(self):
+        from services.models import ServiceKind
+
+        self.client.force_login(self.admin)
+        self.client.post(
+            reverse("services:service_create"),
+            {"name": "Сервис X", "url": "https://x.example"},
+        )
+        self.assertEqual(
+            Service.objects.get(name="Сервис X").kind, ServiceKind.SERVICE
+        )
+
+    def test_create_site_sets_kind(self):
+        from services.models import ServiceKind
+
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse("services:site_create"),
+            {"name": "Сайт Y", "url": "https://y.example"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Service.objects.get(name="Сайт Y").kind, ServiceKind.SITE)
+
     def test_non_admin_has_no_add_button(self):
         self.client.force_login(self.specialist)
         response = self.client.get(reverse("services:service_list"))

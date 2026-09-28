@@ -14,43 +14,6 @@ document.addEventListener("DOMContentLoaded", function () {
     if (overlay) overlay.addEventListener("click", toggle);
   }
 
-  // Всплывающие уведомления
-  function hideToast(toast) {
-    toast.classList.add("hide");
-    setTimeout(() => toast.remove(), 300);
-  }
-  function attachToast(toast) {
-    const closeBtn = toast.querySelector(".toast-close");
-    if (closeBtn) closeBtn.addEventListener("click", () => hideToast(toast));
-    setTimeout(() => hideToast(toast), 7000);
-  }
-  function showToast(message, type) {
-    let stack = document.getElementById("toast-stack");
-    if (!stack) {
-      stack = document.createElement("div");
-      stack.id = "toast-stack";
-      stack.className = "toast-stack";
-      document.body.appendChild(stack);
-    }
-    const toast = document.createElement("div");
-    toast.className = "toast " + (type || "info");
-    const text = document.createElement("span");
-    text.className = "toast-text";
-    text.textContent = message;
-    const close = document.createElement("button");
-    close.type = "button";
-    close.className = "toast-close";
-    close.setAttribute("aria-label", "Закрыть");
-    close.textContent = "×";
-    toast.appendChild(text);
-    toast.appendChild(close);
-    stack.appendChild(toast);
-    attachToast(toast);
-  }
-  window.showToast = showToast;
-
-  document.querySelectorAll(".toast").forEach(attachToast);
-
   // Живой таймер длительности открытой смены
   const shiftTimer = document.getElementById("shift-timer");
   if (shiftTimer) {
@@ -64,18 +27,6 @@ document.addEventListener("DOMContentLoaded", function () {
     };
     render();
     setInterval(render, 1000);
-  }
-
-  // Уведомление, сохранённое перед перезагрузкой
-  try {
-    const pending = sessionStorage.getItem("hmd_toast");
-    if (pending) {
-      sessionStorage.removeItem("hmd_toast");
-      const data = JSON.parse(pending);
-      showToast(data.message, data.type);
-    }
-  } catch (e) {
-    /* ignore */
   }
 
   // Простое подтверждение через window.confirm (удаления)
@@ -416,19 +367,10 @@ document.addEventListener("DOMContentLoaded", function () {
           showEventsModal(result.data.events);
           return;
         }
-        const message = result.data.message || (result.ok ? "Готово" : "Не удалось выполнить действие");
-        try {
-          sessionStorage.setItem(
-            "hmd_toast",
-            JSON.stringify({ message: message, type: result.ok ? "success" : "error" })
-          );
-        } catch (e) {
-          /* ignore */
-        }
         window.location.reload();
       })
       .catch(function () {
-        showToast("Ошибка сети", "error");
+        window.location.reload();
       });
   }
 
@@ -470,9 +412,11 @@ document.addEventListener("DOMContentLoaded", function () {
       li.textContent = "За предыдущую смену изменений не было.";
       list.appendChild(li);
     } else {
-      events.forEach(function (text) {
+      events.forEach(function (item) {
         const li = document.createElement("li");
+        const text = item && typeof item === "object" ? item.text : item;
         li.textContent = text;
+        if (item && item.tone) li.classList.add("event-" + item.tone);
         list.appendChild(li);
       });
     }

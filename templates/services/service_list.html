@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% block title %}Сервисы Молвест.Маркировка{% endblock %}
-{% block breadcrumb %}Сменная работа / Сервисы Молвест.Маркировка{% endblock %}
+{% block title %}Молвест.Маркировка{% endblock %}
+{% block breadcrumb %}Сменная работа / Молвест.Маркировка{% endblock %}
 {% block content %}
 <div class="card">
   <div class="card-header">
@@ -14,6 +14,22 @@
       </span>
     {% empty %}
       <p class="empty">Сервисы ещё не добавлены. Нажмите «Добавить сервис».</p>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Сайты Молвест.Маркировка</div>
+    {% if user.is_admin %}<a class="btn btn-primary btn-sm" href="{% url 'services:site_create' %}">Добавить сайт</a>{% endif %}
+  </div>
+  <div class="service-links">
+    {% for s in sites %}
+      <span class="service-item">
+        <a class="btn" href="{{ s.url }}" target="_blank" rel="noopener noreferrer">{{ s.name }}</a>
+      </span>
+    {% empty %}
+      <p class="empty">Сайты ещё не добавлены. Нажмите «Добавить сайт».</p>
     {% endfor %}
   </div>
 </div>

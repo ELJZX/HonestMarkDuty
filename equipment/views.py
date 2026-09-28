@@ -222,22 +222,6 @@ class CameraCreateView(AdminRequiredMixin, CreateView):
         return reverse("equipment:cameras")
 
 
-class CameraDeleteView(AdminRequiredMixin, DeleteView):
-    """Удаление камеры (только администратор)."""
-
-    model = Equipment
-    template_name = "core/confirm_delete.html"
-
-    def get_queryset(self):
-        return Equipment.objects.filter(is_camera=True)
-
-    def get_success_url(self):
-        workshop = self.object.workshop
-        if workshop:
-            return reverse("equipment:camera_workshop", args=[workshop.pk])
-        return reverse("equipment:cameras")
-
-
 class PrinterWallView(LoginRequiredMixin, ListView):
     """Плитки цехов с принтерами."""
 

@@ -310,3 +310,32 @@ class NavigationTemplateTests(TestCase):
         self.assertEqual(response.status_code, 200)
         for icon in ("◷", "▤", "▣", "⇩", "▧", "▨", "▦", "⌗", "⌘", "⌸", "∿", "◎", "◇", "⌂", "⌖"):
             self.assertNotContains(response, icon)
+
+
+class LayoutAndNotificationsTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username="ui-admin", password="x", role=User.Role.ADMIN, is_superuser=True, is_staff=True
+        )
+
+    def test_nav_group_renamed(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("analytics:dashboard"))
+        self.assertContains(response, "Запчасти и оборудование")
+        self.assertNotContains(response, ">Учет<")
+
+    def test_no_toast_notifications(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("analytics:dashboard"))
+        self.assertNotContains(response, "toast-stack")
+        self.assertNotContains(response, "topbar-version")
+
+    def test_version_in_brand(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("analytics:dashboard"))
+        self.assertContains(response, "brand-version")
+
+    def test_audit_page_has_no_subtitle(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("core:audit_list"))
+        self.assertNotContains(response, "прозрачность по всем модулям")

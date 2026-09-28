@@ -28,8 +28,6 @@ class InventoryItemForm(StyledModelForm):
             "unit",
             "condition",
             "serial_number",
-            "manufactured_at",
-            "last_verified_at",
             "notes",
             "is_active",
         )

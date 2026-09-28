@@ -219,7 +219,10 @@ class ChecklistViewTests(ChecklistBaseTestCase):
             follow=True,
         )
         self.assertRedirects(response, reverse("journal:export_list"))
-        self.assertContains(response, "Чек-лист за выбранную дату не найден")
+        self.assertIn(
+            "Чек-лист за выбранную дату не найден",
+            [str(m) for m in response.context["messages"]],
+        )
 
     def test_detail_renders(self):
         self.client.force_login(self.specialist)
@@ -331,7 +334,9 @@ class ChecklistViewTests(ChecklistBaseTestCase):
             reverse("checklists:checklist_date_export"), {"date": "bad"}, follow=True
         )
         self.assertRedirects(response, reverse("journal:export_list"))
-        self.assertContains(response, "Укажите дату")
+        self.assertTrue(
+            any("Укажите дату" in str(m) for m in response.context["messages"])
+        )
 
 
 class MarkemBaseTestCase(TestCase):
@@ -521,7 +526,10 @@ class MarkemViewTests(MarkemBaseTestCase):
             follow=True,
         )
         self.assertRedirects(response, reverse("journal:export_list"))
-        self.assertContains(response, "Чек-лист за выбранную дату не найден")
+        self.assertIn(
+            "Чек-лист за выбранную дату не найден",
+            [str(m) for m in response.context["messages"]],
+        )
 
     def test_closed_not_editable_by_specialist(self):
         self.checklist.status = ChecklistStatus.FINAL
@@ -588,7 +596,9 @@ class MarkemViewTests(MarkemBaseTestCase):
             reverse("checklists:markem_date_export"), {"date": "bad"}, follow=True
         )
         self.assertRedirects(response, reverse("journal:export_list"))
-        self.assertContains(response, "Укажите дату")
+        self.assertTrue(
+            any("Укажите дату" in str(m) for m in response.context["messages"])
+        )
 
 
 class ChecklistServiceEdgeTests(ChecklistBaseTestCase):

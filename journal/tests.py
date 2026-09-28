@@ -199,7 +199,9 @@ class JournalViewTests(TestCase):
         self.client.force_login(self.specialist)
         response = self.client.get(reverse("journal:export_create"), follow=True)
         self.assertRedirects(response, reverse("journal:export_list"))
-        self.assertContains(response, "Журнал пуст")
+        self.assertTrue(
+            any("Журнал пуст" in str(m) for m in response.context["messages"])
+        )
 
     def test_export_list_has_accordion_sections(self):
         self.client.force_login(self.specialist)
@@ -224,7 +226,12 @@ class JournalViewTests(TestCase):
         self.client.force_login(self.specialist)
         response = self.client.get(reverse("journal:export_period"), follow=True)
         self.assertRedirects(response, reverse("journal:export_list"))
-        self.assertContains(response, "Укажите начало и конец периода")
+        self.assertTrue(
+            any(
+                "Укажите начало и конец периода" in str(m)
+                for m in response.context["messages"]
+            )
+        )
 
     def test_period_export_downloads_and_swaps_dates(self):
         today = timezone.localdate()
@@ -245,7 +252,12 @@ class JournalViewTests(TestCase):
             follow=True,
         )
         self.assertRedirects(response, reverse("journal:export_list"))
-        self.assertContains(response, "За выбранный период записей нет")
+        self.assertTrue(
+            any(
+                "За выбранный период записей нет" in str(m)
+                for m in response.context["messages"]
+            )
+        )
 
 
 class JournalFilterAndGroupTests(TestCase):
