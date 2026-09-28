@@ -17,6 +17,7 @@ from equipment.forms import (
     EquipmentForm,
     EquipmentStatusLogForm,
     MaintenanceRecordForm,
+    PrinterForm,
     ProductionLineForm,
 )
 from equipment.models import (
@@ -235,6 +236,130 @@ class CameraDeleteView(AdminRequiredMixin, DeleteView):
         if workshop:
             return reverse("equipment:camera_workshop", args=[workshop.pk])
         return reverse("equipment:cameras")
+
+
+class PrinterWallView(LoginRequiredMixin, ListView):
+    """Плитки цехов с принтерами."""
+
+    template_name = "equipment/printers.html"
+    context_object_name = "printers"
+
+    def get_queryset(self):
+        return (
+            Equipment.objects.filter(is_active=True, is_printer=True)
+            .select_related("workshop", "line")
+            .order_by(
+                "workshop__sort_order",
+                "workshop__name",
+                "line__sort_order",
+                "line__name",
+                "name",
+            )
+        )
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        groups = []
+        by_workshop = {}
+        for printer in ctx["printers"]:
+            workshop = printer.workshop
+            wkey = workshop.pk if workshop else 0
+            if wkey not in by_workshop:
+                group = {
+                    "workshop": workshop,
+                    "name": workshop.name if workshop else "Без цеха",
+                    "count": 0,
+                    "_lines": set(),
+                }
+                by_workshop[wkey] = group
+                groups.append(group)
+            group = by_workshop[wkey]
+            group["count"] += 1
+            if printer.line_id:
+                group["_lines"].add(printer.line_id)
+        for group in groups:
+            group["lines_count"] = len(group["_lines"])
+        ctx["groups"] = groups
+        ctx["printers_total"] = len(ctx["printers"])
+        return ctx
+
+
+class PrinterWorkshopView(LoginRequiredMixin, DetailView):
+    """Цех: линии с принтерами."""
+
+    model = Workshop
+    template_name = "equipment/printer_workshop.html"
+    context_object_name = "workshop"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        printers = (
+            Equipment.objects.filter(
+                is_active=True, is_printer=True, workshop=self.object
+            )
+            .select_related("line")
+            .order_by("line__sort_order", "line__name", "name")
+        )
+        lines = []
+        by_line = {}
+        for printer in printers:
+            lkey = printer.line_id or 0
+            if lkey not in by_line:
+                group = {
+                    "line": printer.line,
+                    "name": printer.line.name if printer.line else "Без линии",
+                    "printers": [],
+                }
+                by_line[lkey] = group
+                lines.append(group)
+            by_line[lkey]["printers"].append(printer)
+        ctx["lines"] = lines
+        ctx["printers"] = printers
+        ctx["printers_total"] = printers.count()
+        return ctx
+
+
+class PrinterCreateView(AdminRequiredMixin, CreateView):
+    """Добавление принтера (только администратор)."""
+
+    model = Equipment
+    form_class = PrinterForm
+    template_name = "core/generic_form.html"
+    extra_context = {"title": "Новый принтер", "back_url": "equipment:printers"}
+
+    def get_initial(self):
+        initial = super().get_initial()
+        workshop_id = self.request.GET.get("workshop")
+        if workshop_id:
+            initial["workshop"] = workshop_id
+        return initial
+
+    def form_valid(self, form):
+        form.instance.is_printer = True
+        messages.success(self.request, "Принтер добавлен.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        workshop = self.object.workshop
+        if workshop:
+            return reverse("equipment:printer_workshop", args=[workshop.pk])
+        return reverse("equipment:printers")
+
+
+class PrinterDeleteView(AdminRequiredMixin, DeleteView):
+    """Удаление принтера (только администратор)."""
+
+    model = Equipment
+    template_name = "core/confirm_delete.html"
+
+    def get_queryset(self):
+        return Equipment.objects.filter(is_printer=True)
+
+    def get_success_url(self):
+        workshop = self.object.workshop
+        if workshop:
+            return reverse("equipment:printer_workshop", args=[workshop.pk])
+        return reverse("equipment:printers")
 
 
 class WorkshopLinesView(LoginRequiredMixin, DetailView):

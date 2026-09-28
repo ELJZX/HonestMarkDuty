@@ -20,7 +20,7 @@
       </span>
       <span class="brand-text">
         <span class="brand-name">{{ PROJECT_NAME }}</span>
-        <span class="brand-tag">{{ PROJECT_TAGLINE }}</span>
+        <span class="brand-tag">{{ PROJECT_TAGLINE }} <span class="brand-version">v{{ APP_VERSION }}</span></span>
       </span>
     </a>
 
@@ -44,12 +44,11 @@
         </div>
       </details>
 
-      <details class="nav-group" {% if request.resolver_match.namespace == 'inventory' or request.resolver_match.namespace == 'equipment' %}open{% endif %}>
+      <details class="nav-group" {% if request.resolver_match.namespace == 'inventory' or request.resolver_match.namespace == 'equipment' and request.resolver_match.url_name != 'cameras' and request.resolver_match.url_name != 'camera_workshop' and request.resolver_match.url_name != 'printers' and request.resolver_match.url_name != 'printer_workshop' %}open{% endif %}>
         <summary class="nav-label">Учет</summary>
         <div class="nav-items">
           <a class="nav-item {% if request.resolver_match.namespace == 'inventory' and request.resolver_match.url_name != 'location_list' and request.resolver_match.url_name != 'category_list' and request.resolver_match.url_name != 'kind_list' %}active{% endif %}" href="{% url 'inventory:board' %}">Склад</a>
-          <a class="nav-item {% if request.resolver_match.namespace == 'equipment' and request.resolver_match.url_name != 'cameras' and request.resolver_match.url_name != 'camera_workshop' %}active{% endif %}" href="{% url 'equipment:board' %}">Оборудование</a>
-          <a class="nav-item {% if request.resolver_match.url_name == 'cameras' or request.resolver_match.url_name == 'camera_workshop' %}active{% endif %}" href="{% url 'equipment:cameras' %}">Камеры</a>
+          <a class="nav-item {% if request.resolver_match.namespace == 'equipment' and request.resolver_match.url_name != 'cameras' and request.resolver_match.url_name != 'camera_workshop' and request.resolver_match.url_name != 'printers' and request.resolver_match.url_name != 'printer_workshop' %}active{% endif %}" href="{% url 'equipment:board' %}">Оборудование</a>
         </div>
       </details>
 
@@ -72,6 +71,11 @@
       </details>
       {% endif %}
     </nav>
+
+    <div class="nav-bottom">
+      <a class="nav-item {% if request.resolver_match.url_name == 'cameras' or request.resolver_match.url_name == 'camera_workshop' %}active{% endif %}" href="{% url 'equipment:cameras' %}">Камеры</a>
+      <a class="nav-item {% if request.resolver_match.url_name == 'printers' or request.resolver_match.url_name == 'printer_workshop' %}active{% endif %}" href="{% url 'equipment:printers' %}">Принтеры</a>
+    </div>
   </aside>
 
   <div class="overlay" id="overlay"></div>
@@ -97,7 +101,6 @@
             {% csrf_token %}
             <button class="btn btn-sm" type="submit">Выход</button>
           </form>
-          <span class="topbar-version mono">v{{ APP_VERSION }}</span>
         </div>
       </div>
     </header>
@@ -115,6 +118,16 @@
     <div class="modal-actions">
       <button class="btn btn-primary" type="button" id="confirm-modal-yes">Да</button>
       <button class="btn btn-ghost" type="button" id="confirm-modal-no">Нет</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="events-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-title">События за предыдущую смену</div>
+    <ul class="events-list" id="events-modal-list"></ul>
+    <div class="modal-actions">
+      <button class="btn btn-primary" type="button" id="events-modal-accept">Принять</button>
     </div>
   </div>
 </div>

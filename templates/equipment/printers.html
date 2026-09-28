@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Принтеры{% endblock %}
+{% block breadcrumb %}<a href="{% url 'equipment:printers' %}">Принтеры</a>{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Принтеры по цехам</div>
+    <div class="card-sub">Выберите цех · {{ printers_total }} принтеров</div>
+  </div>
+
+  <div class="workshop-board">
+    {% for group in groups %}
+      {% if group.workshop %}
+      <a class="workshop-card cam-shop-card" href="{% url 'equipment:printer_workshop' group.workshop.pk %}">
+        <div class="workshop-card-head">
+          <img class="workshop-card-thumb" src="{% static 'img/workshop.svg' %}" alt="{{ group.name }}">
+          <div class="workshop-card-name">{{ group.name }}</div>
+        </div>
+        <div class="workshop-card-stats">
+          <div>Принтеров: <b>{{ group.count }}</b></div>
+          <div>Линий: <b>{{ group.lines_count }}</b></div>
+        </div>
+        <div class="workshop-card-actions">
+          <span class="btn workshop-card-btn">Подробнее</span>
+        </div>
+      </a>
+      {% else %}
+      <div class="workshop-card">
+        <div class="workshop-card-head">
+          <img class="workshop-card-thumb" src="{% static 'img/workshop.svg' %}" alt="{{ group.name }}">
+          <div class="workshop-card-name">{{ group.name }}</div>
+        </div>
+        <div class="workshop-card-stats">
+          <div>Принтеров: <b>{{ group.count }}</b></div>
+        </div>
+      </div>
+      {% endif %}
+    {% empty %}
+    <div class="empty">Принтеры не добавлены</div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if user.is_admin %}
+<a class="fab" href="{% url 'equipment:printer_create' %}"><span class="fab-add">+</span> Добавить принтер</a>
+{% endif %}
+{% endblock %}

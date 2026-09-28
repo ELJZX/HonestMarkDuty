@@ -795,3 +795,57 @@ class SyncShiftsCommandTests(TestCase):
         ):
             with self.assertRaises(CommandError):
                 call_command("sync_shifts")
+
+
+class PreviousShiftEventsTests(TestCase):
+    def setUp(self):
+        from core.models import Workshop
+
+        self.specialist = User.objects.create_user(
+            username="evt-spec", password="x", role=User.Role.SPECIALIST
+        )
+        self.workshop = Workshop.objects.create(name="Цех Э", code="ЦЭ")
+        now = timezone.now()
+        self.shift = Shift.objects.create(
+            opened_by=self.specialist,
+            status=Shift.Status.CLOSED,
+            opened_at=now - timedelta(hours=8),
+            closed_at=now + timedelta(hours=1),
+            date=timezone.localdate(),
+        )
+
+    def test_collects_all_event_types(self):
+        from equipment.models import Equipment
+        from inventory.models import InventoryMovement, MovementType
+        from services.models import Service
+        from shifts.events import previous_shift_events
+
+        item = InventoryItem.objects.create(name="Новый сканер")
+        InventoryMovement.objects.create(
+            item=item, movement_type=MovementType.OUT, quantity=2
+        )
+        Equipment.objects.create(name="Камера 1", is_camera=True)
+        Equipment.objects.create(name="Принтер 1", is_printer=True)
+        Service.objects.create(name="Сервис 1", url="http://example.com")
+
+        joined = "\n".join(previous_shift_events())
+        self.assertIn("Новая позиция склада: Новый сканер", joined)
+        self.assertIn("Расход", joined)
+        self.assertIn("Добавлена камера: Камера 1", joined)
+        self.assertIn("Добавлен принтер: Принтер 1", joined)
+        self.assertIn("Добавлен сервис: Сервис 1", joined)
+
+    def test_empty_without_closed_shift(self):
+        from shifts.events import previous_shift_events
+
+        Shift.objects.all().delete()
+        self.assertEqual(previous_shift_events(), [])
+
+    def test_shift_open_ajax_returns_events(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(reverse("shifts:shift_open_ajax"))
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["ok"])
+        self.assertIn("events", data)
+        self.assertIsInstance(data["events"], list)

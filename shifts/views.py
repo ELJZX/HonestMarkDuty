@@ -11,6 +11,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView, V
 from core.mixins import EditorRequiredMixin
 from journal.exports import export_full_journal
 from journal.models import JournalEntry
+from shifts.events import previous_shift_events
 from shifts.forms import ShiftCheckForm, ShiftCloseForm, ShiftOpenForm
 from shifts.models import Shift
 
@@ -194,8 +195,10 @@ def shift_open_ajax(request):
     if not getattr(request.user, "can_edit", False):
         return JsonResponse({"ok": False, "message": "Недостаточно прав."}, status=403)
     shift, message = open_shift_for(request)
+    events = previous_shift_events() if shift else []
     return JsonResponse(
-        {"ok": shift is not None, "message": message}, status=200 if shift else 400
+        {"ok": shift is not None, "message": message, "events": events},
+        status=200 if shift else 400,
     )
 
 

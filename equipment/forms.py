@@ -114,3 +114,22 @@ class CameraForm(StyledModelForm):
         if line and not cleaned.get("workshop"):
             cleaned["workshop"] = line.workshop
         return cleaned
+
+
+class PrinterForm(StyledModelForm):
+    class Meta:
+        model = Equipment
+        fields = ("name", "workshop", "line", "ip_address", "print_head", "slot", "notes")
+        widgets = {
+            "notes": forms.Textarea(attrs={"rows": 3}),
+            "ip_address": forms.TextInput(attrs={"placeholder": "192.168.0.10"}),
+            "print_head": forms.TextInput(attrs={"placeholder": "32 / 53"}),
+            "slot": forms.TextInput(attrs={"placeholder": "первый / второй"}),
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        line = cleaned.get("line")
+        if line and not cleaned.get("workshop"):
+            cleaned["workshop"] = line.workshop
+        return cleaned
