@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 {% block title %}Markem Image 9450{% endblock %}
 {% block breadcrumb %}Сменная работа / Чеклисты / Markem Image 9450{% endblock %}
-{% block topbar_actions %}
-  <a class="btn btn-primary btn-sm" href="{% url 'checklists:markem_create' %}">Создать новый чеклист</a>
-{% endblock %}
 {% block content %}
 <div class="card card-current">
   <div class="card-header">
     <div class="card-title">Текущий чек лист технического осмотра принтеров Markem Image 9450</div>
-    {% if current_checklist %}
-      <span class="badge {{ current_checklist.status_badge }}">{{ current_checklist.get_status_display }}</span>
-    {% endif %}
+    <div class="flex items-center gap-2">
+      {% if current_checklist %}
+        <span class="badge {{ current_checklist.status_badge }}">{{ current_checklist.get_status_display }}</span>
+      {% endif %}
+      <a class="btn btn-primary btn-sm" href="{% url 'checklists:markem_create' %}">Создать новый чеклист</a>
+    </div>
   </div>
   {% if current_checklist %}
     <dl class="detail-grid mb-2">
@@ -32,8 +32,6 @@
         </form>
       {% endif %}
     </div>
-  {% else %}
-    <p class="empty">Активный чеклист не создан. Нажмите «Создать новый чеклист».</p>
   {% endif %}
 </div>
 

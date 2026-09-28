@@ -1,12 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ equipment.name }}{% endblock %}
 {% block breadcrumb %}<a href="{% url 'equipment:board' %}">Учет</a> / <a href="{% url 'equipment:board' %}">Оборудование</a> / {{ equipment.name }}{% endblock %}
-{% block topbar_actions %}
-  {% if user.is_admin %}
-  <a class="btn btn-sm" href="{% url 'equipment:equipment_update' equipment.pk %}">Изменить</a>
-  <a class="btn btn-danger btn-sm" href="{% url 'equipment:equipment_delete' equipment.pk %}">Удалить</a>
-  {% endif %}
-{% endblock %}
 {% block content %}
 <div class="page-back">
   <a class="back-arrow" href="{% if equipment.line %}{% url 'equipment:line_equipment' equipment.line.pk %}{% else %}{% url 'equipment:board' %}{% endif %}" title="Назад">←</a>
@@ -16,7 +10,13 @@
     <div class="card">
       <div class="card-header">
         <div class="card-title">{{ equipment.name }}</div>
-        <span class="badge {{ equipment.status_badge }}">{{ equipment.get_status_display }}</span>
+        <div class="flex items-center gap-2">
+          <span class="badge {{ equipment.status_badge }}">{{ equipment.get_status_display }}</span>
+          {% if user.is_admin %}
+          <a class="btn btn-sm" href="{% url 'equipment:equipment_update' equipment.pk %}">Изменить</a>
+          <a class="btn btn-danger btn-sm" href="{% url 'equipment:equipment_delete' equipment.pk %}">Удалить</a>
+          {% endif %}
+        </div>
       </div>
       <dl class="detail-grid">
         <dt>Цех</dt><dd>{{ equipment.workshop|default:"—" }}</dd>

@@ -104,28 +104,18 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 
-# --- База данных -----------------------------------------------------------
-# По умолчанию PostgreSQL. Переменная DB_ENGINE=sqlite используется только
-# для автотестов и быстрой локальной проверки без Docker.
-if env("DB_ENGINE", "postgres").lower() == "sqlite":
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / env("SQLITE_NAME", "db.sqlite3"),
-        }
+# --- База данных (единая — PostgreSQL) -------------------------------------
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": env("POSTGRES_DB", "HonestMarkDuty"),
+        "USER": env("POSTGRES_USER", "honestmark"),
+        "PASSWORD": env("POSTGRES_PASSWORD", "honestmark"),
+        "HOST": env("POSTGRES_HOST", "localhost"),
+        "PORT": env("POSTGRES_PORT", "5432"),
+        "CONN_MAX_AGE": 60,
     }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": env("POSTGRES_DB", "HonestMarkDuty"),
-            "USER": env("POSTGRES_USER", "honestmark"),
-            "PASSWORD": env("POSTGRES_PASSWORD", "honestmark"),
-            "HOST": env("POSTGRES_HOST", "localhost"),
-            "PORT": env("POSTGRES_PORT", "5432"),
-            "CONN_MAX_AGE": 60,
-        }
-    }
+}
 
 AUTH_USER_MODEL = "accounts.User"
 LOGIN_URL = "accounts:login"

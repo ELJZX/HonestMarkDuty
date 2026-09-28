@@ -11,7 +11,7 @@ from django.views.generic import TemplateView
 from accounts.models import User
 from checklists.models import EquipmentChecklist
 from core.models import Workshop
-from documents.models import Document, DocumentStatus
+from documents.models import Document
 from equipment.models import Equipment, EquipmentStatus
 from inventory.models import Condition, InventoryItem, ItemType
 from journal.models import JournalEntry
@@ -99,45 +99,5 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 checklists_count=Count("checklists", distinct=True),
             )
             .order_by("-equipment_count")[:10]
-        )
-        return ctx
-
-
-class StatisticsView(LoginRequiredMixin, TemplateView):
-    template_name = "analytics/statistics.html"
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        today = timezone.localdate()
-        period_start = today - timedelta(days=29)
-
-        ctx["journal_total"] = JournalEntry.objects.filter(occurred_at__date__gte=period_start).count()
-        ctx["checklists_total"] = EquipmentChecklist.objects.filter(date__gte=period_start).count()
-        ctx["shifts_total"] = Shift.objects.filter(date__gte=period_start).count()
-
-        ctx["status_rows"] = [
-            {"label": label, "count": Equipment.objects.filter(is_camera=False, status=value).count()}
-            for value, label in EquipmentStatus.choices
-        ]
-
-        ctx["entry_rows"] = [
-            {"label": label, "count": JournalEntry.objects.filter(entry_type=value).count()}
-            for value, label in JournalEntry.EntryType.choices
-        ]
-
-        ctx["doc_rows"] = [
-            {"label": label, "count": Document.objects.filter(status=value).count()}
-            for value, label in DocumentStatus.choices
-        ]
-
-        ctx["workshop_rows"] = (
-            Workshop.objects.annotate(
-                equipment_count=Count(
-                    "equipment", filter=Q(equipment__is_camera=False), distinct=True
-                ),
-                shifts_count=Count("shifts", distinct=True),
-                checklists_count=Count("checklists", distinct=True),
-            )
-            .order_by("name")
         )
         return ctx

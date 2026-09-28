@@ -311,6 +311,55 @@ class NavigationTemplateTests(TestCase):
         for icon in ("◷", "▤", "▣", "⇩", "▧", "▨", "▦", "⌗", "⌘", "⌸", "∿", "◎", "◇", "⌂", "⌖"):
             self.assertNotContains(response, icon)
 
+    def test_nav_structure(self):
+        admin = User.objects.create_user(
+            username="nav-admin2", password="x", role=User.Role.ADMIN, is_superuser=True, is_staff=True
+        )
+        self.client.force_login(admin)
+        response = self.client.get(reverse("analytics:dashboard"))
+        self.assertNotContains(response, "Администрирование")
+        self.assertNotContains(response, "Аналитика и контроль")
+        self.assertNotContains(response, ">Статистика<")
+        self.assertContains(response, "Молвест.Маркировка")
+        self.assertContains(response, "Логирование")
+        self.assertContains(response, "Камеры")
+        self.assertContains(response, "Принтеры")
+
+
+class AdminSmokeTests(TestCase):
+    """Админ-конфигурация приложений не ломается (autocomplete, inlines, фильтры)."""
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser(username="root", password="x")
+
+    def test_admin_pages_load(self):
+        self.client.force_login(self.admin)
+        urls = (
+            "/admin/",
+            "/admin/accounts/user/",
+            "/admin/accounts/user/add/",
+            "/admin/core/workshop/",
+            "/admin/core/productionline/",
+            "/admin/inventory/inventoryitem/",
+            "/admin/inventory/inventoryitem/add/",
+            "/admin/inventory/inventorymovement/",
+            "/admin/equipment/equipment/",
+            "/admin/equipment/equipment/add/",
+            "/admin/equipment/camera/",
+            "/admin/services/service/",
+            "/admin/services/service/add/",
+            "/admin/shifts/shift/",
+            "/admin/shifts/shiftcheck/",
+            "/admin/checklists/equipmentchecklist/",
+            "/admin/checklists/markemchecklist/",
+            "/admin/documents/document/",
+            "/admin/documents/documenttemplate/",
+            "/admin/core/auditlog/",
+        )
+        for url in urls:
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 200)
+
 
 class LayoutAndNotificationsTests(TestCase):
     def setUp(self):

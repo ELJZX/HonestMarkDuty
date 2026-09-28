@@ -40,11 +40,3 @@ class AnalyticsViewTests(TestCase):
         self.assertEqual(kpi["journal"], 1)
         self.assertEqual(kpi["documents"], 1)
         self.assertIn("journal_series_values", response.context)
-
-    def test_statistics_renders(self):
-        self.client.force_login(self.specialist)
-        response = self.client.get(reverse("analytics:statistics"))
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("status_rows", response.context)
-        self.assertIn("entry_rows", response.context)
-        self.assertIn("workshop_rows", response.context)

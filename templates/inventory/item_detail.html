@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 {% block title %}{{ item.name }}{% endblock %}
 {% block breadcrumb %}<a href="{% url 'inventory:board' %}">Учет</a> / <a href="{% url 'inventory:board' %}">Склад</a> / {{ item.name }}{% endblock %}
-{% block topbar_actions %}
-  {% if user.is_admin %}
-  <a class="btn btn-sm" href="{% url 'inventory:item_update' item.pk %}">Изменить</a>
-  {% endif %}
-{% endblock %}
 {% block content %}
 <div class="grid grid-side">
   <div>
     <div class="card">
       <div class="card-header">
         <div class="card-title">{{ item.name }}</div>
-        <span class="badge {{ item.condition_badge }}">{{ item.get_condition_display }}</span>
+        <div class="flex items-center gap-2">
+          <span class="badge {{ item.condition_badge }}">{{ item.get_condition_display }}</span>
+          {% if user.is_admin %}
+          <a class="btn btn-sm" href="{% url 'inventory:item_update' item.pk %}">Изменить</a>
+          {% endif %}
+        </div>
       </div>
       <dl class="detail-grid">
         <dt>Тип</dt><dd>{{ item.kind|default:"—" }}</dd>
