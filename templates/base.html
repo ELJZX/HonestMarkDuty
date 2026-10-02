@@ -29,9 +29,8 @@
         <summary class="nav-label">Сменная работа</summary>
         <div class="nav-items">
           <a class="nav-item {% if request.resolver_match.namespace == 'shifts' %}active{% endif %}" href="{% url 'shifts:shift_list' %}">Смены</a>
-          <a class="nav-item {% if request.resolver_match.namespace == 'journal' and request.resolver_match.url_name != 'export_list' %}active{% endif %}" href="{% url 'journal:entry_list' %}">Сменный журнал</a>
+          <a class="nav-item {% if request.resolver_match.namespace == 'journal' %}active{% endif %}" href="{% url 'journal:entry_list' %}">Сменный журнал</a>
           <a class="nav-item {% if request.resolver_match.namespace == 'checklists' %}active{% endif %}" href="{% url 'checklists:hub' %}">Чеклисты</a>
-          <a class="nav-item {% if request.resolver_match.url_name == 'export_list' %}active{% endif %}" href="{% url 'journal:export_list' %}">Архив Excel</a>
         </div>
       </details>
 
@@ -104,7 +103,7 @@
 </div>
 
 <div class="modal-overlay" id="events-modal" hidden>
-  <div class="modal" role="dialog" aria-modal="true">
+  <div class="modal modal-wide" role="dialog" aria-modal="true">
     <div class="modal-title">События за предыдущую смену</div>
     <ul class="events-list" id="events-modal-list"></ul>
     <div class="modal-actions">

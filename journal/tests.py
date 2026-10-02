@@ -187,33 +187,41 @@ class JournalViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertFalse(JournalEntry.objects.filter(pk=self.entry.pk).exists())
 
-    def test_export_create_and_list(self):
+    def test_journal_page_has_archive_form(self):
         self.client.force_login(self.specialist)
-        response = self.client.get(reverse("journal:export_create"))
-        self.assertEqual(response.status_code, 302)
-        self.assertTrue(JournalExport.objects.filter(is_full=True).exists())
-        self.assertEqual(self.client.get(reverse("journal:export_list")).status_code, 200)
-
-    def test_export_create_empty_journal_warns(self):
-        JournalEntry.objects.all().delete()
-        self.client.force_login(self.specialist)
-        response = self.client.get(reverse("journal:export_create"), follow=True)
-        self.assertRedirects(response, reverse("journal:export_list"))
-        self.assertTrue(
-            any("Журнал пуст" in str(m) for m in response.context["messages"])
-        )
-
-    def test_export_list_has_accordion_sections(self):
-        self.client.force_login(self.specialist)
-        response = self.client.get(reverse("journal:export_list"))
-        self.assertContains(response, "Сменный журнал")
-        self.assertContains(response, "Чек-лист осмотра оборудования «Честный знак»")
+        response = self.client.get(reverse("journal:entry_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse("journal:export_period"))
+        self.assertContains(response, "Скачать архив за период")
         self.assertContains(
             response,
-            "Чек-лист технического осмотра и обслуживания принтеров Markem Image 9450",
+            '<button class="btn btn-primary" type="submit">Скачать архив за период</button>',
         )
-        self.assertContains(response, reverse("checklists:checklist_date_export"))
-        self.assertContains(response, reverse("checklists:markem_date_export"))
+        self.assertContains(response, 'class="journal-archive-row"')
+
+    def test_add_button_placed_below_filters_and_full_width(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("journal:entry_list"))
+        html = response.content.decode()
+        create_url = reverse("journal:entry_create")
+
+        self.assertContains(response, f'class="btn btn-primary journal-add-btn" href="{create_url}"')
+        # Кнопка ушла из шапки карточки.
+        header = html[html.index('<div class="card-header">'):html.index("<form", html.index('<div class="card-header">'))]
+        self.assertNotIn(create_url, header)
+        # Кнопка идёт после формы поиска/сортировки и перед таблицей.
+        self.assertLess(html.index('name="q"'), html.index("journal-add-btn"))
+        self.assertLess(html.index("journal-add-btn"), html.index('class="table-wrap"'))
+
+    def test_journal_table_headers_alignment_classes(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("journal:entry_list"))
+        self.assertContains(response, '<th class="th-center">Дата</th>')
+        self.assertContains(response, '<th class="th-center">Время</th>')
+        self.assertContains(response, '<th class="th-center">Время простоя</th>')
+        self.assertContains(response, '<th class="th-center">Печ. головка</th>')
+        self.assertContains(response, '<th class="th-center">Пробег (км)</th>')
+        self.assertContains(response, "<th>Дежурный специалист</th>")
 
     def test_shift_export_downloads_xlsx(self):
         self.client.force_login(self.specialist)
@@ -225,7 +233,7 @@ class JournalViewTests(TestCase):
     def test_period_export_requires_dates(self):
         self.client.force_login(self.specialist)
         response = self.client.get(reverse("journal:export_period"), follow=True)
-        self.assertRedirects(response, reverse("journal:export_list"))
+        self.assertRedirects(response, reverse("journal:entry_list"))
         self.assertTrue(
             any(
                 "Укажите начало и конец периода" in str(m)
@@ -251,7 +259,7 @@ class JournalViewTests(TestCase):
             {"date_from": "2000-01-01", "date_to": "2000-01-02"},
             follow=True,
         )
-        self.assertRedirects(response, reverse("journal:export_list"))
+        self.assertRedirects(response, reverse("journal:entry_list"))
         self.assertTrue(
             any(
                 "За выбранный период записей нет" in str(m)

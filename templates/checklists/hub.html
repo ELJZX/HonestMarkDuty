@@ -11,4 +11,33 @@
     <a class="btn btn-sm" href="{% url 'checklists:markem' %}">Технический осмотр и обслуживание принтеров Markem Image</a>
   </div>
 </div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Архив чеклистов</div>
+  </div>
+  <div class="archive-accordion">
+    <details class="archive-group">
+      <summary>Чек-лист осмотра оборудования «Честный знак»</summary>
+      <form method="get" action="{% url 'checklists:checklist_date_export' %}" class="filters">
+        <div class="form-row">
+          <label for="znak_date">Дата</label>
+          <input class="field-input" type="date" id="znak_date" name="date" required>
+        </div>
+        <button class="btn btn-primary" type="submit">Сформировать и скачать</button>
+      </form>
+    </details>
+
+    <details class="archive-group">
+      <summary>Чек-лист технического осмотра и обслуживания принтеров Markem Image 9450</summary>
+      <form method="get" action="{% url 'checklists:markem_date_export' %}" class="filters">
+        <div class="form-row">
+          <label for="markem_date">Дата</label>
+          <input class="field-input" type="date" id="markem_date" name="date" required>
+        </div>
+        <button class="btn btn-primary" type="submit">Сформировать и скачать</button>
+      </form>
+    </details>
+  </div>
+</div>
 {% endblock %}

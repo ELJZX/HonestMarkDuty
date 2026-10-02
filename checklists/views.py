@@ -298,7 +298,7 @@ class MarkemDeleteView(AdminRequiredMixin, DeleteView):
         return super().form_valid(form)
 
 
-# --- Выгрузка чеклиста за выбранную дату (архив Excel) ----------------------
+# --- Выгрузка чеклиста за выбранную дату -----------------------------------
 
 
 class DateExportView(LoginRequiredMixin, View):
@@ -312,14 +312,14 @@ class DateExportView(LoginRequiredMixin, View):
         date = parse_date(request.GET.get("date", "") or "")
         if date is None:
             messages.warning(request, "Укажите дату.")
-            return redirect("journal:export_list")
+            return redirect("checklists:hub")
 
         checklist = (
             self.model.objects.filter(date=date).order_by("-created_at").first()
         )
         if checklist is None:
             messages.warning(request, self.missing_message)
-            return redirect("journal:export_list")
+            return redirect("checklists:hub")
 
         if not checklist.file:
             self.save_file(checklist)

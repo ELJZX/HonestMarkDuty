@@ -160,6 +160,13 @@ class ChecklistViewTests(ChecklistBaseTestCase):
         self.assertContains(response, "Осмотр оборудования «Честный знак»")
         self.assertContains(response, "Технический осмотр и обслуживание принтеров Markem Image")
 
+    def test_hub_has_archive_widget(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("checklists:hub"))
+        self.assertContains(response, "Архив чеклистов")
+        self.assertContains(response, reverse("checklists:checklist_date_export"))
+        self.assertContains(response, reverse("checklists:markem_date_export"))
+
     def test_markem_page_renders(self):
         self.client.force_login(self.specialist)
         self.assertEqual(self.client.get(reverse("checklists:markem")).status_code, 200)
@@ -218,7 +225,7 @@ class ChecklistViewTests(ChecklistBaseTestCase):
             {"date": "2000-01-01"},
             follow=True,
         )
-        self.assertRedirects(response, reverse("journal:export_list"))
+        self.assertRedirects(response, reverse("checklists:hub"))
         self.assertIn(
             "Чек-лист за выбранную дату не найден",
             [str(m) for m in response.context["messages"]],
@@ -333,7 +340,7 @@ class ChecklistViewTests(ChecklistBaseTestCase):
         response = self.client.get(
             reverse("checklists:checklist_date_export"), {"date": "bad"}, follow=True
         )
-        self.assertRedirects(response, reverse("journal:export_list"))
+        self.assertRedirects(response, reverse("checklists:hub"))
         self.assertTrue(
             any("Укажите дату" in str(m) for m in response.context["messages"])
         )
@@ -525,7 +532,7 @@ class MarkemViewTests(MarkemBaseTestCase):
             {"date": "2000-01-01"},
             follow=True,
         )
-        self.assertRedirects(response, reverse("journal:export_list"))
+        self.assertRedirects(response, reverse("checklists:hub"))
         self.assertIn(
             "Чек-лист за выбранную дату не найден",
             [str(m) for m in response.context["messages"]],
@@ -595,7 +602,7 @@ class MarkemViewTests(MarkemBaseTestCase):
         response = self.client.get(
             reverse("checklists:markem_date_export"), {"date": "bad"}, follow=True
         )
-        self.assertRedirects(response, reverse("journal:export_list"))
+        self.assertRedirects(response, reverse("checklists:hub"))
         self.assertTrue(
             any("Укажите дату" in str(m) for m in response.context["messages"])
         )

@@ -831,13 +831,13 @@ class PreviousShiftEventsTests(TestCase):
         Equipment.objects.create(name="Принтер 1", is_printer=True)
         Service.objects.create(name="Сервис 1", url="http://example.com")
 
-        tones = {e["text"]: e["tone"] for e in previous_shift_events()}
-        self.assertEqual(tones.get("Новая позиция склада: Новый сканер (3 шт)"), "")
-        self.assertEqual(tones.get("Склад: Новый сканер -2"), "danger")
-        self.assertEqual(tones.get("Склад: Новый сканер +5"), "ok")
-        self.assertEqual(tones.get("Добавлена камера: Камера 1"), "")
-        self.assertEqual(tones.get("Добавлен принтер: Принтер 1"), "")
-        self.assertEqual(tones.get("Добавлен сервис: Сервис 1"), "")
+        tones = {(e["text"], e["tone"]): e["qty"] for e in previous_shift_events()}
+        self.assertEqual(tones.get(("Новая позиция склада: Новый сканер", "ok")), "(3 шт)")
+        self.assertEqual(tones.get(("Склад: Новый сканер", "danger")), "-2")
+        self.assertEqual(tones.get(("Склад: Новый сканер", "ok")), "+5")
+        self.assertEqual(tones.get(("Добавлена камера: Камера 1", "")), "")
+        self.assertEqual(tones.get(("Добавлен принтер: Принтер 1", "")), "")
+        self.assertEqual(tones.get(("Добавлен сервис: Сервис 1", "")), "")
 
     def test_includes_journal_entries(self):
         from journal.models import JournalEntry

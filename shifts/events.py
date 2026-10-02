@@ -25,8 +25,8 @@ def previous_shift_events(shift: Shift | None = None) -> list[dict]:
     end = shift.closed_at or timezone.now()
     events: list[dict] = []
 
-    def add(text: str, tone: str = "") -> None:
-        events.append({"text": text, "tone": tone})
+    def add(text: str, tone: str = "", qty: str = "") -> None:
+        events.append({"text": text, "tone": tone, "qty": qty})
 
     # Записи сменного журнала за предыдущую смену
     for entry in (
@@ -44,7 +44,7 @@ def previous_shift_events(shift: Shift | None = None) -> list[dict]:
     for item in InventoryItem.objects.filter(
         created_at__gte=start, created_at__lte=end
     ).order_by("name"):
-        add(f"Новая позиция склада: {item.name} ({item.quantity} {item.unit})")
+        add(f"Новая позиция склада: {item.name}", "ok", f"({item.quantity} {item.unit})")
 
     # Движения по складу: приход — зелёным (+), расход/списание — красным (-)
     movements = (
@@ -54,9 +54,9 @@ def previous_shift_events(shift: Shift | None = None) -> list[dict]:
     )
     for movement in movements:
         if movement.movement_type == MovementType.IN:
-            add(f"Склад: {movement.item.name} +{movement.quantity}", "ok")
+            add(f"Склад: {movement.item.name}", "ok", f"+{movement.quantity}")
         elif movement.movement_type in (MovementType.OUT, MovementType.WRITE_OFF):
-            add(f"Склад: {movement.item.name} -{movement.quantity}", "danger")
+            add(f"Склад: {movement.item.name}", "danger", f"-{movement.quantity}")
         else:
             add(
                 f"Склад: {movement.item.name} — "

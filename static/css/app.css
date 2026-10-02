@@ -5,7 +5,7 @@
   --surface-3: #1b1b1b;
   --border: #242424;
   --border-strong: #343434;
-  --text: #ededed;
+  --text: #f5f5f5;
   --muted: #9b9b9b;
   --dim: #6a6a6a;
   --accent: #ffffff;
@@ -40,7 +40,7 @@ body {
 }
 
 a { color: var(--text); text-decoration: none; }
-a:hover { color: var(--accent); }
+a:hover { color: var(--accent); text-decoration: underline; }
 h1, h2, h3, h4 { margin: 0 0 .7rem; font-weight: 600; letter-spacing: -0.01em; }
 h1 { font-size: 1.8rem; }
 h2 { font-size: 1.4rem; }
@@ -150,9 +150,9 @@ code, .mono { font-family: var(--font-mono); }
   transition: background .12s, color .12s;
 }
 .nav a.nav-item:hover,
-.nav-bottom a.nav-item:hover { background: var(--surface-2); color: var(--text); }
+.nav-bottom a.nav-item:hover { background: var(--surface-2); color: var(--accent); text-decoration: underline; }
 .nav a.nav-item.active,
-.nav-bottom a.nav-item.active { background: var(--surface-3); color: var(--accent); }
+.nav-bottom a.nav-item.active { background: var(--surface-3); color: var(--accent); text-decoration: underline; }
 
 .main { flex: 1; margin-left: var(--sidebar); min-width: 0; display: flex; flex-direction: column; }
 
@@ -279,7 +279,7 @@ table.data .primary { font-weight: 500; }
   cursor: pointer; transition: background .12s, border-color .12s, opacity .12s;
   white-space: nowrap;
 }
-.btn:hover { background: var(--surface-3); border-color: #454545; color: var(--accent); }
+.btn:hover { background: var(--surface-3); border-color: #454545; color: var(--accent); text-decoration: underline; }
 .btn-primary { background: var(--accent); color: #0a0a0a; border-color: var(--accent); }
 .btn-primary:hover { background: #d4d4d4; color: #0a0a0a; }
 .btn-danger { color: var(--danger); border-color: rgba(240,122,122,.4); }
@@ -311,6 +311,8 @@ label { display: block; font-family: var(--font-mono); font-size: .82rem; text-t
 .filters .form-row { margin: 0; min-width: 10rem; flex: 1 1 10rem; }
 .filters .field-input { height: 2.67rem; padding: 0 .78rem; font-size: 1rem; }
 .filters .btn { height: 2.67rem; padding: 0 .78rem; font-size: 1rem; min-width: 10rem; justify-content: center; }
+.journal-archive-row { display: flex; gap: .5rem; }
+.journal-archive-row .field-input { flex: 1 1 9rem; width: auto; }
 
 /* ---------- Messages ---------- */
 .messages { margin-bottom: 1.11rem; display: grid; gap: .56rem; }
@@ -395,7 +397,18 @@ label { display: block; font-family: var(--font-mono); font-size: .82rem; text-t
 .journal-table { table-layout: fixed; font-size: .92rem; min-width: 54rem; }
 .journal-table th,
 .journal-table td { padding: .5rem .6rem; vertical-align: top; }
-table.data.journal-table th { white-space: normal; word-break: normal; vertical-align: bottom; line-height: 1.3; }
+table.data.journal-table th {
+  white-space: normal; word-break: normal; hyphens: none;
+  vertical-align: middle; line-height: 1.25;
+  padding-top: .65rem; padding-bottom: .65rem;
+}
+table.data.journal-table th.th-center { text-align: center; }
+
+/* Кнопка добавления записи — под фильтрами, во всю ширину журнала */
+.journal-add-btn {
+  display: flex; width: 100%; justify-content: center;
+  margin-bottom: 1.11rem;
+}
 
 /* Группировка: ячейки даты и специалиста объединены по вертикали
    на все строки одной смены (rowspan), как в бумажной форме. */
@@ -476,19 +489,9 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
 .archive-upload { margin: 0; }
 .archive-upload .btn { text-transform: none; margin: 0; cursor: pointer; }
 
-/* ---------- Архив Excel (журнал + чеклисты) ---------- */
-.grid-archive {
-  display: grid;
-  gap: 1.22rem;
-  grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
-}
-.archive-table { font-size: .82rem; min-width: 23rem; }
-.archive-table th,
-.archive-table td { padding: .33rem .44rem; vertical-align: middle; }
-.archive-table th { font-size: .7rem; white-space: nowrap; }
-.archive-table td { overflow-wrap: anywhere; }
+/* ---------- Архивные выгрузки (журнал, чеклисты) ---------- */
 
-/* Аккордеон выбора отчёта на странице «Архив Excel» */
+/* Аккордеон выбора отчёта на страницах «Сменный журнал» / «Чеклисты» */
 .archive-accordion { display: flex; flex-direction: column; gap: .67rem; }
 .archive-group {
   border: 1px solid var(--border);
@@ -531,6 +534,7 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
   border-radius: var(--radius); padding: 1.44rem; width: 100%; max-width: 25.56rem;
   box-shadow: 0 20px 50px rgba(0, 0, 0, .6);
 }
+.modal-wide { max-width: 51rem; padding: 2rem; }
 .modal-text { font-family: var(--font-mono); font-size: 1rem; margin-bottom: 1.11rem; }
 .modal-title {
   font-family: var(--font-mono); font-size: 1.05rem; text-transform: uppercase;
@@ -544,10 +548,11 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
 }
 .events-list li {
   padding: .56rem .67rem; background: var(--surface-2);
-  border: 1px solid var(--border); border-radius: var(--radius); font-size: .95rem;
+  border: 1px solid var(--border); border-radius: var(--radius); font-size: 1.05rem;
 }
-.events-list li.event-ok { color: var(--ok); }
-.events-list li.event-danger { color: var(--danger); }
+.event-qty { font-weight: 700; }
+.event-qty.event-ok { color: var(--ok); }
+.event-qty.event-danger { color: var(--danger); }
 @media print { .modal-overlay { display: none !important; } }
 
 /* ---------- Открытая смена в шапке ---------- */

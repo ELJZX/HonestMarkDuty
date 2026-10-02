@@ -414,9 +414,15 @@ document.addEventListener("DOMContentLoaded", function () {
     } else {
       events.forEach(function (item) {
         const li = document.createElement("li");
-        const text = item && typeof item === "object" ? item.text : item;
-        li.textContent = text;
-        if (item && item.tone) li.classList.add("event-" + item.tone);
+        const obj = item && typeof item === "object" ? item : { text: item };
+        li.appendChild(document.createTextNode(obj.text || ""));
+        if (obj.qty) {
+          li.appendChild(document.createTextNode(" "));
+          const span = document.createElement("span");
+          span.className = "event-qty" + (obj.tone ? " event-" + obj.tone : "");
+          span.textContent = obj.qty;
+          li.appendChild(span);
+        }
         list.appendChild(li);
       });
     }

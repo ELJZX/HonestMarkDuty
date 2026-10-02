@@ -5,8 +5,18 @@
 <div class="card">
   <div class="card-header">
     <div class="card-title">Сменный журнал специалистов по цифровой маркировке</div>
-    <a class="btn btn-primary btn-sm" href="{% url 'journal:entry_create' %}">+ Добавить запись</a>
   </div>
+
+  <form method="get" action="{% url 'journal:export_period' %}" class="filters">
+    <div class="form-row">
+      <label>Архив</label>
+      <div class="journal-archive-row">
+        <input class="field-input" type="date" name="date_from" required title="Начало периода">
+        <input class="field-input" type="date" name="date_to" required title="Конец периода">
+      </div>
+    </div>
+    <button class="btn btn-primary" type="submit">Скачать архив за период</button>
+  </form>
 
   <form method="get" class="filters">
     <div class="form-row"><label>Поиск</label>
@@ -22,6 +32,8 @@
     <div class="form-row"><label>По дату</label><input class="field-input" type="date" name="date_to" value="{{ current.date_to }}"></div>
     <button class="btn" type="submit">Применить</button>
   </form>
+
+  <a class="btn btn-primary journal-add-btn" href="{% url 'journal:entry_create' %}">+ Добавить запись</a>
 
   <div class="table-wrap">
     <table class="data journal-table">
@@ -39,15 +51,15 @@
       </colgroup>
       <thead>
         <tr>
-          <th>Дата</th>
+          <th class="th-center">Дата</th>
           <th>Дежурный специалист</th>
-          <th>Время</th>
+          <th class="th-center">Время</th>
           <th>Оборудование / Линия</th>
-          <th>Время простоя</th>
+          <th class="th-center">Время простоя</th>
           <th>Действие / Задача</th>
           <th>Решение (комментарий)</th>
-          <th>Печ. головка</th>
-          <th>Пробег (км)</th>
+          <th class="th-center">Печ. головка</th>
+          <th class="th-center">Пробег (км)</th>
           <th></th>
         </tr>
       </thead>
