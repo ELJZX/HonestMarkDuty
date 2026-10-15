@@ -311,6 +311,23 @@ class ShiftIntegrationParseTests(TestCase):
         self.assertEqual(data["solution"], "проверил")
         self.assertEqual(data["downtime"], "16:49")
 
+    def test_parse_shift_live_html(self):
+        from shifts.integration import parse_shift_live_html
+
+        html = (
+            "<table>"
+            "<tr><td>2176</td><td>15 октября 2026 г. 9:23</td>"
+            "<td>Бородин Александр Владимирович</td><td></td><td>Смену принял</td>"
+            "<td></td><td></td><td></td><td></td><td>Нет</td></tr>"
+            "</table>"
+        )
+        events = parse_shift_live_html(html)
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0].event_id, "2176")
+        self.assertEqual(events[0].fio, "Бородин Александр Владимирович")
+        self.assertEqual(events[0].action_task, "Смену принял")
+        self.assertEqual(timezone.localtime(events[0].occurred_at).hour, 9)
+
     def test_parse_events_xlsx(self):
         import io
 
@@ -384,6 +401,25 @@ class ShiftIntegrationSyncTests(TestCase):
         with override_settings(SHIFT_SYNC_ENABLED=False):
             result = sync_window(7, 7, opener=object())
         self.assertIn("skipped", result)
+
+    def test_sync_shift_live_command(self):
+        from django.core.management import call_command
+
+        html = (
+            "<table>"
+            "<tr><td>2176</td><td>15 октября 2026 г. 9:23</td>"
+            "<td>Бородин Александр Владимирович</td><td>Линия 1</td><td>Смену принял</td>"
+            "<td></td><td></td><td></td><td></td><td>Нет</td></tr>"
+            "</table>"
+        )
+        with mock.patch("shifts.integration.login", return_value=object()), mock.patch(
+            "shifts.integration.fetch_shift_live_html", return_value=html
+        ):
+            call_command("sync_shift_live", force=True, verbosity=0)
+        entry = JournalEntry.objects.get(external_id="shiftlive:2176")
+        self.assertEqual(entry.entry_type, JournalEntry.EntryType.SHIFT_START)
+        self.assertEqual(entry.specialist.last_name, "Бородин")
+        self.assertEqual(entry.equipment_line, "Линия 1")
 
     def test_quick_sync_marks_today_open(self):
         from django.core.cache import cache

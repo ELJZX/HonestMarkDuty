@@ -17,6 +17,7 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
+from html import unescape
 
 from django.conf import settings
 from django.core.cache import cache
@@ -50,6 +51,19 @@ class ExternalWorkday:
     fio: str
     start: time
     end: time
+
+
+@dataclass
+class ShiftLiveEvent:
+    event_id: str
+    occurred_at: datetime
+    fio: str
+    equipment_line: str
+    action_task: str
+    downtime: str
+    solution: str
+    print_head: str
+    mileage: str
 
 
 def _translit(value: str) -> str:
@@ -91,6 +105,21 @@ def _parse_dt(value: str) -> datetime | None:
     return None
 
 
+def _parse_dt_ru(value: str) -> datetime | None:
+    """«15 октября 2026 г. 9:23» → datetime."""
+    match = re.search(
+        r"(\d{1,2})\s+([А-Яа-яЁё]+)\s+(\d{4})\s*(?:г\.?)?\s+(\d{1,2}):(\d{2})", value
+    )
+    if not match:
+        return None
+    day, month_name, year, hour, minute = match.groups()
+    month = MONTHS.get(month_name.lower())
+    if not month:
+        return None
+    naive = datetime(int(year), month, int(day), int(hour), int(minute))
+    return timezone.make_aware(naive, timezone.get_current_timezone())
+
+
 # --------------------------------------------------------------------------- HTTP
 def login(base_url: str | None = None) -> urllib.request.OpenerDirector:
     base = (base_url or settings.SHIFT_SYNC_URL).rstrip("/")
@@ -127,6 +156,12 @@ def fetch_events_xlsx(opener, date_from: date, date_to: date, base_url: str | No
 def fetch_schedule_html(opener, base_url: str | None = None) -> str:
     base = (base_url or settings.SHIFT_SYNC_URL).rstrip("/")
     with opener.open(f"{base}/main/shift/", timeout=30) as response:
+        return response.read().decode("utf-8", "replace")
+
+
+def fetch_shift_live_html(opener, base_url: str | None = None) -> str:
+    base = (base_url or settings.SHIFT_SYNC_URL).rstrip("/")
+    with opener.open(f"{base}/main/shift_live/", timeout=30) as response:
         return response.read().decode("utf-8", "replace")
 
 
@@ -181,6 +216,35 @@ def parse_schedule_html(html: str) -> list[ExternalWorkday]:
             continue
         result.append(ExternalWorkday(date=day, fio=cells[1], start=start, end=end or time(20, 0)))
     return result
+
+
+def parse_shift_live_html(html: str) -> list[ShiftLiveEvent]:
+    """Таблица «События на смене (онлайн)» → список событий."""
+    events: list[ShiftLiveEvent] = []
+    for row_html in re.findall(r"<tr[^>]*>(.*?)</tr>", html, re.S | re.I):
+        cells = [
+            unescape(_strip_tags(cell)).strip()
+            for cell in re.findall(r"<td[^>]*>(.*?)</td>", row_html, re.S | re.I)
+        ]
+        if len(cells) < 9:
+            continue
+        occurred_at = _parse_dt_ru(cells[1])
+        if occurred_at is None:
+            continue
+        events.append(
+            ShiftLiveEvent(
+                event_id=cells[0],
+                occurred_at=occurred_at,
+                fio=cells[2],
+                equipment_line=cells[3],
+                action_task=cells[4],
+                downtime=cells[5],
+                solution=cells[6],
+                print_head=cells[7],
+                mileage=cells[8],
+            )
+        )
+    return events
 
 
 def parse_work_comment(comment: str) -> dict:
