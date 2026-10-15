@@ -132,7 +132,6 @@ class ShiftCheck(AuditedModel):
     condition = models.CharField(
         "Состояние при проверке", max_length=20, choices=Condition.choices, blank=True
     )
-    wear_percent = models.PositiveSmallIntegerField("Износ, %", default=0)
     comment = models.CharField("Комментарий", max_length=300, blank=True)
 
     class Meta:
@@ -141,4 +140,4 @@ class ShiftCheck(AuditedModel):
         ordering = ("-created_at",)
 
     def __str__(self) -> str:
-        return f"{self.item} — {self.wear_percent}%"
+        return f"{self.item} — {self.get_condition_display() or '—'}"

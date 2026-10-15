@@ -9,9 +9,14 @@ class JournalEntryAdmin(admin.ModelAdmin):
     list_filter = ("entry_type", "specialist")
     search_fields = ("action_task", "solution", "equipment_line")
     date_hierarchy = "occurred_at"
+    list_select_related = ("specialist", "shift")
+    autocomplete_fields = ("specialist", "shift", "created_by")
+    save_on_top = True
 
 
 @admin.register(JournalExport)
 class JournalExportAdmin(admin.ModelAdmin):
     list_display = ("created_at", "entries_count", "is_full", "shift", "created_by", "file")
     list_filter = ("is_full", "created_at")
+    list_select_related = ("shift", "created_by")
+    date_hierarchy = "created_at"

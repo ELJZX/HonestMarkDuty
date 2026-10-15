@@ -1,19 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Склад{% endblock %}
 {% block breadcrumb %}<a href="{% url 'inventory:board' %}">Учет</a> / <a href="{% url 'inventory:board' %}">Склад</a>{% endblock %}
-{% block topbar_actions %}
-  <a class="btn btn-primary btn-sm" href="{% url 'inventory:item_create' %}">+ Позиция</a>
-{% endblock %}
 {% block content %}
-<div class="grid grid-2 mb-3">
-  <div class="stat"><div class="stat-label">Всего позиций</div><div class="stat-value">{{ stats.total }}</div></div>
-  <div class="stat"><div class="stat-label">Полок</div><div class="stat-value">{{ locations|length }}</div></div>
-</div>
-
 <div class="card">
   <div class="card-header">
     <div class="card-title">Каталог склада</div>
-    <a class="btn btn-sm btn-ghost" href="{% url 'inventory:board' %}">Склады</a>
+    <div class="card-header-actions">
+      <a class="btn btn-sm btn-ghost" href="{% url 'inventory:board' %}">Склады</a>
+      <a class="btn btn-primary btn-sm" href="{% url 'inventory:item_create' %}">+ Позиция</a>
+    </div>
   </div>
 
   <form method="get" class="filters">

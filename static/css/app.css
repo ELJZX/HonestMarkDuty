@@ -5,7 +5,7 @@
   --surface-3: #1b1b1b;
   --border: #242424;
   --border-strong: #343434;
-  --text: #ededed;
+  --text: #f5f5f5;
   --muted: #9b9b9b;
   --dim: #6a6a6a;
   --accent: #ffffff;
@@ -40,7 +40,7 @@ body {
 }
 
 a { color: var(--text); text-decoration: none; }
-a:hover { color: var(--accent); }
+a:hover { color: var(--accent); text-decoration: underline; }
 h1, h2, h3, h4 { margin: 0 0 .7rem; font-weight: 600; letter-spacing: -0.01em; }
 h1 { font-size: 1.8rem; }
 h2 { font-size: 1.4rem; }
@@ -91,6 +91,7 @@ code, .mono { font-family: var(--font-mono); }
 .brand-text { display: flex; flex-direction: column; gap: .22rem; min-width: 0; flex: 1; }
 .brand-name { font-family: var(--font-mono); font-size: 1.15rem; letter-spacing: .04em; }
 .brand-tag { font-size: .82rem; color: var(--dim); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .06em; }
+.brand-version { text-transform: none; color: var(--muted); }
 
 .nav {
   padding: .89rem .67rem;
@@ -102,6 +103,15 @@ code, .mono { font-family: var(--font-mono); }
   -ms-overflow-style: none;
 }
 .nav::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+.nav-bottom {
+  flex: 0 0 auto;
+  padding: .67rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: .22rem;
+}
 
 .nav-group { margin-bottom: .33rem; }
 .nav-group > summary {
@@ -130,7 +140,8 @@ code, .mono { font-family: var(--font-mono); }
   color: var(--dim);
   padding: .72rem .78rem;
 }
-.nav a.nav-item {
+.nav a.nav-item,
+.nav-bottom a.nav-item {
   display: flex; align-items: center; gap: .78rem;
   padding: .72rem .78rem;
   border-radius: var(--radius);
@@ -138,8 +149,10 @@ code, .mono { font-family: var(--font-mono); }
   font-size: 1.25rem;
   transition: background .12s, color .12s;
 }
-.nav a.nav-item:hover { background: var(--surface-2); color: var(--text); }
-.nav a.nav-item.active { background: var(--surface-3); color: var(--accent); }
+.nav a.nav-item:hover,
+.nav-bottom a.nav-item:hover { background: var(--surface-2); color: var(--accent); text-decoration: underline; }
+.nav a.nav-item.active,
+.nav-bottom a.nav-item.active { background: var(--surface-3); color: var(--accent); text-decoration: underline; }
 
 .main { flex: 1; margin-left: var(--sidebar); min-width: 0; display: flex; flex-direction: column; }
 
@@ -183,7 +196,6 @@ code, .mono { font-family: var(--font-mono); }
 .account-link { font-size: 1.02rem; }
 .account-link:hover { color: var(--accent); }
 .topbar-logout { display: flex; flex-direction: column; align-items: center; gap: .22rem; }
-.topbar-version { font-size: .78rem; color: var(--dim); letter-spacing: .04em; }
 .avatar {
   width: 2.11rem; height: 2.11rem; border-radius: 50%;
   background: var(--surface-3); border: 1px solid var(--border-strong);
@@ -267,7 +279,7 @@ table.data .primary { font-weight: 500; }
   cursor: pointer; transition: background .12s, border-color .12s, opacity .12s;
   white-space: nowrap;
 }
-.btn:hover { background: var(--surface-3); border-color: #454545; color: var(--accent); }
+.btn:hover { background: var(--surface-3); border-color: #454545; color: var(--accent); text-decoration: underline; }
 .btn-primary { background: var(--accent); color: #0a0a0a; border-color: var(--accent); }
 .btn-primary:hover { background: #d4d4d4; color: #0a0a0a; }
 .btn-danger { color: var(--danger); border-color: rgba(240,122,122,.4); }
@@ -299,6 +311,8 @@ label { display: block; font-family: var(--font-mono); font-size: .82rem; text-t
 .filters .form-row { margin: 0; min-width: 10rem; flex: 1 1 10rem; }
 .filters .field-input { height: 2.67rem; padding: 0 .78rem; font-size: 1rem; }
 .filters .btn { height: 2.67rem; padding: 0 .78rem; font-size: 1rem; min-width: 10rem; justify-content: center; }
+.journal-archive-row { display: flex; gap: .5rem; }
+.journal-archive-row .field-input { flex: 1 1 9rem; width: auto; }
 
 /* ---------- Messages ---------- */
 .messages { margin-bottom: 1.11rem; display: grid; gap: .56rem; }
@@ -383,7 +397,18 @@ label { display: block; font-family: var(--font-mono); font-size: .82rem; text-t
 .journal-table { table-layout: fixed; font-size: .92rem; min-width: 54rem; }
 .journal-table th,
 .journal-table td { padding: .5rem .6rem; vertical-align: top; }
-table.data.journal-table th { white-space: normal; word-break: normal; vertical-align: bottom; line-height: 1.3; }
+table.data.journal-table th {
+  white-space: normal; word-break: normal; hyphens: none;
+  vertical-align: middle; line-height: 1.25;
+  padding-top: .65rem; padding-bottom: .65rem;
+}
+table.data.journal-table th.th-center { text-align: center; }
+
+/* Кнопка добавления записи — под фильтрами, во всю ширину журнала */
+.journal-add-btn {
+  display: flex; width: 100%; justify-content: center;
+  margin-bottom: 1.11rem;
+}
 
 /* Группировка: ячейки даты и специалиста объединены по вертикали
    на все строки одной смены (rowspan), как в бумажной форме. */
@@ -464,19 +489,9 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
 .archive-upload { margin: 0; }
 .archive-upload .btn { text-transform: none; margin: 0; cursor: pointer; }
 
-/* ---------- Архив Excel (журнал + чеклисты) ---------- */
-.grid-archive {
-  display: grid;
-  gap: 1.22rem;
-  grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
-}
-.archive-table { font-size: .82rem; min-width: 23rem; }
-.archive-table th,
-.archive-table td { padding: .33rem .44rem; vertical-align: middle; }
-.archive-table th { font-size: .7rem; white-space: nowrap; }
-.archive-table td { overflow-wrap: anywhere; }
+/* ---------- Архивные выгрузки (журнал, чеклисты) ---------- */
 
-/* Аккордеон выбора отчёта на странице «Архив Excel» */
+/* Аккордеон выбора отчёта на страницах «Сменный журнал» / «Чеклисты» */
 .archive-accordion { display: flex; flex-direction: column; gap: .67rem; }
 .archive-group {
   border: 1px solid var(--border);
@@ -508,36 +523,6 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
 .archive-group > summary:hover { background: var(--surface-3); }
 .archive-group .filters { padding: 1.11rem; margin-bottom: 0; }
 
-/* ---------- Всплывающие уведомления ---------- */
-.toast-stack {
-  position: fixed; top: 5.56rem; right: 1.11rem; z-index: 200;
-  display: flex; flex-direction: column; gap: .56rem;
-  max-width: min(25.56rem, calc(100vw - 2.22rem));
-}
-.toast {
-  display: flex; align-items: flex-start; gap: .67rem;
-  background: var(--surface); border: 1px solid var(--border-strong);
-  border-left-width: 4px; border-radius: var(--radius);
-  padding: .67rem .78rem; font-family: var(--font-mono); font-size: .88rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
-  animation: toast-in .2s ease;
-}
-.toast.success { border-left-color: var(--ok); }
-.toast.error { border-left-color: var(--danger); }
-.toast.warning { border-left-color: var(--warn); }
-.toast.info { border-left-color: var(--info); }
-.toast.hide { opacity: 0; transform: translateX(16px); transition: opacity .25s, transform .25s; }
-.toast-text { flex: 1; }
-.toast-close {
-  background: none; border: none; color: var(--dim);
-  font-size: 1.25rem; line-height: 1; cursor: pointer; padding: 0 2px;
-}
-.toast-close:hover { color: var(--accent); }
-@keyframes toast-in {
-  from { opacity: 0; transform: translateX(16px); }
-  to { opacity: 1; transform: none; }
-}
-
 /* ---------- Модальное окно подтверждения ---------- */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0, 0, 0, .65);
@@ -549,9 +534,26 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
   border-radius: var(--radius); padding: 1.44rem; width: 100%; max-width: 25.56rem;
   box-shadow: 0 20px 50px rgba(0, 0, 0, .6);
 }
+.modal-wide { max-width: 51rem; padding: 2rem; }
 .modal-text { font-family: var(--font-mono); font-size: 1rem; margin-bottom: 1.11rem; }
+.modal-title {
+  font-family: var(--font-mono); font-size: 1.05rem; text-transform: uppercase;
+  letter-spacing: .06em; margin-bottom: 1rem; color: var(--text);
+}
 .modal-actions { display: flex; gap: .56rem; }
-@media print { .toast-stack, .modal-overlay { display: none !important; } }
+.events-list {
+  list-style: none; margin: 0 0 1.11rem; padding: 0;
+  max-height: 50vh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: .44rem;
+}
+.events-list li {
+  padding: .56rem .67rem; background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: var(--radius); font-size: 1.05rem;
+}
+.event-qty { font-weight: 700; }
+.event-qty.event-ok { color: var(--ok); }
+.event-qty.event-danger { color: var(--danger); }
+@media print { .modal-overlay { display: none !important; } }
 
 /* ---------- Открытая смена в шапке ---------- */
 .topbar-shift {
@@ -798,7 +800,7 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
 .cam-lightbox-cap { font-family: var(--font-mono); font-size: .82rem; color: var(--muted); padding: .4rem .3rem .1rem; }
 .cam-lightbox-close { position: absolute; top: -1rem; right: -1rem; width: 2rem; height: 2rem; border-radius: 50%; border: none; background: #fff; color: #111; font-size: 1.1rem; line-height: 1; cursor: pointer; }
 
-/* ������� ����� ���� ������� ������ */
+/* ������� ����� ���� ������� ������ */
 .kind-select {
   padding: .3rem .5rem; font-size: .85rem; min-width: 10rem;
   background: var(--surface-2); color: var(--text);
@@ -806,3 +808,9 @@ table.data.journal-table th { white-space: normal; word-break: normal; vertical-
   font-family: var(--font-mono);
 }
 .kind-select:focus { border-color: var(--accent); outline: none; }
+
+/* ---------- Сервисы Молвест.Маркировка ---------- */
+.service-links { display: flex; flex-wrap: wrap; gap: .67rem; }
+.service-item { display: inline-flex; align-items: center; gap: .33rem; }
+.service-item form { display: inline-flex; margin: 0; }
+.service-links .empty { width: 100%; }

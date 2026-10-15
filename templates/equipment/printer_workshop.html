@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ workshop.name }} — принтеры{% endblock %}
+{% block breadcrumb %}<a href="{% url 'equipment:printers' %}">Принтеры</a> / {{ workshop.name }}{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-sm btn-ghost" href="{% url 'equipment:printers' %}">Все цеха</a>
+  <a class="btn btn-sm btn-ghost" href="{% url 'equipment:workshop_lines' workshop.pk %}">Оборудование цеха</a>
+{% endblock %}
+{% block content %}
+<div class="page-back">
+  <a class="back-arrow" href="{% url 'equipment:printers' %}" title="Назад к цехам">←</a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">{{ workshop.name }}</div>
+    <span class="badge badge-muted">{{ printers_total }} принтеров</span>
+  </div>
+
+  {% if printers %}
+  <div class="cam-wall">
+    {% for printer in printers %}
+    <div class="cam-tile">
+      {% if user.is_admin %}
+      <a class="btn btn-danger btn-sm icon-btn cam-tile-del" href="{% url 'equipment:printer_delete' printer.pk %}" title="Удалить принтер">✕</a>
+      {% endif %}
+      <div class="cam-tile-img" data-printer-open
+           data-printer-ip="{{ printer.ip_address }}"
+           data-printer-caption="{{ printer.name }} · {{ printer.ip_address|default:'—' }}"
+           title="Открыть веб-интерфейс принтера">
+        <span class="cam-ph">открыть веб-интерфейс…</span>
+      </div>
+      <div class="cam-tile-cap">
+        <span>
+          <a href="{% url 'equipment:equipment_detail' printer.pk %}">{{ printer.name }}</a>
+          <div class="cam-line-label">
+            {{ printer.line.name|default:"—" }}{% if printer.print_head %} · головка {{ printer.print_head }}{% endif %}
+          </div>
+        </span>
+        <span class="badge {% if printer.ip_address %}badge-ok{% else %}badge-muted{% endif %}">{% if printer.ip_address %}онлайн{% else %}нет IP{% endif %}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">В цехе нет принтеров</div>
+  {% endif %}
+</div>
+
+{% if user.is_admin %}
+<a class="fab" href="{% url 'equipment:printer_create' %}?workshop={{ workshop.pk }}"><span class="fab-add">+</span> Добавить принтер</a>
+{% endif %}
+
+<div class="cam-lightbox" id="printer-lightbox" hidden>
+  <div class="cam-lightbox-backdrop" data-printer-close></div>
+  <div class="cam-lightbox-box">
+    <button class="cam-lightbox-close" type="button" data-printer-close title="Закрыть">&times;</button>
+    <iframe id="printer-lightbox-frame" title="Принтер" allow="autoplay"></iframe>
+    <div class="cam-lightbox-cap" id="printer-lightbox-cap"></div>
+  </div>
+</div>
+{% endblock %}

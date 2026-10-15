@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from accounts.models import User
 from core.models import ProductionLine, ProductionSite, Workshop
-from equipment.forms import CameraForm, EquipmentForm
+from equipment.forms import CameraForm, EquipmentForm, PrinterForm
 from equipment.models import (
     Criticality,
     Equipment,
@@ -525,6 +525,86 @@ class SeedStructureEdgeTests(TestCase):
         self.assertTrue(Workshop.objects.filter(name="Цех №1", is_active=True).exists())
 
 
+class PrinterTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username="prt-admin", password="x", role=User.Role.ADMIN, is_superuser=True, is_staff=True
+        )
+        self.specialist = User.objects.create_user(
+            username="prt-spec", password="x", role=User.Role.SPECIALIST
+        )
+        self.workshop = Workshop.objects.create(name="КМЦ", code="КМЦ-P")
+        self.line = ProductionLine.objects.create(
+            workshop=self.workshop, name="AVE", code="L-AVE-P"
+        )
+        self.printer = Equipment.objects.create(
+            name="Принтер AVE", workshop=self.workshop, line=self.line,
+            is_printer=True, ip_address="10.0.0.5", print_head="32",
+        )
+        self.plain = Equipment.objects.create(name="Стол", workshop=self.workshop)
+
+    def test_printer_wall_groups(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("equipment:printers"))
+        groups = {g["name"]: g for g in response.context["groups"]}
+        self.assertEqual(groups["КМЦ"]["count"], 1)
+        self.assertEqual(response.context["printers_total"], 1)
+
+    def test_printer_workshop_page(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(
+            reverse("equipment:printer_workshop", args=[self.workshop.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-printer-ip="10.0.0.5"')
+
+    def test_printer_form_fields(self):
+        self.assertEqual(
+            list(PrinterForm().fields.keys()),
+            ["name", "workshop", "line", "ip_address", "print_head", "slot", "notes"],
+        )
+
+    def test_admin_can_create_printer(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse("equipment:printer_create"),
+            {"name": "Новый принтер", "workshop": self.workshop.pk, "ip_address": "10.0.0.9"},
+        )
+        self.assertEqual(response.status_code, 302)
+        printer = Equipment.objects.get(name="Новый принтер")
+        self.assertTrue(printer.is_printer)
+        self.assertRedirects(
+            response, reverse("equipment:printer_workshop", args=[self.workshop.pk])
+        )
+
+    def test_specialist_cannot_create_printer(self):
+        self.client.force_login(self.specialist)
+        self.assertEqual(
+            self.client.get(reverse("equipment:printer_create")).status_code, 403
+        )
+
+    def test_admin_can_delete_printer(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse("equipment:printer_delete", args=[self.printer.pk])
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Equipment.objects.filter(pk=self.printer.pk).exists())
+
+    def test_printer_delete_rejects_non_printer(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse("equipment:printer_delete", args=[self.plain.pk])
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Equipment.objects.filter(pk=self.plain.pk).exists())
+
+    def test_printer_stays_in_registry(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("equipment:equipment_list"))
+        self.assertContains(response, "Принтер AVE")
+
+
 class EquipmentPermissionAndBreadcrumbTests(TestCase):
     """Права на изменение/удаление и кликабельные хлебные крошки."""
 
@@ -646,19 +726,18 @@ class CameraTests(TestCase):
         self.client.force_login(self.specialist)
         self.assertEqual(self.client.get(reverse("equipment:camera_create")).status_code, 403)
 
-    def test_admin_can_delete_camera(self):
-        admin = User.objects.create_user(
-            username="cam-admin2", password="x", role=User.Role.ADMIN, is_superuser=True
-        )
-        self.client.force_login(admin)
-        response = self.client.post(reverse("equipment:camera_delete", args=[self.camera.pk]))
-        self.assertEqual(response.status_code, 302)
-        self.assertFalse(Equipment.objects.filter(pk=self.camera.pk).exists())
+    def test_camera_delete_route_removed(self):
+        with self.assertRaises(NoReverseMatch):
+            reverse("equipment:camera_delete", args=[self.camera.pk])
 
-    def test_specialist_cannot_delete_camera(self):
-        self.client.force_login(self.specialist)
-        response = self.client.post(reverse("equipment:camera_delete", args=[self.camera.pk]))
-        self.assertEqual(response.status_code, 403)
+    def test_cameras_managed_in_django_admin(self):
+        from django.contrib import admin
+
+        from equipment.models import Camera
+
+        self.assertIn(Camera, admin.site._registry)
+        self.assertIn(self.camera, Camera.objects.all())
+        self.assertNotIn(self.plain, Camera.objects.all())
 
 
 class CameraExtraTests(TestCase):
@@ -758,30 +837,6 @@ class CameraExtraTests(TestCase):
         )
         self.assertRedirects(response, reverse("equipment:cameras"))
 
-    def test_camera_delete_redirects_to_workshop(self):
-        self.client.force_login(self.admin)
-        response = self.client.post(
-            reverse("equipment:camera_delete", args=[self.cam1.pk])
-        )
-        self.assertRedirects(
-            response, reverse("equipment:camera_workshop", args=[self.kmc.pk])
-        )
-
-    def test_camera_delete_without_workshop_redirects_to_wall(self):
-        self.client.force_login(self.admin)
-        response = self.client.post(
-            reverse("equipment:camera_delete", args=[self.cam4.pk])
-        )
-        self.assertRedirects(response, reverse("equipment:cameras"))
-
-    def test_camera_delete_rejects_non_camera(self):
-        self.client.force_login(self.admin)
-        response = self.client.post(
-            reverse("equipment:camera_delete", args=[self.plain.pk])
-        )
-        self.assertEqual(response.status_code, 404)
-        self.assertTrue(Equipment.objects.filter(pk=self.plain.pk).exists())
-
     def test_seed_cameras_is_idempotent(self):
         call_command("seed_cameras", verbosity=0)
         first = Equipment.objects.filter(is_camera=True).count()
@@ -811,3 +866,27 @@ class CameraExtraTests(TestCase):
         equipment = list(response.context["equipment_list"])
         self.assertIn(self.line_plain, equipment)
         self.assertNotIn(self.cam1, equipment)
+
+
+class EquipmentFormLineTests(TestCase):
+    def test_workshop_defaults_from_line(self):
+        workshop = Workshop.objects.create(name="Цех", code="Ц")
+        line = ProductionLine.objects.create(workshop=workshop, name="Линия")
+        form = EquipmentForm(
+            data={
+                "name": "Обор",
+                "inventory_number": "EQ-700",
+                "line": line.pk,
+                "status": EquipmentStatus.OPERATIONAL,
+                "criticality": Criticality.MEDIUM,
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["workshop"], workshop)
+
+
+class SeedCamerasVerboseTests(TestCase):
+    def test_verbose_output(self):
+        out = StringIO()
+        call_command("seed_cameras", stdout=out)
+        self.assertTrue(out.getvalue().strip())

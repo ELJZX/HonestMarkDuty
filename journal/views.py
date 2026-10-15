@@ -6,10 +6,10 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils.dateparse import parse_date
-from django.views.generic import CreateView, DeleteView, ListView, TemplateView, UpdateView, View
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView, View
 
 from core.mixins import AdminRequiredMixin, EditorRequiredMixin
-from journal.exports import export_full_journal, group_entries, workbook_response
+from journal.exports import group_entries, workbook_response
 from journal.forms import JournalEntryForm
 from journal.models import JournalEntry
 from shifts.models import Shift
@@ -161,24 +161,6 @@ class JournalEntryDeleteView(AdminRequiredMixin, DeleteView):
         return super().form_valid(form)
 
 
-class JournalExportListView(LoginRequiredMixin, TemplateView):
-    template_name = "journal/export_list.html"
-
-
-class JournalExportCreateView(EditorRequiredMixin, View):
-    """Ручное формирование единого Excel-архива журнала."""
-
-    def get(self, request):
-        export = export_full_journal(user=request.user)
-        if export is None:
-            messages.warning(request, "Журнал пуст — нечего выгружать.")
-        else:
-            messages.success(
-                request, f"Единый архив сформирован: {export.file.name.split('/')[-1]}"
-            )
-        return redirect("journal:export_list")
-
-
 class JournalShiftExportView(LoginRequiredMixin, View):
     """Скачивание Excel-архива по конкретной смене.
 
@@ -207,10 +189,10 @@ class JournalPeriodExportView(LoginRequiredMixin, View):
         date_to = parse_date(request.GET.get("date_to", "") or "")
         if not date_from or not date_to:
             messages.warning(request, "Укажите начало и конец периода.")
-            return redirect("journal:export_list")
+            return redirect("journal:entry_list")
         if date_from > date_to:
             date_from, date_to = date_to, date_from
-        entries = (
+        entries = list(
             JournalEntry.objects.select_related("shift", "specialist", "shift__opened_by")
             .filter(
                 occurred_at__date__gte=date_from,
@@ -218,8 +200,8 @@ class JournalPeriodExportView(LoginRequiredMixin, View):
             )
             .order_by("occurred_at", "id")
         )
-        if not entries.exists():
+        if not entries:
             messages.warning(request, "За выбранный период записей нет.")
-            return redirect("journal:export_list")
+            return redirect("journal:entry_list")
         filename = f"smennyy_zhurnal_{date_from:%d.%m.%Y}_{date_to:%d.%m.%Y}"
         return workbook_response(entries, filename)

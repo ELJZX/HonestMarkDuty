@@ -12,7 +12,7 @@ from django.core.management.base import BaseCommand
 from inventory.models import InventoryItem, Storage, StorageLocation
 from inventory.sklad_data import LOCATION_DESC, LOCATION_NAME, LOCATION_SHELF, SKLAD, STORAGE_NAME
 
-NOTES = "Загружено из sklad.xlsx (конечный остаток)"
+NOTES = "Загружено из реестра отдела «Честный знак» (конечный остаток)"
 
 
 class Command(BaseCommand):

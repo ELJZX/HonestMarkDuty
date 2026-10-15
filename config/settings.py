@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     "documents",
     "equipment",
     "analytics",
+    "services",
 ]
 
 MIDDLEWARE = [
@@ -104,9 +105,8 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 
-# --- База данных -----------------------------------------------------------
-# По умолчанию PostgreSQL. Переменная DB_ENGINE=sqlite используется только
-# для автотестов и быстрой локальной проверки без Docker.
+# --- База данных (единая — PostgreSQL) -------------------------------------
+# DB_ENGINE=sqlite — только для локальной разработки/тестов без PostgreSQL.
 if env("DB_ENGINE", "postgres").lower() == "sqlite":
     DATABASES = {
         "default": {

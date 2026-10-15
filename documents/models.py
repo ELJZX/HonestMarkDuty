@@ -123,14 +123,6 @@ class Document(AuditedModel):
             return self.template.get_doc_type_display()
         return "—"
 
-    @property
-    def status_badge(self) -> str:
-        return {
-            DocumentStatus.DRAFT: "badge-muted",
-            DocumentStatus.SAVED: "badge-ok",
-            DocumentStatus.ARCHIVED: "badge-info",
-        }.get(self.status, "badge-muted")
-
     def render(self, save: bool = True) -> None:
         """Заполняет заголовок и тело документа по шаблону и данным цеха."""
         from documents.services import build_context, render_text

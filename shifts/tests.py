@@ -1,7 +1,10 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from unittest import mock
 
-from django.test import RequestFactory, TestCase
+from django.core.cache import cache
+from django.core.management import call_command
+from django.core.management.base import CommandError
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -93,8 +96,8 @@ class ShiftModelTests(TestCase):
     def test_shiftcheck_str(self):
         shift = Shift.objects.create()
         item = InventoryItem.objects.create(name="Сканер")
-        check = ShiftCheck.objects.create(shift=shift, item=item, wear_percent=10)
-        self.assertIn("10", str(check))
+        check = ShiftCheck.objects.create(shift=shift, item=item, condition=Condition.USED)
+        self.assertIn("Б/у", str(check))
 
 
 class ShiftViewTests(TestCase):
@@ -170,7 +173,7 @@ class ShiftViewTests(TestCase):
         self.client.force_login(self.specialist)
         response = self.client.post(
             reverse("shifts:check_create", args=[shift.pk]),
-            {"item": self.item.pk, "condition": Condition.GOOD, "wear_percent": 10, "comment": "ок"},
+            {"item": self.item.pk, "condition": Condition.NEW, "comment": "ок"},
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(shift.checks.count(), 1)
@@ -180,12 +183,12 @@ class ShiftViewTests(TestCase):
         self.client.force_login(self.specialist)
         self.client.post(
             reverse("shifts:check_create", args=[shift.pk]),
-            {"item": self.item.pk, "condition": Condition.GOOD, "wear_percent": 10},
+            {"item": self.item.pk, "condition": Condition.NEW},
         )
         self.assertEqual(shift.checks.count(), 0)
 
     def test_check_form_valid(self):
-        form = ShiftCheckForm(data={"item": self.item.pk, "condition": Condition.NEW, "wear_percent": 0})
+        form = ShiftCheckForm(data={"item": self.item.pk, "condition": Condition.NEW})
         self.assertTrue(form.is_valid())
 
     def test_detail_and_close_pages_render(self):
@@ -475,3 +478,409 @@ class ShiftIntegrationSyncTests(TestCase):
         self.assertEqual(shift.opened_by.last_name, "Петров")
         self.assertIn("Иванов", shift.opening_notes)
         self.assertEqual(shift.closed_by.last_name, "Петров")
+
+
+class _FakeResponse:
+    def __init__(self, data):
+        self._data = data if isinstance(data, bytes) else str(data).encode("utf-8")
+
+    def read(self):
+        return self._data
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+class _FakeOpener:
+    def __init__(self, *responses):
+        self._responses = list(responses)
+        self.opened = []
+
+    def open(self, url, *args, **kwargs):
+        self.opened.append(url)
+        if not self._responses:
+            raise AssertionError("нет подготовленных ответов")
+        return self._responses.pop(0)
+
+
+class ShiftIntegrationNetworkTests(TestCase):
+    def test_parse_helpers_invalid_values(self):
+        from shifts.integration import _parse_date_ru, _parse_dt, _parse_time
+
+        self.assertIsNone(_parse_date_ru("без даты"))
+        self.assertIsNone(_parse_date_ru("18 фруктибря 2026"))
+        self.assertIsNone(_parse_time(""))
+        self.assertIsNone(_parse_time("25:99"))
+        self.assertIsNotNone(_parse_dt("18.09.2026 08:21"))
+        self.assertIsNone(_parse_dt("18/09/2026"))
+
+    def test_login_returns_opener(self):
+        from shifts import integration
+
+        page = b'<input name="csrfmiddlewaretoken" value="abc123">'
+        opener = _FakeOpener(_FakeResponse(page), _FakeResponse(b"ok"))
+        with mock.patch(
+            "shifts.integration.urllib.request.build_opener", return_value=opener
+        ):
+            result = integration.login("http://example.test")
+        self.assertIs(result, opener)
+        self.assertEqual(len(opener.opened), 2)
+
+    def test_fetch_helpers(self):
+        from shifts import integration
+
+        opener = _FakeOpener(
+            _FakeResponse(b"xlsx-bytes"),
+            _FakeResponse("<html>schedule</html>"),
+            _FakeResponse('<span class="current-duty-chz-fio">Иванов Иван:</span>'),
+        )
+        self.assertEqual(
+            integration.fetch_events_xlsx(opener, date(2026, 9, 1), date(2026, 9, 2), "http://x"),
+            b"xlsx-bytes",
+        )
+        self.assertIn("schedule", integration.fetch_schedule_html(opener, "http://x"))
+        on_duty, fio = integration.fetch_current_duty(opener, "http://x")
+        self.assertFalse(on_duty)
+        self.assertEqual(fio, "Иванов Иван")
+
+    def test_fetch_current_duty_on_work(self):
+        from shifts import integration
+
+        opener = _FakeOpener(
+            _FakeResponse('<body class="duty-on-work"><b class="current-duty-chz-fio">Петров Пётр</b>')
+        )
+        on_duty, fio = integration.fetch_current_duty(opener, "http://x")
+        self.assertTrue(on_duty)
+        self.assertEqual(fio, "Петров Пётр")
+
+    def test_parse_events_skips_bad_rows(self):
+        import io
+
+        from openpyxl import Workbook
+
+        from shifts.integration import parse_events_xlsx
+
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.append(["Дата и время", "ФИО", "Тип события", "Комментарий"])
+        sheet.append([None, "fio", "Начало смены", "c"])
+        sheet.append(["не дата", "fio", "Начало смены", "c"])
+        sheet.append(["18.09.2026 08:00", "fio", "Неизвестно", "c"])
+        buffer = io.BytesIO()
+        workbook.save(buffer)
+        self.assertEqual(parse_events_xlsx(buffer.getvalue()), [])
+
+    def test_parse_schedule_skips_bad_rows(self):
+        from shifts.integration import parse_schedule_html
+
+        html = (
+            "<table>"
+            "<tr><td>нет даты</td><td>X</td><td>8:00</td><td>20:00</td></tr>"
+            "<tr><td>18 сентября 2026</td><td>X</td><td>плохо</td><td>20:00</td></tr>"
+            "<tr><td>18 сентября 2026</td><td>X</td><td>8:00</td><td>20:00</td></tr>"
+            "</table>"
+        )
+        rows = parse_schedule_html(html)
+        self.assertEqual(len(rows), 1)
+
+    def test_parse_work_comment_variants(self):
+        from shifts.integration import parse_work_comment
+
+        self.assertEqual(parse_work_comment("")["action_task"], "")
+        short = parse_work_comment("08:00\tЛиния\tЗадача")
+        self.assertEqual(short["action_task"], "Задача")
+        trailing = parse_work_comment("16:00\tЛиния\tЗадача\t\t")
+        self.assertEqual(trailing["downtime"], "16:00")
+
+    def test_user_for_fio_branches(self):
+        from shifts.integration import user_for_fio
+
+        self.assertIsNone(user_for_fio(""))
+        with override_settings(SHIFT_SYNC_CREATE_USERS=False):
+            self.assertIsNone(user_for_fio("Сидоров Сидор"))
+        User.objects.create_user(username="sidorov_sidor", password="x")
+        created = user_for_fio("Сидоров Сидор")
+        self.assertTrue(created.username.startswith("sidorov_sidor"))
+        self.assertNotEqual(created.username, "sidorov_sidor")
+
+    def test_shift_for_date_statuses(self):
+        from shifts.integration import _shift_for_date
+
+        today = timezone.localdate()
+        future = _shift_for_date(today + timedelta(days=3))
+        self.assertEqual(future.status, Shift.Status.PLANNED)
+        past = _shift_for_date(today - timedelta(days=3))
+        self.assertEqual(past.status, Shift.Status.CLOSED)
+        self.assertEqual(_shift_for_date(today - timedelta(days=3)).pk, past.pk)
+        self.assertEqual(_shift_for_date(today).status, Shift.Status.PLANNED)
+
+    def _empty_xlsx(self):
+        import io
+
+        from openpyxl import Workbook
+
+        workbook = Workbook()
+        workbook.active.append(["Дата и время", "ФИО", "Тип события", "Комментарий"])
+        buffer = io.BytesIO()
+        workbook.save(buffer)
+        return buffer.getvalue()
+
+    def _schedule_row(self, day, fio="Бородин Александр Владимирович"):
+        from shifts.integration import MONTHS
+
+        month_name = {v: k for k, v in MONTHS.items()}[day.month]
+        return (
+            "<tr><td>"
+            f"{day.day} {month_name} {day.year} г."
+            f"</td><td>{fio}</td><td>8:00</td><td>20:00</td></tr>"
+        )
+
+    def test_sync_skips_out_of_range_and_plans_future(self):
+        from shifts.integration import sync_window
+
+        today = timezone.localdate()
+        future = today + timedelta(days=2)
+        far = today + timedelta(days=30)
+        schedule = f"<table>{self._schedule_row(future)}{self._schedule_row(far)}</table>"
+        with mock.patch("shifts.integration.fetch_schedule_html", return_value=schedule), \
+                mock.patch("shifts.integration.fetch_events_xlsx", return_value=self._empty_xlsx()):
+            result = sync_window(0, 7, opener=object(), force=True)
+        self.assertEqual(result["workdays"], 1)
+        self.assertEqual(
+            Shift.objects.get(external_id=f"workday:{future.isoformat()}").status,
+            Shift.Status.PLANNED,
+        )
+        self.assertFalse(
+            Shift.objects.filter(external_id=f"workday:{far.isoformat()}").exists()
+        )
+
+    def test_sync_today_start_event_sets_open(self):
+        import io
+
+        from openpyxl import Workbook
+
+        from shifts.integration import sync_window
+
+        today = timezone.localdate()
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.append(["Дата и время", "ФИО", "Тип события", "Комментарий"])
+        sheet.append([f"{today:%d.%m.%Y} 08:21:13", "Бородин Александр Владимирович", "Начало смены", "принят"])
+        buffer = io.BytesIO()
+        workbook.save(buffer)
+
+        schedule = f"<table>{self._schedule_row(today)}</table>"
+        with mock.patch("shifts.integration.fetch_schedule_html", return_value=schedule), \
+                mock.patch("shifts.integration.fetch_events_xlsx", return_value=buffer.getvalue()):
+            sync_window(7, 7, opener=object(), force=True)
+
+        shift = Shift.objects.get(external_id=f"workday:{today.isoformat()}")
+        self.assertEqual(shift.status, Shift.Status.OPEN)
+        self.assertTrue(shift.accepted)
+        self.assertIsNone(shift.closed_at)
+
+    def test_sync_today_without_events_stays_planned(self):
+        from shifts.integration import sync_window
+
+        today = timezone.localdate()
+        schedule = f"<table>{self._schedule_row(today)}</table>"
+        with mock.patch("shifts.integration.fetch_schedule_html", return_value=schedule), \
+                mock.patch("shifts.integration.fetch_events_xlsx", return_value=self._empty_xlsx()):
+            sync_window(7, 7, opener=object(), force=True)
+        shift = Shift.objects.get(external_id=f"workday:{today.isoformat()}")
+        self.assertEqual(shift.status, Shift.Status.PLANNED)
+        self.assertFalse(shift.accepted)
+
+
+class ShiftIntegrationQuickSyncEdgeTests(TestCase):
+    def test_network_error_is_reported(self):
+        from shifts.integration import quick_sync
+
+        cache.clear()
+        with mock.patch("shifts.integration.login", side_effect=RuntimeError("no net")):
+            result = quick_sync(force=True)
+        self.assertIn("error", result)
+
+    def test_off_duty_without_shift(self):
+        from shifts.integration import quick_sync
+
+        cache.clear()
+        with mock.patch("shifts.integration.login", return_value=object()), mock.patch(
+            "shifts.integration.fetch_current_duty", return_value=(False, "")
+        ):
+            result = quick_sync(force=True)
+        self.assertEqual(result, {"on_duty": False})
+
+    def test_updates_existing_shift(self):
+        from shifts.integration import quick_sync
+
+        cache.clear()
+        today = timezone.localdate()
+        shift = Shift.objects.create(
+            external_id=f"workday:{today.isoformat()}",
+            date=today,
+            status=Shift.Status.CLOSED,
+            accepted=False,
+        )
+        with mock.patch("shifts.integration.login", return_value=object()), mock.patch(
+            "shifts.integration.fetch_current_duty",
+            return_value=(True, "Бородин Александр Владимирович"),
+        ):
+            result = quick_sync(force=True)
+        shift.refresh_from_db()
+        self.assertTrue(result["on_duty"])
+        self.assertEqual(shift.status, Shift.Status.OPEN)
+        self.assertTrue(shift.accepted)
+        self.assertEqual(shift.opened_by.last_name, "Бородин")
+
+    def test_shift_list_survives_sync_error(self):
+        specialist = User.objects.create_user(
+            username="sync-error-user", password="x", role=User.Role.SPECIALIST
+        )
+        self.client.force_login(specialist)
+        with mock.patch("shifts.integration.quick_sync", side_effect=RuntimeError("boom")):
+            response = self.client.get(reverse("shifts:shift_list"))
+        self.assertEqual(response.status_code, 200)
+
+
+class ShiftDurationTests(TestCase):
+    def test_duration_and_display(self):
+        specialist = User.objects.create_user(
+            username="duration-user", password="x", role=User.Role.SPECIALIST
+        )
+        today = timezone.localdate()
+        planned = Shift.objects.create(
+            opened_by=specialist, date=today, status=Shift.Status.PLANNED
+        )
+        self.assertIsNone(planned.duration)
+        self.assertEqual(planned.duration_display, "—")
+
+        now = timezone.now()
+        active = Shift.objects.create(
+            opened_by=specialist,
+            date=today,
+            status=Shift.Status.OPEN,
+            opened_at=now - timedelta(hours=1, minutes=5, seconds=3),
+        )
+        self.assertEqual(active.duration_display, "01:05:03")
+
+
+class SyncShiftsCommandTests(TestCase):
+    def test_command_success(self):
+        from io import StringIO
+
+        out = StringIO()
+        with mock.patch(
+            "shifts.management.commands.sync_shifts.sync_window",
+            return_value={"workdays": 2, "events": 3, "entries": 1},
+        ):
+            call_command("sync_shifts", stdout=out)
+        self.assertIn("Синхронизация завершена", out.getvalue())
+
+    def test_command_skipped(self):
+        from io import StringIO
+
+        out = StringIO()
+        with mock.patch(
+            "shifts.management.commands.sync_shifts.sync_window",
+            return_value={"skipped": "off"},
+        ):
+            call_command("sync_shifts", stdout=out)
+        self.assertIn("Пропущено", out.getvalue())
+
+    def test_command_error_raises(self):
+        with mock.patch(
+            "shifts.management.commands.sync_shifts.sync_window",
+            side_effect=RuntimeError("boom"),
+        ):
+            with self.assertRaises(CommandError):
+                call_command("sync_shifts")
+
+
+class PreviousShiftEventsTests(TestCase):
+    def setUp(self):
+        from core.models import Workshop
+
+        self.specialist = User.objects.create_user(
+            username="evt-spec", password="x", role=User.Role.SPECIALIST
+        )
+        self.workshop = Workshop.objects.create(name="Цех Э", code="ЦЭ")
+        now = timezone.now()
+        self.shift = Shift.objects.create(
+            opened_by=self.specialist,
+            status=Shift.Status.CLOSED,
+            opened_at=now - timedelta(hours=8),
+            closed_at=now + timedelta(hours=1),
+            date=timezone.localdate(),
+        )
+
+    def test_collects_all_event_types(self):
+        from equipment.models import Equipment
+        from inventory.models import InventoryMovement, MovementType
+        from services.models import Service
+        from shifts.events import previous_shift_events
+
+        item = InventoryItem.objects.create(name="Новый сканер", quantity=3)
+        InventoryMovement.objects.create(
+            item=item, movement_type=MovementType.OUT, quantity=2
+        )
+        InventoryMovement.objects.create(
+            item=item, movement_type=MovementType.IN, quantity=5
+        )
+        Equipment.objects.create(name="Камера 1", is_camera=True)
+        Equipment.objects.create(name="Принтер 1", is_printer=True)
+        Service.objects.create(name="Сервис 1", url="http://example.com")
+
+        tones = {(e["text"], e["tone"]): e["qty"] for e in previous_shift_events()}
+        self.assertEqual(tones.get(("Новая позиция склада: Новый сканер", "ok")), "(3 шт)")
+        self.assertEqual(tones.get(("Склад: Новый сканер", "danger")), "-2")
+        self.assertEqual(tones.get(("Склад: Новый сканер", "ok")), "+5")
+        self.assertEqual(tones.get(("Добавлена камера: Камера 1", "")), "")
+        self.assertEqual(tones.get(("Добавлен принтер: Принтер 1", "")), "")
+        self.assertEqual(tones.get(("Добавлен сервис: Сервис 1", "")), "")
+
+    def test_includes_journal_entries(self):
+        from journal.models import JournalEntry
+        from shifts.events import previous_shift_events
+
+        JournalEntry.objects.create(
+            shift=self.shift,
+            specialist=self.specialist,
+            action_task="Проверка печати",
+            equipment_line="AVE",
+        )
+        texts = [e["text"] for e in previous_shift_events()]
+        self.assertTrue(any("Проверка печати" in text for text in texts))
+        self.assertTrue(any("AVE" in text for text in texts))
+
+    def test_includes_archived_documents(self):
+        from core.models import Workshop
+        from documents.models import Document, DocumentKind
+        from shifts.events import previous_shift_events
+
+        workshop = Workshop.objects.create(name="Цех Д", code="ЦД")
+        Document.objects.create(
+            kind=DocumentKind.SERVICE_NOTE, number="СЛ-0007", workshop=workshop
+        )
+        texts = [e["text"] for e in previous_shift_events()]
+        self.assertTrue(
+            any("СЛ-0007" in text and "Цех Д" in text for text in texts)
+        )
+
+    def test_empty_without_closed_shift(self):
+        from shifts.events import previous_shift_events
+
+        Shift.objects.all().delete()
+        self.assertEqual(previous_shift_events(), [])
+
+    def test_shift_open_ajax_returns_events(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(reverse("shifts:shift_open_ajax"))
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["ok"])
+        self.assertIn("events", data)
+        self.assertIsInstance(data["events"], list)

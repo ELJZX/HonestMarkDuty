@@ -14,43 +14,6 @@ document.addEventListener("DOMContentLoaded", function () {
     if (overlay) overlay.addEventListener("click", toggle);
   }
 
-  // Всплывающие уведомления
-  function hideToast(toast) {
-    toast.classList.add("hide");
-    setTimeout(() => toast.remove(), 300);
-  }
-  function attachToast(toast) {
-    const closeBtn = toast.querySelector(".toast-close");
-    if (closeBtn) closeBtn.addEventListener("click", () => hideToast(toast));
-    setTimeout(() => hideToast(toast), 7000);
-  }
-  function showToast(message, type) {
-    let stack = document.getElementById("toast-stack");
-    if (!stack) {
-      stack = document.createElement("div");
-      stack.id = "toast-stack";
-      stack.className = "toast-stack";
-      document.body.appendChild(stack);
-    }
-    const toast = document.createElement("div");
-    toast.className = "toast " + (type || "info");
-    const text = document.createElement("span");
-    text.className = "toast-text";
-    text.textContent = message;
-    const close = document.createElement("button");
-    close.type = "button";
-    close.className = "toast-close";
-    close.setAttribute("aria-label", "Закрыть");
-    close.textContent = "×";
-    toast.appendChild(text);
-    toast.appendChild(close);
-    stack.appendChild(toast);
-    attachToast(toast);
-  }
-  window.showToast = showToast;
-
-  document.querySelectorAll(".toast").forEach(attachToast);
-
   // Живой таймер длительности открытой смены
   const shiftTimer = document.getElementById("shift-timer");
   if (shiftTimer) {
@@ -64,18 +27,6 @@ document.addEventListener("DOMContentLoaded", function () {
     };
     render();
     setInterval(render, 1000);
-  }
-
-  // Уведомление, сохранённое перед перезагрузкой
-  try {
-    const pending = sessionStorage.getItem("hmd_toast");
-    if (pending) {
-      sessionStorage.removeItem("hmd_toast");
-      const data = JSON.parse(pending);
-      showToast(data.message, data.type);
-    }
-  } catch (e) {
-    /* ignore */
   }
 
   // Простое подтверждение через window.confirm (удаления)
@@ -258,6 +209,38 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   })();
 
+  // Принтеры: открытие веб-интерфейса принтера по IP
+  (function () {
+    const box = document.getElementById("printer-lightbox");
+    if (!box) return;
+    const frame = document.getElementById("printer-lightbox-frame");
+    const caption = document.getElementById("printer-lightbox-cap");
+
+    function close() {
+      box.hidden = true;
+      frame.removeAttribute("src");
+    }
+
+    function open(ip, text) {
+      caption.textContent = text || "";
+      frame.src = "http://" + ip + "/";
+      box.hidden = false;
+    }
+
+    document.querySelectorAll("[data-printer-open]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        const ip = el.getAttribute("data-printer-ip");
+        if (ip) open(ip, el.getAttribute("data-printer-caption"));
+      });
+    });
+    box.addEventListener("click", function (e) {
+      if (e.target === box || e.target.hasAttribute("data-printer-close")) close();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") close();
+    });
+  })();
+
   // Перетаскивание карточек ([data-sortable]) с сохранением порядка
   document.querySelectorAll("[data-sortable]").forEach(function (list) {
     const form = document.getElementById(list.dataset.form);
@@ -401,19 +384,14 @@ document.addEventListener("DOMContentLoaded", function () {
           });
       })
       .then(function (result) {
-        const message = result.data.message || (result.ok ? "Готово" : "Не удалось выполнить действие");
-        try {
-          sessionStorage.setItem(
-            "hmd_toast",
-            JSON.stringify({ message: message, type: result.ok ? "success" : "error" })
-          );
-        } catch (e) {
-          /* ignore */
+        if (result.ok && result.data && Array.isArray(result.data.events)) {
+          showEventsModal(result.data.events);
+          return;
         }
         window.location.reload();
       })
       .catch(function () {
-        showToast("Ошибка сети", "error");
+        window.location.reload();
       });
   }
 
@@ -439,5 +417,45 @@ document.addEventListener("DOMContentLoaded", function () {
     modal.addEventListener("click", function (event) {
       if (event.target === modal) closeModal();
     });
+  }
+
+  // Модальное окно «События за предыдущую смену» (показывается после приёма смены)
+  const eventsModal = document.getElementById("events-modal");
+  function showEventsModal(events) {
+    if (!eventsModal) {
+      window.location.reload();
+      return;
+    }
+    const list = document.getElementById("events-modal-list");
+    list.innerHTML = "";
+    if (!events || !events.length) {
+      const li = document.createElement("li");
+      li.textContent = "За предыдущую смену изменений не было.";
+      list.appendChild(li);
+    } else {
+      events.forEach(function (item) {
+        const li = document.createElement("li");
+        const obj = item && typeof item === "object" ? item : { text: item };
+        li.appendChild(document.createTextNode(obj.text || ""));
+        if (obj.qty) {
+          li.appendChild(document.createTextNode(" "));
+          const span = document.createElement("span");
+          span.className = "event-qty" + (obj.tone ? " event-" + obj.tone : "");
+          span.textContent = obj.qty;
+          li.appendChild(span);
+        }
+        list.appendChild(li);
+      });
+    }
+    eventsModal.hidden = false;
+  }
+  if (eventsModal) {
+    const acceptEvents = document.getElementById("events-modal-accept");
+    if (acceptEvents) {
+      acceptEvents.addEventListener("click", function () {
+        eventsModal.hidden = true;
+        window.location.reload();
+      });
+    }
   }
 });

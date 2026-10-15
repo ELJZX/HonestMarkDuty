@@ -27,22 +27,13 @@ class InventoryItemForm(StyledModelForm):
             "min_quantity",
             "unit",
             "condition",
-            "wear_percent",
             "serial_number",
-            "manufactured_at",
-            "last_verified_at",
             "notes",
             "is_active",
         )
         widgets = {
             "notes": forms.Textarea(attrs={"rows": 3}),
         }
-
-    def clean_wear_percent(self):
-        value = self.cleaned_data["wear_percent"]
-        if value > 100:
-            raise forms.ValidationError("Износ не может превышать 100%.")
-        return value
 
 
 class InventoryMovementForm(StyledModelForm):

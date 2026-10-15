@@ -42,10 +42,7 @@ class InventoryModelTests(TestCase):
     def test_condition_badge_mapping(self):
         expectations = {
             Condition.NEW: "badge-ok",
-            Condition.GOOD: "badge-ok",
-            Condition.WORN: "badge-warn",
-            Condition.NEEDS_REPAIR: "badge-warn",
-            Condition.BROKEN: "badge-danger",
+            Condition.USED: "badge-warn",
         }
         for condition, badge in expectations.items():
             self.item.condition = condition
@@ -100,12 +97,6 @@ class InventoryMovementTests(TestCase):
 
 
 class InventoryFormTests(TestCase):
-    def test_wear_percent_over_100_invalid(self):
-        item_type = ItemType.objects.create(name="Инструмент")
-        form = InventoryItemForm(data={"name": "X", "kind": item_type.pk, "quantity": 1, "wear_percent": 150})
-        self.assertFalse(form.is_valid())
-        self.assertIn("wear_percent", form.errors)
-
     def test_item_form_valid(self):
         item_type = ItemType.objects.create(name="Инструмент")
         form = InventoryItemForm(
@@ -115,11 +106,15 @@ class InventoryFormTests(TestCase):
                 "quantity": 1,
                 "min_quantity": 0,
                 "unit": "шт",
-                "condition": Condition.GOOD,
-                "wear_percent": 10,
+                "condition": Condition.NEW,
             }
         )
         self.assertTrue(form.is_valid())
+
+    def test_item_form_excludes_dates(self):
+        fields = InventoryItemForm().fields
+        self.assertNotIn("manufactured_at", fields)
+        self.assertNotIn("last_verified_at", fields)
 
     def test_movement_form_valid(self):
         form = InventoryMovementForm(data={"movement_type": MovementType.IN, "quantity": 2})
@@ -136,7 +131,7 @@ class InventoryViewTests(TestCase):
         self.type_tool = ItemType.objects.create(name="Инструмент")
         self.item = InventoryItem.objects.create(
             name="Сканер", kind=self.type_device, location=self.location, category=self.category,
-            quantity=1, min_quantity=2, wear_percent=90, condition=Condition.WORN,
+            quantity=1, min_quantity=2, condition=Condition.USED,
         )
 
     def test_list_renders_and_filters(self):
@@ -144,7 +139,7 @@ class InventoryViewTests(TestCase):
         self.assertEqual(self.client.get(reverse("inventory:item_list")).status_code, 200)
         response = self.client.get(reverse("inventory:item_list"), {"q": "Сканер", "low": "1"})
         self.assertContains(response, "Сканер")
-        response = self.client.get(reverse("inventory:item_list"), {"condition": Condition.WORN})
+        response = self.client.get(reverse("inventory:item_list"), {"condition": Condition.USED})
         self.assertEqual(response.status_code, 200)
 
     def test_detail_renders(self):
@@ -156,7 +151,7 @@ class InventoryViewTests(TestCase):
         self.client.force_login(self.specialist)
         response = self.client.post(
             reverse("inventory:item_create"),
-            {"name": "Новый инструмент", "kind": self.type_tool.pk, "quantity": 3, "min_quantity": 1, "unit": "шт", "condition": Condition.GOOD, "wear_percent": 0},
+            {"name": "Новый инструмент", "kind": self.type_tool.pk, "quantity": 3, "min_quantity": 1, "unit": "шт", "condition": Condition.NEW},
         )
         self.assertEqual(response.status_code, 302)
         self.assertTrue(InventoryItem.objects.filter(name="Новый инструмент").exists())
@@ -170,7 +165,7 @@ class InventoryViewTests(TestCase):
         self.client.force_login(self.admin)
         response = self.client.post(
             reverse("inventory:item_update", args=[self.item.pk]),
-            {"name": "Сканер обновлён", "kind": self.type_device.pk, "quantity": 1, "min_quantity": 2, "unit": "шт", "condition": Condition.WORN, "wear_percent": 90},
+            {"name": "Сканер обновлён", "kind": self.type_device.pk, "quantity": 1, "min_quantity": 2, "unit": "шт", "condition": Condition.USED},
         )
         self.assertEqual(response.status_code, 302)
         self.item.refresh_from_db()
@@ -376,8 +371,7 @@ class ItemTypeTests(TestCase):
                 "quantity": 1,
                 "min_quantity": 0,
                 "unit": "шт",
-                "condition": Condition.GOOD,
-                "wear_percent": 0,
+                "condition": Condition.NEW,
             },
         )
         self.assertEqual(response.status_code, 302)
@@ -411,3 +405,29 @@ class SeedSkladCommandTests(TestCase):
             InventoryItem.objects.filter(location__shelf_code=LOCATION_SHELF).count(),
             len(SKLAD),
         )
+
+
+class InventoryStorageFilterTests(TestCase):
+    def setUp(self):
+        self.specialist = User.objects.create_user(
+            username="inv-filter", password="x", role=User.Role.SPECIALIST
+        )
+        self.storage = Storage.objects.create(name="Новый склад")
+        self.item_type = ItemType.objects.create(name="Прибор")
+        self.item = InventoryItem.objects.create(
+            name="Позиция",
+            kind=self.item_type,
+            storage=self.storage,
+            quantity=1,
+            min_quantity=1,
+        )
+
+    def test_storage_no_kind_no_storage_filters(self):
+        self.client.force_login(self.specialist)
+        for params in (
+            {"storage": self.storage.pk},
+            {"no_kind": "1"},
+            {"no_storage": "1"},
+        ):
+            response = self.client.get(reverse("inventory:item_list"), params)
+            self.assertEqual(response.status_code, 200)
