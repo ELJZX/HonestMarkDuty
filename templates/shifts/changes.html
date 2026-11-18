@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}История изменений{% endblock %}
+{% block breadcrumb %}Сменная работа / История изменений{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">История изменений сервисов</div>
+  </div>
+
+  <dl class="detail-grid" style="margin-bottom:1rem">
+    <dt>Период</dt><dd>{{ changes_period }}</dd>
+    <dt>Релизов</dt><dd class="mono">{{ changes|length }}</dd>
+    <dt>Предыдущий приём смены</dt>
+    <dd>{% if changes_seen_at %}{{ changes_seen_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</dd>
+    <dt>Источник</dt>
+    <dd class="mono">{{ changes_meta.source|default:"—" }}{% if changes_meta.fetched_at %} · обновлено {{ changes_meta.fetched_at }}{% endif %}</dd>
+  </dl>
+
+  {% if not changes_meta.ok %}
+    <div class="message error mb-2">
+      Сервис истории изменений недоступен: {{ changes_meta.error|default:"неизвестная ошибка" }}.
+      Показан сохранённый список, если он есть.
+    </div>
+  {% endif %}
+
+  {% for group in change_groups %}
+    <div class="change-day" style="margin-bottom:1.1rem">
+      <div class="change-day-title">{{ group.label }}{% if group.weekday %} · {{ group.weekday }}{% endif %}</div>
+      {% for item in group.items %}
+        <article class="change-item">
+          <div class="change-head">
+            {% if item.app %}<span class="badge">{{ item.app }}</span>{% endif %}
+            {% if item.version %}<span class="change-version">v{{ item.version }}</span>{% endif %}
+            {% if item.time %}<span class="change-time">{{ item.time }}</span>{% endif %}
+            {% if item.is_beta %}<span class="badge badge-warn">beta</span>{% endif %}
+            {% if item.has_file and item.download_url %}
+              <a class="change-time" href="{{ item.download_url }}" target="_blank" rel="noopener">файл</a>
+            {% endif %}
+          </div>
+          {% if item.text %}<div class="change-text">{{ item.text }}</div>{% endif %}
+        </article>
+      {% endfor %}
+    </div>
+  {% empty %}
+    <div class="change-empty">За выбранный период релизов не было.</div>
+  {% endfor %}
+</div>
+{% endblock %}

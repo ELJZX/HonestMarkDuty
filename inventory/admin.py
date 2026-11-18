@@ -67,9 +67,16 @@ class InventoryItemAdmin(admin.ModelAdmin):
 
 @admin.register(InventoryMovement)
 class InventoryMovementAdmin(admin.ModelAdmin):
-    list_display = ("created_at", "item", "movement_type", "quantity", "created_by")
+    list_display = (
+        "created_at",
+        "item",
+        "movement_type",
+        "quantity",
+        "equipment_line",
+        "created_by",
+    )
     list_filter = ("movement_type",)
-    search_fields = ("item__name", "comment")
+    search_fields = ("item__name", "comment", "equipment_line")
     date_hierarchy = "created_at"
     list_select_related = ("item", "created_by", "shift")
     autocomplete_fields = ("item", "created_by", "shift")

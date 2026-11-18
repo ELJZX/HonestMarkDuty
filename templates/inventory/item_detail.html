@@ -31,18 +31,19 @@
       <div class="card-header"><div class="card-title">История движений</div></div>
       <div class="table-wrap">
         <table class="data">
-          <thead><tr><th>Время</th><th>Операция</th><th>Кол-во</th><th>Сотрудник</th><th>Комментарий</th></tr></thead>
+          <thead><tr><th>Время</th><th>Операция</th><th>Кол-во</th><th>Линия</th><th>Сотрудник</th><th>Комментарий</th></tr></thead>
           <tbody>
             {% for m in movements %}
             <tr>
               <td class="mono nowrap">{{ m.created_at|date:"d.m.Y H:i" }}</td>
               <td><span class="badge {% if m.movement_type == 'in' %}badge-ok{% elif m.movement_type == 'correction' %}badge-info{% else %}badge-warn{% endif %}">{{ m.get_movement_type_display }}</span></td>
               <td class="mono">{{ m.quantity }}</td>
+              <td>{{ m.equipment_line|default:"—" }}</td>
               <td>{% firstof m.created_by.full_name m.created_by.username "—" %}</td>
               <td>{{ m.comment|default:"—" }}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="5" class="empty">Движений не было</td></tr>
+            <tr><td colspan="6" class="empty">Движений не было</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -56,6 +57,9 @@
       <form method="post" action="{% url 'inventory:movement_create' item.pk %}">
         {% csrf_token %}
         {% include "partials/form_fields.html" with form=movement_form %}
+        <datalist id="movement-line-options">
+          {% for option in line_options %}<option value="{{ option }}">{% endfor %}
+        </datalist>
         <div class="form-actions"><button class="btn btn-primary" type="submit">Применить</button></div>
       </form>
     </div>

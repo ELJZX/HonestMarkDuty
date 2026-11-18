@@ -535,24 +535,68 @@ table.data.journal-table th.th-center { text-align: center; }
   box-shadow: 0 20px 50px rgba(0, 0, 0, .6);
 }
 .modal-wide { max-width: 51rem; padding: 2rem; }
+.modal-briefing {
+  width: min(76rem, 97vw); max-width: min(76rem, 97vw);
+  max-height: 92vh; display: flex; flex-direction: column; padding: 1.8rem 2rem;
+}
 .modal-text { font-family: var(--font-mono); font-size: 1rem; margin-bottom: 1.11rem; }
 .modal-title {
   font-family: var(--font-mono); font-size: 1.05rem; text-transform: uppercase;
   letter-spacing: .06em; margin-bottom: 1rem; color: var(--text);
 }
-.modal-actions { display: flex; gap: .56rem; }
-.events-list {
-  list-style: none; margin: 0 0 1.11rem; padding: 0;
-  max-height: 50vh; overflow-y: auto;
+.modal-actions { display: flex; gap: .56rem; flex: 0 0 auto; padding-top: 1rem; }
+.briefing-body {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  padding-right: .5rem; margin-bottom: .25rem;
+}
+.briefing-section { padding: .2rem 0 .4rem; }
+.briefing-section + .briefing-section {
+  margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1.1rem;
+}
+.briefing-section[hidden] { display: none; }
+.briefing-heading {
+  display: flex; align-items: baseline; justify-content: space-between; gap: .8rem;
+  font-family: var(--font-mono); font-size: .92rem; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--text); margin-bottom: .7rem;
+}
+.briefing-period { font-size: .8rem; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.briefing-note { margin: 0 0 .7rem; font-size: .84rem; color: var(--muted); }
+.briefing-note.is-error { color: var(--danger); }
+.change-groups { display: flex; flex-direction: column; gap: .9rem; }
+.change-day-title {
+  font-family: var(--font-mono); font-size: .82rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .05em; margin-bottom: .4rem;
+}
+.change-item {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: .56rem .7rem; margin-bottom: .44rem;
+}
+.change-head { display: flex; align-items: center; flex-wrap: wrap; gap: .45rem; margin-bottom: .35rem; }
+.change-head .badge { font-size: .74rem; }
+.change-version { font-family: var(--font-mono); font-size: .86rem; }
+.change-time { font-family: var(--font-mono); font-size: .78rem; color: var(--muted); }
+.change-text {
+  font-size: .92rem; line-height: 1.45; color: var(--text); white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.change-empty { padding: .6rem .7rem; color: var(--muted); font-size: .9rem; }
+.events-list, .warehouse-list {
+  list-style: none; margin: 0; padding: 0;
   display: flex; flex-direction: column; gap: .44rem;
 }
-.events-list li {
+.events-list li, .warehouse-list li {
   padding: .56rem .67rem; background: var(--surface-2);
-  border: 1px solid var(--border); border-radius: var(--radius); font-size: 1.05rem;
+  border: 1px solid var(--border); border-radius: var(--radius); font-size: 1rem;
 }
+.warehouse-item-head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+.warehouse-line { font-size: .86rem; color: var(--muted); margin-top: .2rem; }
+.warehouse-line strong { color: var(--text); font-weight: 600; }
 .event-qty { font-weight: 700; }
 .event-qty.event-ok { color: var(--ok); }
 .event-qty.event-danger { color: var(--danger); }
+@media (max-width: 700px) {
+  .modal-briefing { width: 100%; max-width: 100%; max-height: 96vh; padding: 1.1rem; }
+}
 @media print { .modal-overlay { display: none !important; } }
 
 /* ---------- Открытая смена в шапке ---------- */

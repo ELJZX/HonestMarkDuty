@@ -6,6 +6,7 @@ app_name = "shifts"
 
 urlpatterns = [
     path("", views.ShiftListView.as_view(), name="shift_list"),
+    path("changes/", views.ChangesHistoryView.as_view(), name="changes"),
     path("open/", views.ShiftOpenView.as_view(), name="shift_open"),
     path("open/ajax/", views.shift_open_ajax, name="shift_open_ajax"),
     path("<int:pk>/", views.ShiftDetailView.as_view(), name="shift_detail"),

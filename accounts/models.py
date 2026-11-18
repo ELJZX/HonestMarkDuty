@@ -22,6 +22,12 @@ class User(AbstractUser):
         blank=True,
         related_name="employees",
     )
+    changes_seen_at = models.DateTimeField(
+        "История изменений просмотрена",
+        null=True,
+        blank=True,
+        help_text="Последний приём смены: с этой даты показываются изменения в сервисах.",
+    )
 
     class Meta:
         verbose_name = "Пользователь"

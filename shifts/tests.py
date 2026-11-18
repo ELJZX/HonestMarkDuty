@@ -855,28 +855,37 @@ class PreviousShiftEventsTests(TestCase):
 
     def test_collects_all_event_types(self):
         from equipment.models import Equipment
-        from inventory.models import InventoryMovement, MovementType
         from services.models import Service
         from shifts.events import previous_shift_events
 
-        item = InventoryItem.objects.create(name="Новый сканер", quantity=3)
-        InventoryMovement.objects.create(
-            item=item, movement_type=MovementType.OUT, quantity=2
-        )
-        InventoryMovement.objects.create(
-            item=item, movement_type=MovementType.IN, quantity=5
-        )
         Equipment.objects.create(name="Камера 1", is_camera=True)
         Equipment.objects.create(name="Принтер 1", is_printer=True)
         Service.objects.create(name="Сервис 1", url="http://example.com")
 
         tones = {(e["text"], e["tone"]): e["qty"] for e in previous_shift_events()}
-        self.assertEqual(tones.get(("Новая позиция склада: Новый сканер", "ok")), "(3 шт)")
-        self.assertEqual(tones.get(("Склад: Новый сканер", "danger")), "-2")
-        self.assertEqual(tones.get(("Склад: Новый сканер", "ok")), "+5")
         self.assertEqual(tones.get(("Добавлена камера: Камера 1", "")), "")
         self.assertEqual(tones.get(("Добавлен принтер: Принтер 1", "")), "")
         self.assertEqual(tones.get(("Добавлен сервис: Сервис 1", "")), "")
+
+    def test_warehouse_events_show_line_and_remaining(self):
+        from inventory.models import InventoryMovement, MovementType
+        from shifts.events import previous_shift_warehouse_events
+
+        item = InventoryItem.objects.create(name="Новый сканер", quantity=3)
+        InventoryMovement.objects.create(
+            item=item,
+            movement_type=MovementType.OUT,
+            quantity=2,
+            equipment_line="Линия 3 · Принтер Markem",
+            shift=self.shift,
+        )
+
+        events = previous_shift_warehouse_events()
+        self.assertEqual(events[0]["text"], "Склад: Новый сканер")
+        self.assertEqual(events[0]["tone"], "danger")
+        self.assertEqual(events[0]["qty"], "-2 шт")
+        self.assertEqual(events[0]["line"], "Линия 3 · Принтер Markem")
+        self.assertEqual(events[0]["remaining"], "3 шт")
 
     def test_includes_journal_entries(self):
         from journal.models import JournalEntry
@@ -920,3 +929,140 @@ class PreviousShiftEventsTests(TestCase):
         self.assertTrue(data["ok"])
         self.assertIn("events", data)
         self.assertIsInstance(data["events"], list)
+        self.assertIn("briefing", data)
+        self.assertIn("warehouse", data["briefing"])
+        self.assertIn("changes", data["briefing"])
+
+    def test_shift_open_marks_changes_seen(self):
+        from accounts.models import User
+
+        self.client.force_login(self.specialist)
+        self.assertIsNone(self.specialist.changes_seen_at)
+        response = self.client.post(reverse("shifts:shift_open_ajax"))
+        self.assertEqual(response.status_code, 200)
+        self.specialist.refresh_from_db()
+        self.assertIsNotNone(self.specialist.changes_seen_at)
+
+    def test_non_ajax_shift_open_stores_briefing_in_session(self):
+        self.client.force_login(self.specialist)
+        response = self.client.post(reverse("shifts:shift_open"), follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("shift_briefing", response.context)
+        self.assertIsNotNone(response.context["shift_briefing"])
+        self.assertNotIn("shift_briefing", self.client.session)
+
+
+class ChangesFeedTests(TestCase):
+    def setUp(self):
+        from django.core.cache import cache
+
+        cache.clear()
+        self.specialist = User.objects.create_user(
+            username="changes-spec", password="x", role=User.Role.SPECIALIST
+        )
+
+    def _entries(self):
+        return [
+            {
+                "anchor": "terminal-v2.3.89",
+                "app": "Терминал",
+                "app_slug": "terminal",
+                "version": "2.3.89",
+                "display_version": "2.3.89",
+                "kind": "release",
+                "date": "17.11.2026",
+                "date_iso": "2026-11-17",
+                "time": "22:34",
+                "weekday": "вторник",
+                "sort_value": "20261117223400",
+                "search_text": "2.3.89 терминал ### Наборы\n\n- **Ошибка печати**",
+                "is_beta": True,
+            },
+            {
+                "anchor": "terminal-commit",
+                "app": "Терминал",
+                "version": "2.3.90",
+                "display_version": "2.3.90",
+                "kind": "commit",
+                "date": "17.11.2026",
+                "date_iso": "2026-11-17",
+                "time": "23:00",
+                "sort_value": "20261117230000",
+                "search_text": "commit",
+            },
+            {
+                "anchor": "old-release",
+                "app": "СУП",
+                "version": "1.0.0",
+                "display_version": "1.0.0",
+                "kind": "release",
+                "date": "01.01.2025",
+                "date_iso": "2025-01-01",
+                "time": "10:00",
+                "sort_value": "20250101100000",
+                "search_text": "old",
+            },
+        ]
+
+    def test_window_minimum_two_days(self):
+        from shifts.changes import changes_window
+
+        start, end = changes_window(self.specialist, now=timezone.now())
+        self.assertGreaterEqual((end - start).days, 2)
+
+    def test_window_expands_after_absence(self):
+        from shifts.changes import changes_window
+
+        now = timezone.now()
+        self.specialist.changes_seen_at = now - timedelta(days=9)
+        start, _ = changes_window(self.specialist, now=now)
+        self.assertLessEqual((now - start).days, 10)
+        self.assertGreaterEqual((now - start).days, 9)
+
+    @override_settings(CHANGES_FEED_ENABLED=True)
+    def test_fetch_returns_only_releases_in_period(self):
+        from shifts.changes import fetch_release_entries
+
+        now = timezone.now()
+        with mock.patch("shifts.changes._download_entries", return_value=self._entries()):
+            releases, status = fetch_release_entries(
+                now - timedelta(days=3), now
+            )
+        self.assertTrue(status["ok"])
+        self.assertEqual(len(releases), 1)
+        self.assertEqual(releases[0]["version"], "2.3.89")
+        self.assertNotIn("**", releases[0]["text"])
+        self.assertNotIn("###", releases[0]["text"])
+
+    @override_settings(CHANGES_FEED_ENABLED=True)
+    @mock.patch("shifts.changes._download_entries", side_effect=RuntimeError("no net"))
+    def test_fetch_error_is_reported(self, _download):
+        from django.core.cache import cache
+        from shifts.changes import fetch_release_entries
+
+        cache.clear()
+        releases, status = fetch_release_entries(
+            timezone.now() - timedelta(days=2), timezone.now()
+        )
+        self.assertEqual(releases, [])
+        self.assertFalse(status["ok"])
+        self.assertIn("no net", status["error"])
+
+    @override_settings(CHANGES_FEED_ENABLED=True)
+    @mock.patch("shifts.changes._download_entries")
+    def test_changes_page_renders(self, download):
+        from django.core.cache import cache
+
+        cache.clear()
+        download.return_value = self._entries()
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("shifts:changes"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "История изменений сервисов")
+        self.assertContains(response, "2.3.89")
+
+    def test_changes_page_handles_disabled_feed(self):
+        self.client.force_login(self.specialist)
+        response = self.client.get(reverse("shifts:changes"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "недоступен")

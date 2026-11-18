@@ -28,8 +28,9 @@
       <details class="nav-group" {% if request.resolver_match.namespace == 'shifts' or request.resolver_match.namespace == 'journal' or request.resolver_match.namespace == 'checklists' %}open{% endif %}>
         <summary class="nav-label">Сменная работа</summary>
         <div class="nav-items">
-          <a class="nav-item {% if request.resolver_match.namespace == 'shifts' %}active{% endif %}" href="{% url 'shifts:shift_list' %}">Смены</a>
+          <a class="nav-item {% if request.resolver_match.namespace == 'shifts' and request.resolver_match.url_name != 'changes' %}active{% endif %}" href="{% url 'shifts:shift_list' %}">Смены</a>
           <a class="nav-item {% if request.resolver_match.namespace == 'journal' %}active{% endif %}" href="{% url 'journal:entry_list' %}">Сменный журнал</a>
+          <a class="nav-item {% if request.resolver_match.namespace == 'shifts' and request.resolver_match.url_name == 'changes' %}active{% endif %}" href="{% url 'shifts:changes' %}">История изменений</a>
           <a class="nav-item {% if request.resolver_match.namespace == 'checklists' %}active{% endif %}" href="{% url 'checklists:hub' %}">Чеклисты</a>
         </div>
       </details>
@@ -103,14 +104,35 @@
 </div>
 
 <div class="modal-overlay" id="events-modal" hidden>
-  <div class="modal modal-wide" role="dialog" aria-modal="true">
-    <div class="modal-title">События за предыдущую смену</div>
-    <ul class="events-list" id="events-modal-list"></ul>
+  <div class="modal modal-wide modal-briefing" role="dialog" aria-modal="true">
+    <div class="modal-title" id="events-modal-title">Сводка при приёме смены</div>
+    <div class="briefing-body">
+      <section class="briefing-section" id="briefing-changes-section">
+        <div class="briefing-heading">
+          <span>История изменений сервисов</span>
+          <span class="briefing-period" id="briefing-changes-period"></span>
+        </div>
+        <p class="briefing-note" id="briefing-changes-note"></p>
+        <div class="change-groups" id="briefing-changes"></div>
+      </section>
+
+      <section class="briefing-section" id="briefing-warehouse-section">
+        <div class="briefing-heading">Изменения на складе за предыдущую смену</div>
+        <ul class="warehouse-list" id="briefing-warehouse"></ul>
+      </section>
+
+      <section class="briefing-section" id="briefing-events-section">
+        <div class="briefing-heading">События за предыдущую смену</div>
+        <ul class="events-list" id="events-modal-list"></ul>
+      </section>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-primary" type="button" id="events-modal-accept">Принять</button>
     </div>
   </div>
 </div>
+
+{% if shift_briefing %}{{ shift_briefing|json_script:"shift-briefing-data" }}{% endif %}
 
 <script src="{% static 'js/app.js' %}"></script>
 {% block extra_js %}{% endblock %}

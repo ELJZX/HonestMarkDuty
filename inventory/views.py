@@ -150,9 +150,19 @@ class InventoryItemDetailView(LoginRequiredMixin, DetailView):
         return InventoryItem.objects.select_related("category", "location", "location__workshop")
 
     def get_context_data(self, **kwargs):
+        from core.models import ProductionLine
+        from equipment.models import Equipment
+
         ctx = super().get_context_data(**kwargs)
         ctx["movements"] = self.object.movements.select_related("created_by", "shift")[:50]
         ctx["movement_form"] = InventoryMovementForm()
+        lines = [str(line) for line in ProductionLine.objects.select_related("workshop")]
+        equipment = list(
+            Equipment.objects.exclude(name="")
+            .order_by("name")
+            .values_list("name", flat=True)
+        )
+        ctx["line_options"] = sorted(set(lines + equipment))
         return ctx
 
 
@@ -207,9 +217,15 @@ class InventoryMovementCreateView(EditorRequiredMixin, View):
         item = get_object_or_404(InventoryItem, pk=pk)
         form = InventoryMovementForm(request.POST)
         if form.is_valid():
+            from shifts.models import Shift
+
             movement = form.save(commit=False)
             movement.item = item
             movement.created_by = request.user
+            movement.shift = (
+                Shift.objects.open().filter(opened_by=request.user).first()
+                or Shift.objects.open().order_by("-opened_at").first()
+            )
             movement.save()
             movement.apply()
             messages.success(

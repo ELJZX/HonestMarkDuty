@@ -6,12 +6,25 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from django.views.generic import CreateView, DetailView, ListView, UpdateView, View
+from django.views.generic import (
+    CreateView,
+    DetailView,
+    ListView,
+    TemplateView,
+    UpdateView,
+    View,
+)
 
 from core.mixins import EditorRequiredMixin
 from journal.exports import export_full_journal
 from journal.models import JournalEntry
-from shifts.events import previous_shift_events
+from shifts.changes import (
+    build_shift_briefing,
+    changes_window,
+    fetch_release_entries,
+    format_period,
+    mark_changes_seen,
+)
 from shifts.forms import ShiftCheckForm, ShiftCloseForm, ShiftOpenForm
 from shifts.models import Shift
 
@@ -29,8 +42,13 @@ def _plural_ru(count: int, one: str, few: str, many: str) -> str:
     return many
 
 
-def open_shift_for(request):
-    """Открывает смену текущим пользователем. Возвращает (shift, message)."""
+def open_shift_for(request, *, store_briefing: bool = True):
+    """Открывает смену текущим пользователем.
+
+    Возвращает ``(shift, message)``. Сводка для окна приёма смены доступна
+    в ``request.shift_briefing``; при обычном (не AJAX) приёме она кладётся
+    в сессию и показывается на следующей странице.
+    """
     existing = Shift.objects.open().filter(opened_by=request.user).first()
     if existing:
         return None, "У вас уже есть открытая смена."
@@ -48,6 +66,23 @@ def open_shift_for(request):
         action_task="Смену принял +",
         created_by=request.user,
     )
+
+    try:
+        briefing = build_shift_briefing(request.user)
+    except Exception:  # история не должна мешать приёму смены
+        briefing = None
+    request.shift_briefing = briefing
+    if store_briefing and hasattr(request, "session"):
+        request.session["shift_briefing"] = briefing
+
+    # Если сервис истории недоступен, не сдвигаем отметку — покажем при
+    # следующем приёме смены, чтобы инженер не пропустил изменения.
+    meta = (briefing or {}).get("changes_meta") or {}
+    if meta.get("ok") or meta.get("disabled"):
+        try:
+            mark_changes_seen(request.user, shift.opened_at)
+        except Exception:  # noqa: BLE001
+            pass
     return shift, "Смена открыта"
 
 
@@ -114,6 +149,7 @@ class ShiftListView(LoginRequiredMixin, ListView):
             Shift.objects.closed().select_related("opened_by").first()
         )
         ctx["current"] = self.request.GET
+        ctx["shift_briefing"] = self.request.session.pop("shift_briefing", None)
         return ctx
 
 
@@ -126,6 +162,44 @@ class ShiftDetailView(LoginRequiredMixin, DetailView):
         return Shift.objects.select_related(
             "opened_by", "closed_by", "handover_to", "workshop"
         ).prefetch_related("journal_entries")
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["shift_briefing"] = self.request.session.pop("shift_briefing", None)
+        return ctx
+
+
+class ChangesHistoryView(LoginRequiredMixin, TemplateView):
+    """История изменений сервисов для текущего аккаунта."""
+
+    template_name = "shifts/changes.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        start, end = changes_window(self.request.user)
+        releases, status = fetch_release_entries(start, end)
+        groups: list[dict] = []
+        for release in releases:
+            if not groups or groups[-1]["date"] != release["date"]:
+                groups.append(
+                    {
+                        "date": release["date"],
+                        "label": release["date_label"] or release["date"],
+                        "weekday": release["weekday"],
+                        "items": [],
+                    }
+                )
+            groups[-1]["items"].append(release)
+        ctx.update(
+            {
+                "changes": releases,
+                "change_groups": groups,
+                "changes_period": format_period(start, end),
+                "changes_meta": status,
+                "changes_seen_at": self.request.user.changes_seen_at,
+            }
+        )
+        return ctx
 
 
 class ShiftOpenView(EditorRequiredMixin, CreateView):
@@ -194,10 +268,16 @@ def shift_open_ajax(request):
         return JsonResponse({"ok": False, "message": "Требуется вход в систему."}, status=403)
     if not getattr(request.user, "can_edit", False):
         return JsonResponse({"ok": False, "message": "Недостаточно прав."}, status=403)
-    shift, message = open_shift_for(request)
-    events = previous_shift_events() if shift else []
+    shift, message = open_shift_for(request, store_briefing=False)
+    briefing = getattr(request, "shift_briefing", None) or {}
     return JsonResponse(
-        {"ok": shift is not None, "message": message, "events": events},
+        {
+            "ok": shift is not None,
+            "message": message,
+            "briefing": briefing if shift else None,
+            # обратная совместимость с прежним клиентом
+            "events": briefing.get("previous_events", []) if shift else [],
+        },
         status=200 if shift else 400,
     )
 

@@ -8,14 +8,22 @@ from accounts.models import User
 class UserAdmin(BaseUserAdmin):
     """Пользователи с ролями; пароль хешируется стандартными средствами Django."""
 
-    list_display = ("username", "full_name", "role", "workshop", "position", "is_active")
+    list_display = (
+        "username",
+        "full_name",
+        "role",
+        "workshop",
+        "position",
+        "changes_seen_at",
+        "is_active",
+    )
     list_filter = ("role", "workshop", "is_active", "is_staff")
     search_fields = ("username", "last_name", "first_name", "patronymic", "email")
     ordering = ("last_name", "first_name", "username")
     list_select_related = ("workshop",)
     save_on_top = True
     filter_horizontal = ("groups", "user_permissions")
-    readonly_fields = ("last_login", "date_joined")
+    readonly_fields = ("last_login", "date_joined", "changes_seen_at")
     fieldsets = (
         (None, {"fields": ("username", "password")}),
         (
@@ -27,7 +35,7 @@ class UserAdmin(BaseUserAdmin):
             "Права",
             {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")},
         ),
-        ("Даты", {"fields": ("last_login", "date_joined")}),
+        ("Даты", {"fields": ("last_login", "date_joined", "changes_seen_at")}),
     )
     add_fieldsets = (
         (

@@ -173,6 +173,12 @@ class InventoryMovement(AuditedModel):
     movement_type = models.CharField("Операция", max_length=20, choices=MovementType.choices)
     quantity = models.PositiveIntegerField("Количество")
     comment = models.CharField("Комментарий", max_length=300, blank=True)
+    equipment_line = models.CharField(
+        "Линия/оборудование",
+        max_length=200,
+        blank=True,
+        help_text="Куда установлена запчасть (линия или оборудование).",
+    )
     created_by = models.ForeignKey(
         "accounts.User",
         verbose_name="Сотрудник",

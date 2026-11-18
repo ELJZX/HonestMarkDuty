@@ -189,6 +189,16 @@ SHIFT_SYNC_DAYS_AHEAD = int(env("SHIFT_SYNC_DAYS_AHEAD", "7") or "7")
 SHIFT_SYNC_CREATE_USERS = env_bool("SHIFT_SYNC_CREATE_USERS", True)
 SHIFT_SYNC_QUICK_TTL = int(env("SHIFT_SYNC_QUICK_TTL", "120") or "120")
 
+# История изменений сервисов (внешний архив релизов)
+CHANGES_FEED_URL = env("CHANGES_FEED_URL", "http://172.16.16.27:8091")
+CHANGES_FEED_ENABLED = env_bool("CHANGES_FEED_ENABLED", True)
+CHANGES_FEED_TIMEOUT = int(env("CHANGES_FEED_TIMEOUT", "15") or "15")
+CHANGES_FEED_CACHE_TTL = int(env("CHANGES_FEED_CACHE_TTL", "300") or "300")
+# Минимальное окно истории при приёме смены (дни). Если инженер пропустил
+# смены, окно расширяется до даты его прошлого приёма смены.
+SHIFT_BRIEFING_MIN_DAYS = int(env("SHIFT_BRIEFING_MIN_DAYS", "2") or "2")
+
 # В тестах не обращаемся к внешней системе
 if "test" in sys.argv:
     SHIFT_SYNC_ENABLED = False
+    CHANGES_FEED_ENABLED = False

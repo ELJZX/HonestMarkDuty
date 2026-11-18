@@ -39,7 +39,15 @@ class InventoryItemForm(StyledModelForm):
 class InventoryMovementForm(StyledModelForm):
     class Meta:
         model = InventoryMovement
-        fields = ("movement_type", "quantity", "comment")
+        fields = ("movement_type", "quantity", "equipment_line", "comment")
+        widgets = {
+            "equipment_line": forms.TextInput(
+                attrs={
+                    "list": "movement-line-options",
+                    "placeholder": "Например: Линия 3 · Принтер Markem",
+                }
+            ),
+        }
 
     def clean_quantity(self):
         quantity = self.cleaned_data["quantity"]

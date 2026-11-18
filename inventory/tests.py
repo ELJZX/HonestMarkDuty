@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from accounts.models import User
 from inventory.forms import InventoryItemForm, InventoryMovementForm
@@ -182,13 +183,35 @@ class InventoryViewTests(TestCase):
         self.client.force_login(self.specialist)
         response = self.client.post(
             reverse("inventory:movement_create", args=[self.item.pk]),
-            {"movement_type": MovementType.IN, "quantity": 5, "comment": "поставка"},
+            {
+                "movement_type": MovementType.IN,
+                "quantity": 5,
+                "comment": "поставка",
+                "equipment_line": "Линия 3 · Принтер Markem",
+            },
         )
         self.assertEqual(response.status_code, 302)
         self.item.refresh_from_db()
         self.assertEqual(self.item.quantity, 6)
         movement = self.item.movements.first()
         self.assertEqual(movement.created_by, self.specialist)
+        self.assertEqual(movement.equipment_line, "Линия 3 · Принтер Markem")
+
+    def test_movement_links_to_open_shift(self):
+        from shifts.models import Shift
+
+        shift = Shift.objects.create(
+            opened_by=self.specialist,
+            opened_at=timezone.now(),
+            date=timezone.localdate(),
+            status=Shift.Status.OPEN,
+        )
+        self.client.force_login(self.specialist)
+        self.client.post(
+            reverse("inventory:movement_create", args=[self.item.pk]),
+            {"movement_type": MovementType.OUT, "quantity": 1},
+        )
+        self.assertEqual(self.item.movements.first().shift, shift)
 
     def test_location_views(self):
         self.client.force_login(self.specialist)

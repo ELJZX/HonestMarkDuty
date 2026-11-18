@@ -384,9 +384,15 @@ document.addEventListener("DOMContentLoaded", function () {
           });
       })
       .then(function (result) {
-        if (result.ok && result.data && Array.isArray(result.data.events)) {
-          showEventsModal(result.data.events);
-          return;
+        if (result.ok && result.data) {
+          if (result.data.briefing) {
+            showBriefing(result.data.briefing);
+            return;
+          }
+          if (Array.isArray(result.data.events)) {
+            showBriefing(result.data.events);
+            return;
+          }
         }
         window.location.reload();
       })
@@ -419,36 +425,177 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Модальное окно «События за предыдущую смену» (показывается после приёма смены)
+  // Модальное окно сводки при приёме смены
   const eventsModal = document.getElementById("events-modal");
-  function showEventsModal(events) {
+
+  function makeElement(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function renderPlainEvents(list, events, emptyText) {
+    list.innerHTML = "";
+    if (!events || !events.length) {
+      list.appendChild(makeElement("li", "change-empty", emptyText));
+      return;
+    }
+    events.forEach(function (item) {
+      const li = document.createElement("li");
+      const obj = item && typeof item === "object" ? item : { text: item };
+      li.appendChild(document.createTextNode(obj.text || ""));
+      if (obj.qty) {
+        li.appendChild(document.createTextNode(" "));
+        const span = makeElement(
+          "span",
+          "event-qty" + (obj.tone ? " event-" + obj.tone : ""),
+          obj.qty
+        );
+        li.appendChild(span);
+      }
+      list.appendChild(li);
+    });
+  }
+
+  function renderChanges(container, changes) {
+    container.innerHTML = "";
+    if (!changes || !changes.length) {
+      container.appendChild(
+        makeElement("div", "change-empty", "За выбранный период релизов не было.")
+      );
+      return;
+    }
+    const groups = [];
+    changes.forEach(function (item) {
+      const key = item.date || "";
+      let group = groups[groups.length - 1];
+      if (!group || group.key !== key) {
+        group = { key: key, label: item.date_label || key, items: [] };
+        groups.push(group);
+      }
+      group.items.push(item);
+    });
+    groups.forEach(function (group) {
+      const block = makeElement("div", "change-day");
+      block.appendChild(
+        makeElement(
+          "div",
+          "change-day-title",
+          group.label + (group.items[0].weekday ? " · " + group.items[0].weekday : "")
+        )
+      );
+      group.items.forEach(function (item) {
+        const article = makeElement("article", "change-item");
+        const head = makeElement("div", "change-head");
+        if (item.app) head.appendChild(makeElement("span", "badge", item.app));
+        if (item.version) {
+          head.appendChild(makeElement("span", "change-version", "v" + item.version));
+        }
+        if (item.time) head.appendChild(makeElement("span", "change-time", item.time));
+        if (item.is_beta) head.appendChild(makeElement("span", "badge badge-warn", "beta"));
+        article.appendChild(head);
+        if (item.text) {
+          article.appendChild(makeElement("div", "change-text", item.text));
+        }
+        block.appendChild(article);
+      });
+      container.appendChild(block);
+    });
+  }
+
+  function renderWarehouse(list, movements) {
+    list.innerHTML = "";
+    if (!movements || !movements.length) {
+      list.appendChild(
+        makeElement("li", "change-empty", "За предыдущую смену склад не менялся.")
+      );
+      return;
+    }
+    movements.forEach(function (item) {
+      const li = document.createElement("li");
+      const head = makeElement("div", "warehouse-item-head");
+      const title = makeElement("span", "", item.text || "");
+      if (item.at) title.textContent = "(" + item.at + ") " + title.textContent;
+      head.appendChild(title);
+      if (item.qty) {
+        head.appendChild(
+          makeElement(
+            "span",
+            "event-qty" + (item.tone ? " event-" + item.tone : ""),
+            item.qty
+          )
+        );
+      }
+      li.appendChild(head);
+
+      const line = makeElement("div", "warehouse-line");
+      if (item.line) {
+        line.appendChild(document.createTextNode("Линия/оборудование: "));
+        line.appendChild(makeElement("strong", "", item.line));
+      } else if (item.operation !== "Новая позиция") {
+        line.appendChild(document.createTextNode("Линия/оборудование не указана"));
+      }
+      if (item.remaining) {
+        if (line.textContent) line.appendChild(document.createTextNode(" · "));
+        line.appendChild(document.createTextNode("Остаток на складе: "));
+        line.appendChild(makeElement("strong", "", item.remaining));
+      }
+      if (line.textContent) li.appendChild(line);
+      if (item.comment) {
+        li.appendChild(makeElement("div", "warehouse-line", item.comment));
+      }
+      list.appendChild(li);
+    });
+  }
+
+  function showBriefing(briefing) {
     if (!eventsModal) {
       window.location.reload();
       return;
     }
-    const list = document.getElementById("events-modal-list");
-    list.innerHTML = "";
-    if (!events || !events.length) {
-      const li = document.createElement("li");
-      li.textContent = "За предыдущую смену изменений не было.";
-      list.appendChild(li);
-    } else {
-      events.forEach(function (item) {
-        const li = document.createElement("li");
-        const obj = item && typeof item === "object" ? item : { text: item };
-        li.appendChild(document.createTextNode(obj.text || ""));
-        if (obj.qty) {
-          li.appendChild(document.createTextNode(" "));
-          const span = document.createElement("span");
-          span.className = "event-qty" + (obj.tone ? " event-" + obj.tone : "");
-          span.textContent = obj.qty;
-          li.appendChild(span);
-        }
-        list.appendChild(li);
-      });
+    if (Array.isArray(briefing)) {
+      // совместимость со старым ответом: только список событий
+      renderPlainEvents(
+        document.getElementById("events-modal-list"),
+        briefing,
+        "За предыдущую смену изменений не было."
+      );
+      eventsModal.hidden = false;
+      return;
     }
+    const data = briefing || {};
+    const meta = data.changes_meta || {};
+    const title = document.getElementById("events-modal-title");
+    if (title) title.textContent = "Сводка при приёме смены";
+
+    const period = document.getElementById("briefing-changes-period");
+    if (period) {
+      period.textContent = data.changes_period
+        ? data.changes_period +
+          (typeof meta.count === "number" ? " · релизов: " + meta.count : "")
+        : "";
+    }
+    const note = document.getElementById("briefing-changes-note");
+    if (note) {
+      note.textContent = meta.ok
+        ? ""
+        : meta.error
+          ? "Сервис истории изменений недоступен: " + meta.error
+          : "";
+      note.className = "briefing-note" + (meta.ok ? "" : " is-error");
+      note.hidden = !note.textContent;
+    }
+    renderChanges(document.getElementById("briefing-changes"), data.changes);
+    renderWarehouse(document.getElementById("briefing-warehouse"), data.warehouse);
+    renderPlainEvents(
+      document.getElementById("events-modal-list"),
+      data.previous_events,
+      "За предыдущую смену изменений не было."
+    );
     eventsModal.hidden = false;
   }
+
   if (eventsModal) {
     const acceptEvents = document.getElementById("events-modal-accept");
     if (acceptEvents) {
@@ -456,6 +603,16 @@ document.addEventListener("DOMContentLoaded", function () {
         eventsModal.hidden = true;
         window.location.reload();
       });
+    }
+
+    // Сводка, сохранённая после обычного (не AJAX) приёма смены
+    const briefingData = document.getElementById("shift-briefing-data");
+    if (briefingData) {
+      try {
+        showBriefing(JSON.parse(briefingData.textContent || "null"));
+      } catch (error) {
+        /* некорректные данные не должны ломать страницу */
+      }
     }
   }
 });
