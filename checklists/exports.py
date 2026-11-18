@@ -191,6 +191,9 @@ def save_checklist_file(checklist):
     buffer = BytesIO()
     workbook.save(buffer)
     filename = f"checklist_{checklist.date:%Y%m%d}_{checklist.pk}.xlsx"
+    # Перегенерация заменяет прежний файл, чтобы не плодить копии в media/
+    if checklist.file:
+        checklist.file.delete(save=False)
     checklist.file.save(filename, ContentFile(buffer.getvalue(), name=filename), save=False)
     checklist.save()
     return checklist.file
