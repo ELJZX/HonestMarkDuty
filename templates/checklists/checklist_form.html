@@ -3,6 +3,7 @@
 {% block breadcrumb %}Сменная работа / {{ title }}{% endblock %}
 {% block content %}
 {% if form.non_field_errors %}<div class="message error mb-2">{{ form.non_field_errors }}</div>{% endif %}
+<div class="checklist-page">
 <form method="post">
   {% csrf_token %}
   <div class="card">
@@ -58,4 +59,5 @@
     </div>
   </div>
 </form>
+</div>
 {% endblock %}

@@ -251,11 +251,14 @@ html[data-theme="apple"] table.data .primary { font-weight: 600; }
 html[data-theme="apple"] .table-wrap.checklist-wrap { overflow-x: auto; }
 html[data-theme="apple"] table.data.checklist-matrix th,
 html[data-theme="apple"] table.data.checklist-matrix td {
-  padding: .22rem .28rem; font-size: .84rem;
+  padding: .14rem .22rem; font-size: .8rem;
 }
 html[data-theme="apple"] table.data.checklist-matrix thead th {
-  padding: .3rem .28rem; font-size: .66rem;
+  padding: .24rem .2rem; font-size: .6rem;
 }
+html[data-theme="apple"] .checklist-page .card-header { margin-bottom: .5rem; }
+html[data-theme="apple"] .checklist-page .field-input { padding: .4rem .6rem; font-size: .95rem; }
+html[data-theme="apple"] .checklist-page .form-actions { margin-top: .6rem; padding-top: .7rem; }
 html[data-theme="apple"] .empty { font-family: var(--font-sans); color: var(--dim); }
 html[data-theme="apple"] .nowrap { white-space: nowrap; }
 
