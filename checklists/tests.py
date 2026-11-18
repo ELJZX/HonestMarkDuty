@@ -476,6 +476,37 @@ class MarkemServiceTests(MarkemBaseTestCase):
         workbook = build_markem_workbook(self.checklist)
         self.assertIn("Markem Image 9450", workbook.active["A1"].value)
 
+    def test_workbook_layout_and_print_setup(self):
+        workbook = build_markem_workbook(self.checklist)
+        sheet = workbook.active
+        last_col = sheet.max_column
+
+        self.assertEqual(sheet["A1"].font.size, 22)
+        self.assertEqual(sheet["A1"].alignment.horizontal, "center")
+        self.assertEqual(sheet.row_dimensions[1].height, 32.4)
+        self.assertEqual(sheet.row_dimensions[4].height, 37.8)
+        self.assertEqual(sheet.row_dimensions[5].height, 34.95)
+        self.assertEqual(sheet.column_dimensions["A"].width, 5)
+        self.assertEqual(sheet.column_dimensions["B"].width, 44)
+        self.assertEqual(sheet.column_dimensions["C"].width, 13)
+
+        self.assertEqual(sheet["A2"].value.split(":")[0], "Дата")
+        self.assertEqual(sheet.cell(2, 3).value, "Принтер / серийный номер")
+        self.assertEqual(sheet["A3"].value, "№")
+        self.assertEqual(sheet["B3"].value, "Проводимые работы и проверка параметров")
+        self.assertEqual(sheet["C4"].font.size, 12)
+        self.assertEqual(sheet.cell(5, 2).font.size, 12)
+
+        self.assertEqual(sheet.page_setup.orientation, "landscape")
+        self.assertEqual(sheet.page_setup.paperSize, int(sheet.PAPERSIZE_A4))
+        self.assertTrue(sheet.sheet_properties.pageSetUpPr.fitToPage)
+        self.assertEqual(sheet.page_setup.fitToWidth, 1)
+        self.assertEqual(sheet.page_setup.fitToHeight, 1)
+        self.assertEqual(sheet.page_margins.left, 0.75)
+        self.assertTrue(sheet.print_area)
+        self.assertEqual(sheet.print_title_rows, "$3:$4")
+        self.assertGreaterEqual(last_col, 3)
+
 
 class MarkemViewTests(MarkemBaseTestCase):
     def test_list_requires_login(self):
