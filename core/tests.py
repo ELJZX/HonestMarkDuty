@@ -323,7 +323,7 @@ class NavigationTemplateTests(TestCase):
         self.assertContains(response, "Молвест.Маркировка")
         self.assertContains(response, "Логирование")
         self.assertContains(response, "Камеры")
-        self.assertContains(response, "Принтеры")
+        self.assertNotContains(response, "Принтеры")
 
 
 class AdminSmokeTests(TestCase):

@@ -246,6 +246,16 @@ html[data-theme="apple"] table.data td {
 html[data-theme="apple"] table.data tr:last-child td { border-bottom: none; }
 html[data-theme="apple"] table.data tbody tr:hover { background: #fafafc; }
 html[data-theme="apple"] table.data .primary { font-weight: 600; }
+
+/* Чеклист оборудования: компактная матрица, чтобы таблица помещалась на экран */
+html[data-theme="apple"] .table-wrap.checklist-wrap { overflow-x: auto; }
+html[data-theme="apple"] table.data.checklist-matrix th,
+html[data-theme="apple"] table.data.checklist-matrix td {
+  padding: .22rem .28rem; font-size: .84rem;
+}
+html[data-theme="apple"] table.data.checklist-matrix thead th {
+  padding: .3rem .28rem; font-size: .66rem;
+}
 html[data-theme="apple"] .empty { font-family: var(--font-sans); color: var(--dim); }
 html[data-theme="apple"] .nowrap { white-space: nowrap; }
 

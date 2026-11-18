@@ -45,11 +45,11 @@
         </div>
       </details>
 
-      <details class="nav-group" {% if request.resolver_match.namespace == 'inventory' or request.resolver_match.namespace == 'equipment' and request.resolver_match.url_name != 'cameras' and request.resolver_match.url_name != 'camera_workshop' and request.resolver_match.url_name != 'printers' and request.resolver_match.url_name != 'printer_workshop' %}open{% endif %}>
+      <details class="nav-group" {% if request.resolver_match.namespace == 'inventory' or request.resolver_match.namespace == 'equipment' and request.resolver_match.url_name != 'cameras' and request.resolver_match.url_name != 'camera_workshop' %}open{% endif %}>
         <summary class="nav-label">Запчасти и оборудование</summary>
         <div class="nav-items">
           <a class="nav-item {% if request.resolver_match.namespace == 'inventory' and request.resolver_match.url_name != 'location_list' and request.resolver_match.url_name != 'category_list' and request.resolver_match.url_name != 'kind_list' %}active{% endif %}" href="{% url 'inventory:board' %}">Склад</a>
-          <a class="nav-item {% if request.resolver_match.namespace == 'equipment' and request.resolver_match.url_name != 'cameras' and request.resolver_match.url_name != 'camera_workshop' and request.resolver_match.url_name != 'printers' and request.resolver_match.url_name != 'printer_workshop' %}active{% endif %}" href="{% url 'equipment:board' %}">Оборудование</a>
+          <a class="nav-item {% if request.resolver_match.namespace == 'equipment' and request.resolver_match.url_name != 'cameras' and request.resolver_match.url_name != 'camera_workshop' %}active{% endif %}" href="{% url 'equipment:board' %}">Оборудование</a>
         </div>
       </details>
     </nav>
@@ -57,7 +57,6 @@
     <div class="nav-bottom">
       <a class="nav-item {% if request.resolver_match.namespace == 'services' %}active{% endif %}" href="{% url 'services:service_list' %}">Молвест.Маркировка</a>
       <a class="nav-item {% if request.resolver_match.url_name == 'cameras' or request.resolver_match.url_name == 'camera_workshop' %}active{% endif %}" href="{% url 'equipment:cameras' %}">Камеры</a>
-      <a class="nav-item {% if request.resolver_match.url_name == 'printers' or request.resolver_match.url_name == 'printer_workshop' %}active{% endif %}" href="{% url 'equipment:printers' %}">Принтеры</a>
       <a class="nav-item {% if request.resolver_match.url_name == 'audit_list' %}active{% endif %}" href="{% url 'core:audit_list' %}">Логирование</a>
     </div>
   </aside>

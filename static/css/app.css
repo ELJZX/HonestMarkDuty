@@ -422,10 +422,13 @@ table.data.journal-table th {
 }
 table.data.journal-table th.th-center { text-align: center; }
 
-/* Кнопка добавления записи — под фильтрами, во всю ширину журнала */
-.journal-add-btn {
-  display: flex; width: 100%; justify-content: center;
-  margin-bottom: 1.11rem;
+/* Кнопка добавления записи — над кнопкой скачивания архива, того же размера */
+.journal-archive-actions {
+  display: flex; flex-direction: column; gap: .5rem;
+  margin-left: auto; min-width: 14rem;
+}
+.journal-archive-actions .btn {
+  width: 100%; min-width: 0; justify-content: center;
 }
 
 /* Группировка: ячейки даты и специалиста объединены по вертикали
@@ -672,17 +675,29 @@ table.data.journal-table th.th-center { text-align: center; }
 }
 .markem-input:focus { border-color: var(--accent); outline: none; }
 
-.checklist-matrix th,
-.checklist-matrix td { text-align: center; padding: .44rem .56rem; }
-.checklist-matrix .check-col,
-.checklist-matrix .check-name { text-align: left; min-width: 15.56rem; }
-.checklist-matrix .machine-col { font-size: .74rem; }
-.score-input {
-  width: 3rem; padding: .33rem; text-align: center;
-  background: var(--surface-2); color: var(--text);
-  border: 1px solid var(--border-strong); border-radius: .28rem;
-  font-family: var(--font-mono); font-size: 1rem;
+/* Матрица заполняется с клавиатуры: компактные ячейки, чтобы таблица
+   целиком помещалась на экране без горизонтальной и вертикальной прокрутки */
+table.data.checklist-matrix { font-size: .84rem; }
+table.data.checklist-matrix th,
+table.data.checklist-matrix td {
+  text-align: center; padding: .22rem .28rem; line-height: 1.15;
 }
+table.data.checklist-matrix thead th {
+  padding: .3rem .28rem; font-size: .66rem; letter-spacing: .04em;
+}
+.checklist-matrix .check-col,
+.checklist-matrix .check-name { text-align: left; min-width: 11rem; }
+.checklist-matrix .machine-col { font-size: .64rem; line-height: 1.1; white-space: normal; }
+.score-input {
+  width: 2.4rem; height: 1.7rem; padding: .1rem; text-align: center;
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: .24rem;
+  font-family: var(--font-mono); font-size: .92rem;
+}
+.score-input:focus { border-color: var(--accent); outline: none; }
+.score-input::-webkit-outer-spin-button,
+.score-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.score-input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 .score {
   display: inline-flex; align-items: center; justify-content: center;
   width: 1.56rem; height: 1.56rem; border-radius: .28rem;

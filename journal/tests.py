@@ -199,19 +199,22 @@ class JournalViewTests(TestCase):
         )
         self.assertContains(response, 'class="journal-archive-row"')
 
-    def test_add_button_placed_below_filters_and_full_width(self):
+    def test_add_button_above_archive_button_and_same_size(self):
         self.client.force_login(self.specialist)
         response = self.client.get(reverse("journal:entry_list"))
         html = response.content.decode()
         create_url = reverse("journal:entry_create")
 
         self.assertContains(response, f'class="btn btn-primary journal-add-btn" href="{create_url}"')
+        self.assertContains(response, 'class="journal-archive-actions"')
+        # Кнопка «Добавить запись» стоит в одном блоке с кнопкой архива и выше неё.
+        self.assertLess(html.index("journal-archive-actions"), html.index(create_url))
+        self.assertLess(html.index(create_url), html.index("Скачать архив за период"))
         # Кнопка ушла из шапки карточки.
         header = html[html.index('<div class="card-header">'):html.index("<form", html.index('<div class="card-header">'))]
         self.assertNotIn(create_url, header)
-        # Кнопка идёт после формы поиска/сортировки и перед таблицей.
-        self.assertLess(html.index('name="q"'), html.index("journal-add-btn"))
-        self.assertLess(html.index("journal-add-btn"), html.index('class="table-wrap"'))
+        # Таблица идёт после блока с кнопками.
+        self.assertLess(html.index("Скачать архив за период"), html.index('class="table-wrap"'))
 
     def test_journal_table_headers_alignment_classes(self):
         self.client.force_login(self.specialist)

@@ -15,7 +15,10 @@
         <input class="field-input" type="date" name="date_to" required title="Конец периода">
       </div>
     </div>
-    <button class="btn btn-primary" type="submit">Скачать архив за период</button>
+    <div class="journal-archive-actions">
+      <a class="btn btn-primary journal-add-btn" href="{% url 'journal:entry_create' %}">+ Добавить запись</a>
+      <button class="btn btn-primary" type="submit">Скачать архив за период</button>
+    </div>
   </form>
 
   <form method="get" class="filters">
@@ -32,8 +35,6 @@
     <div class="form-row"><label>По дату</label><input class="field-input" type="date" name="date_to" value="{{ current.date_to }}"></div>
     <button class="btn" type="submit">Применить</button>
   </form>
-
-  <a class="btn btn-primary journal-add-btn" href="{% url 'journal:entry_create' %}">+ Добавить запись</a>
 
   <div class="table-wrap">
     <table class="data journal-table">

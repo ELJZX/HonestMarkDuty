@@ -665,4 +665,41 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
   }
+
+  // Чеклист оборудования: перемещение по матрице стрелками для быстрого заполнения
+  function initChecklistGrid() {
+    document.querySelectorAll("table.checklist-matrix").forEach(function (table) {
+      const body = table.tBodies[0];
+      if (!body) return;
+      const rows = Array.prototype.slice.call(body.rows);
+      table.addEventListener("keydown", function (event) {
+        const input = event.target;
+        if (!input || !input.classList || !input.classList.contains("score-input")) return;
+        const steps = {
+          ArrowUp: [-1, 0],
+          ArrowDown: [1, 0],
+          ArrowLeft: [0, -1],
+          ArrowRight: [0, 1],
+          Enter: [1, 0],
+        };
+        const step = steps[event.key];
+        if (!step) return;
+        // Стрелки не должны менять значение в поле — только переносить фокус.
+        event.preventDefault();
+        const cell = input.closest("td");
+        const row = input.closest("tr");
+        if (!cell || !row) return;
+        const nextRow = rows[rows.indexOf(row) + step[0]];
+        if (!nextRow) return;
+        const nextCell = nextRow.cells[cell.cellIndex + step[1]];
+        if (!nextCell) return;
+        const nextInput = nextCell.querySelector("input.score-input");
+        if (!nextInput) return;
+        nextInput.focus();
+        nextInput.select();
+      });
+    });
+  }
+
+  initChecklistGrid();
 });
