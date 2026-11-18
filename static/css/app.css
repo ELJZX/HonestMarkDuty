@@ -206,12 +206,11 @@ code, .mono { font-family: var(--font-mono); }
 
 /* Переключатель оформления: классика ↔ стиль Apple */
 .theme-toggle {
-  display: inline-flex; align-items: center; gap: .44rem;
-  height: 2.11rem; padding: 0 .78rem;
-  border: 1px solid var(--border-strong); border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2.11rem; height: 2.11rem; padding: 0;
+  border: 1px solid var(--border-strong); border-radius: 50%;
   background: var(--surface-2); color: var(--text);
-  font-family: var(--font-sans); font-size: .82rem; font-weight: 500;
-  cursor: pointer; white-space: nowrap;
+  cursor: pointer;
   transition: background .15s, border-color .15s, color .15s, transform .15s;
 }
 .theme-toggle:hover { background: var(--surface-3); border-color: var(--muted); }
@@ -219,16 +218,9 @@ code, .mono { font-family: var(--font-mono); }
 .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .theme-toggle-icon { display: inline-flex; align-items: center; justify-content: center; }
 .theme-toggle-icon svg { width: 1.05rem; height: 1.05rem; display: block; }
-.theme-toggle .icon-moon,
-.theme-toggle .label-classic { display: none; }
-html[data-theme="apple"] .theme-toggle .icon-sun,
-html[data-theme="apple"] .theme-toggle .label-apple { display: none; }
-html[data-theme="apple"] .theme-toggle .icon-moon,
-html[data-theme="apple"] .theme-toggle .label-classic { display: inline-flex; }
-@media (max-width: 720px) {
-  .theme-toggle-text { display: none; }
-  .theme-toggle { padding: 0 .6rem; }
-}
+.theme-toggle .icon-moon { display: none; }
+html[data-theme="apple"] .theme-toggle .icon-sun { display: none; }
+html[data-theme="apple"] .theme-toggle .icon-moon { display: block; }
 
 .content { padding: clamp(1rem, 1.6vw, 2rem); max-width: 110rem; width: 100%; }
 
