@@ -1,0 +1,23 @@
+<script>
+  /* Тема применяется до загрузки CSS, чтобы не было мигания.
+     По умолчанию — оформление в стиле Apple, классическая тема — по кнопке. */
+  (function () {
+    try {
+      var match = document.cookie.match(/(?:^|; )hmd_style=(classic|apple)/);
+      var saved = match ? match[1] : null;
+      if (!saved) {
+        try {
+          saved = localStorage.getItem("hmd_style");
+        } catch (error) {
+          saved = null;
+        }
+      }
+      document.documentElement.setAttribute(
+        "data-theme",
+        saved === "classic" ? "classic" : "apple"
+      );
+    } catch (error) {
+      document.documentElement.setAttribute("data-theme", "apple");
+    }
+  })();
+</script>

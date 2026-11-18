@@ -1,0 +1,708 @@
+/* ============================================================
+   Оформление в стиле apple.com
+   Подключается после app.css и включается через html[data-theme="apple"].
+   Классическая тёмная тема остаётся нетронутой.
+   ============================================================ */
+
+html[data-theme="apple"] {
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --surface-2: #f5f5f7;
+  --surface-3: #e8e8ed;
+  --border: #e6e6eb;
+  --border-strong: #d2d2d7;
+  --text: #1d1d1f;
+  --muted: #6e6e73;
+  --dim: #86868b;
+  --accent: #0071e3;
+  --ok: #1d7a36;
+  --warn: #9a6400;
+  --danger: #d70015;
+  --info: #0071e3;
+  --radius: 18px;
+  --font-sans: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont,
+    "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+html[data-theme="apple"] body {
+  background: var(--bg);
+  color: var(--text);
+  letter-spacing: -.01em;
+}
+
+html[data-theme="apple"] a { color: var(--text); }
+html[data-theme="apple"] a:hover { color: var(--accent); text-decoration: none; }
+
+html[data-theme="apple"] h1,
+html[data-theme="apple"] h2,
+html[data-theme="apple"] h3,
+html[data-theme="apple"] h4 {
+  letter-spacing: -.025em;
+  font-weight: 700;
+  color: var(--text);
+}
+html[data-theme="apple"] h1 { font-size: 2.15rem; }
+html[data-theme="apple"] h2 { font-size: 1.6rem; }
+html[data-theme="apple"] h3 { font-size: 1.3rem; }
+html[data-theme="apple"] p { color: var(--text); }
+html[data-theme="apple"] small,
+html[data-theme="apple"] .muted { color: var(--muted); }
+html[data-theme="apple"] .dim { color: var(--dim); }
+html[data-theme="apple"] .mono,
+html[data-theme="apple"] code { color: inherit; }
+
+/* ---------- Каркас и сайдбар ---------- */
+html[data-theme="apple"] .app { background: var(--bg); }
+
+html[data-theme="apple"] .sidebar {
+  background: rgba(255, 255, 255, .78);
+  border-right: 1px solid rgba(0, 0, 0, .07);
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+  backdrop-filter: saturate(180%) blur(22px);
+}
+
+html[data-theme="apple"] .brand {
+  border-bottom: 1px solid rgba(0, 0, 0, .06);
+  padding: 1.35rem 1.2rem 1.1rem;
+}
+html[data-theme="apple"] .brand:hover { background: rgba(0, 0, 0, .025); }
+html[data-theme="apple"] .brand-name {
+  font-family: var(--font-sans);
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+html[data-theme="apple"] .brand-tag {
+  font-family: var(--font-sans);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: .78rem;
+  color: var(--dim);
+}
+html[data-theme="apple"] .brand-version { color: var(--muted); }
+html[data-theme="apple"] .brand-logo { filter: none; }
+
+html[data-theme="apple"] .nav-label {
+  font-family: var(--font-sans);
+  font-size: .78rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: .01em;
+  color: var(--dim);
+  padding: .7rem .8rem .35rem;
+}
+html[data-theme="apple"] .nav-group > summary::after { color: var(--dim); }
+html[data-theme="apple"] .nav-group > summary:hover { color: var(--text); }
+html[data-theme="apple"] .nav a.nav-item,
+html[data-theme="apple"] .nav-bottom a.nav-item {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+  padding: .58rem .8rem;
+  border-radius: 12px;
+  transition: background .15s, color .15s;
+}
+html[data-theme="apple"] .nav a.nav-item:hover,
+html[data-theme="apple"] .nav-bottom a.nav-item:hover {
+  background: rgba(0, 0, 0, .045);
+  color: var(--text);
+  text-decoration: none;
+}
+html[data-theme="apple"] .nav a.nav-item.active,
+html[data-theme="apple"] .nav-bottom a.nav-item.active {
+  background: var(--surface-3);
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}
+html[data-theme="apple"] .nav-bottom { border-top: 1px solid rgba(0, 0, 0, .06); }
+
+/* ---------- Шапка ---------- */
+html[data-theme="apple"] .topbar {
+  background: rgba(251, 251, 253, .8);
+  border-bottom: 1px solid rgba(0, 0, 0, .08);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: blur(20px) saturate(180%);
+  min-height: 3.6rem;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .02);
+}
+html[data-theme="apple"] .topbar-title {
+  font-family: var(--font-sans);
+  font-size: .95rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+html[data-theme="apple"] .account-link {
+  font-family: var(--font-sans);
+  font-size: .92rem;
+  color: var(--muted);
+}
+html[data-theme="apple"] .account-link:hover { color: var(--accent); }
+html[data-theme="apple"] .avatar {
+  background: linear-gradient(145deg, #e8e8ed, #f5f5f7);
+  border: 1px solid rgba(0, 0, 0, .08);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+html[data-theme="apple"] .theme-toggle {
+  border-color: rgba(0, 0, 0, .1);
+  background: rgba(255, 255, 255, .7);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-weight: 500;
+}
+html[data-theme="apple"] .theme-toggle:hover {
+  background: #fff;
+  border-color: rgba(0, 0, 0, .2);
+}
+html[data-theme="apple"] .theme-toggle:focus-visible { outline-color: var(--accent); }
+html[data-theme="apple"] .topbar-logout .btn {
+  background: rgba(0, 0, 0, .05);
+  border-color: transparent;
+}
+html[data-theme="apple"] .topbar-logout .btn:hover { background: rgba(0, 0, 0, .09); }
+
+/* ---------- Контент и карточки ---------- */
+html[data-theme="apple"] .content {
+  padding: clamp(1.25rem, 2vw, 2.5rem);
+  max-width: 96rem;
+  margin: 0 auto;
+}
+
+html[data-theme="apple"] .card {
+  background: var(--surface);
+  border: 1px solid rgba(0, 0, 0, .045);
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, .05), 0 1px 2px rgba(0, 0, 0, .03);
+}
+html[data-theme="apple"] .card-header { margin-bottom: 1.15rem; }
+html[data-theme="apple"] .card-title {
+  font-family: var(--font-sans);
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: -.015em;
+  color: var(--text);
+}
+html[data-theme="apple"] .card-sub { color: var(--muted); }
+html[data-theme="apple"] .card-current {
+  border-left: none;
+  box-shadow: inset 3px 0 0 #34c759, 0 4px 24px rgba(0, 0, 0, .05);
+}
+
+html[data-theme="apple"] .stat {
+  background: var(--surface);
+  border: 1px solid rgba(0, 0, 0, .045);
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, .05);
+}
+html[data-theme="apple"] .stat-label {
+  font-family: var(--font-sans);
+  font-size: .82rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+html[data-theme="apple"] .stat-value {
+  font-family: var(--font-sans);
+  font-size: 2.6rem;
+  font-weight: 700;
+  letter-spacing: -.04em;
+  color: var(--text);
+  margin-top: .3rem;
+}
+html[data-theme="apple"] .stat-hint { color: var(--muted); }
+html[data-theme="apple"] .stat.danger .stat-value { color: var(--danger); }
+html[data-theme="apple"] .stat.warn .stat-value { color: var(--warn); }
+html[data-theme="apple"] .stat.ok .stat-value { color: var(--ok); }
+
+/* ---------- Таблицы ---------- */
+html[data-theme="apple"] .table-wrap {
+  border: 1px solid rgba(0, 0, 0, .06);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+}
+html[data-theme="apple"] table.data th {
+  font-family: var(--font-sans);
+  font-size: .8rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+  background: #fbfbfd;
+  border-bottom: 1px solid rgba(0, 0, 0, .07);
+  padding: .85rem 1rem;
+}
+html[data-theme="apple"] table.data td {
+  border-bottom: 1px solid rgba(0, 0, 0, .055);
+  padding: .85rem 1rem;
+}
+html[data-theme="apple"] table.data tr:last-child td { border-bottom: none; }
+html[data-theme="apple"] table.data tbody tr:hover { background: #fafafc; }
+html[data-theme="apple"] table.data .primary { font-weight: 600; }
+html[data-theme="apple"] .empty { font-family: var(--font-sans); color: var(--dim); }
+html[data-theme="apple"] .nowrap { white-space: nowrap; }
+
+/* ---------- Бейджи ---------- */
+html[data-theme="apple"] .badge {
+  font-family: var(--font-sans);
+  font-size: .76rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  padding: .2rem .62rem;
+  border-radius: 999px;
+  border-color: transparent;
+  background: rgba(0, 0, 0, .05);
+  color: var(--muted);
+}
+html[data-theme="apple"] .badge-ok {
+  background: rgba(52, 199, 89, .14);
+  color: #1d7a36;
+  border-color: transparent;
+}
+html[data-theme="apple"] .badge-warn {
+  background: rgba(255, 159, 10, .16);
+  color: #8a5a00;
+  border-color: transparent;
+}
+html[data-theme="apple"] .badge-danger {
+  background: rgba(255, 59, 48, .13);
+  color: var(--danger);
+  border-color: transparent;
+}
+html[data-theme="apple"] .badge-info {
+  background: rgba(0, 113, 227, .12);
+  color: var(--info);
+  border-color: transparent;
+}
+html[data-theme="apple"] .badge-muted { color: var(--dim); }
+
+/* ---------- Кнопки ---------- */
+html[data-theme="apple"] .btn {
+  font-family: var(--font-sans);
+  font-size: .92rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  border-radius: 999px;
+  padding: .56rem 1.1rem;
+  background: rgba(0, 0, 0, .05);
+  border-color: transparent;
+  color: var(--text);
+  transition: background .15s, color .15s, transform .15s, box-shadow .15s;
+}
+html[data-theme="apple"] .btn:hover {
+  background: rgba(0, 0, 0, .09);
+  border-color: transparent;
+  color: var(--text);
+  text-decoration: none;
+}
+html[data-theme="apple"] .btn:active { transform: scale(.98); }
+html[data-theme="apple"] .btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+html[data-theme="apple"] .btn-primary:hover {
+  background: #0077ed;
+  border-color: #0077ed;
+  color: #fff;
+}
+html[data-theme="apple"] .btn-danger {
+  background: rgba(255, 59, 48, .1);
+  border-color: transparent;
+  color: var(--danger);
+}
+html[data-theme="apple"] .btn-danger:hover { background: rgba(255, 59, 48, .16); }
+html[data-theme="apple"] .btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--accent);
+}
+html[data-theme="apple"] .btn-ghost:hover { background: rgba(0, 113, 227, .08); color: var(--accent); }
+html[data-theme="apple"] .btn-sm { padding: .4rem .8rem; font-size: .84rem; }
+html[data-theme="apple"] .back-arrow {
+  background: var(--surface);
+  border-color: rgba(0, 0, 0, .08);
+  border-radius: 50%;
+  color: var(--text);
+}
+html[data-theme="apple"] .back-arrow:hover {
+  background: var(--surface-2);
+  border-color: rgba(0, 0, 0, .15);
+  color: var(--text);
+}
+
+/* ---------- Формы ---------- */
+html[data-theme="apple"] label {
+  font-family: var(--font-sans);
+  font-size: .82rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+html[data-theme="apple"] .field-input {
+  background: #f5f5f7;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  padding: .7rem .9rem;
+}
+html[data-theme="apple"] .field-input:focus {
+  background: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, .16);
+  outline: none;
+}
+html[data-theme="apple"] .field-input::placeholder { color: var(--dim); }
+html[data-theme="apple"] .field-textarea { min-height: 6.5rem; }
+html[data-theme="apple"] .field-checkbox { accent-color: var(--accent); }
+html[data-theme="apple"] .errorlist { font-family: var(--font-sans); color: var(--danger); }
+html[data-theme="apple"] .helptext { color: var(--dim); }
+html[data-theme="apple"] .form-actions { border-top: 1px solid rgba(0, 0, 0, .07); }
+html[data-theme="apple"] .filters .field-input,
+html[data-theme="apple"] .filters .btn { height: 2.6rem; }
+html[data-theme="apple"] select.field-input {
+  background-color: #f5f5f7;
+}
+
+/* ---------- Сообщения ---------- */
+html[data-theme="apple"] .message {
+  background: var(--surface);
+  border: 1px solid rgba(0, 0, 0, .06);
+  border-left-width: 4px;
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .04);
+  font-family: var(--font-sans);
+  color: var(--text);
+}
+
+/* ---------- Детали, таймлайн, diff ---------- */
+html[data-theme="apple"] .detail-grid dt {
+  font-family: var(--font-sans);
+  font-size: .8rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+  border-bottom: 1px solid rgba(0, 0, 0, .06);
+}
+html[data-theme="apple"] .detail-grid dd { border-bottom: 1px solid rgba(0, 0, 0, .06); }
+html[data-theme="apple"] .timeline li { border-left: 1px solid rgba(0, 0, 0, .09); }
+html[data-theme="apple"] .timeline li::before {
+  background: #fff;
+  border: 2px solid var(--accent);
+}
+html[data-theme="apple"] .timeline .tl-time { color: var(--dim); }
+html[data-theme="apple"] .diff { color: var(--text); }
+html[data-theme="apple"] .diff .from { color: var(--danger); }
+html[data-theme="apple"] .diff .to { color: var(--ok); }
+html[data-theme="apple"] .diff-field { color: var(--muted); }
+
+/* ---------- Вход ---------- */
+html[data-theme="apple"] body:has(.login-wrap),
+html[data-theme="apple"] .login-wrap {
+  background:
+    radial-gradient(1100px 600px at 50% -10%, #ffffff 0%, #f5f5f7 45%, #e9e9ef 100%);
+}
+html[data-theme="apple"] .login-card {
+  background: rgba(255, 255, 255, .82);
+  border: 1px solid rgba(0, 0, 0, .05);
+  border-radius: 28px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .13), 0 2px 6px rgba(0, 0, 0, .04);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  padding: 2.5rem;
+}
+html[data-theme="apple"] .login-brand .brand-name {
+  font-family: var(--font-sans);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+html[data-theme="apple"] .login-brand .brand-tag {
+  font-family: var(--font-sans);
+  text-transform: none;
+  letter-spacing: .01em;
+  color: var(--dim);
+}
+html[data-theme="apple"] .login-note { font-family: var(--font-sans); color: var(--muted); }
+html[data-theme="apple"] .login-note.dim { color: var(--dim); }
+
+/* ---------- Модальные окна ---------- */
+html[data-theme="apple"] .modal-overlay {
+  background: rgba(0, 0, 0, .32);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  backdrop-filter: blur(10px) saturate(140%);
+}
+html[data-theme="apple"] .modal {
+  background: rgba(255, 255, 255, .97);
+  border: 1px solid rgba(0, 0, 0, .06);
+  border-radius: 24px;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, .28);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
+}
+html[data-theme="apple"] .modal-title {
+  font-family: var(--font-sans);
+  font-size: 1.4rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: -.025em;
+  color: var(--text);
+}
+html[data-theme="apple"] .modal-text { font-family: var(--font-sans); color: var(--text); }
+html[data-theme="apple"] .briefing-heading {
+  font-family: var(--font-sans);
+  font-size: .95rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: -.01em;
+  color: var(--text);
+}
+html[data-theme="apple"] .briefing-section + .briefing-section { border-top-color: rgba(0, 0, 0, .07); }
+html[data-theme="apple"] .briefing-period,
+html[data-theme="apple"] .briefing-note { color: var(--muted); }
+html[data-theme="apple"] .briefing-note.is-error { color: var(--danger); }
+html[data-theme="apple"] .change-day-title {
+  font-family: var(--font-sans);
+  font-size: .8rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+html[data-theme="apple"] .change-item {
+  background: #f5f5f7;
+  border: 1px solid transparent;
+  border-radius: 14px;
+}
+html[data-theme="apple"] .change-version,
+html[data-theme="apple"] .change-time { color: var(--muted); }
+html[data-theme="apple"] .change-text { color: var(--text); }
+html[data-theme="apple"] .change-empty { color: var(--muted); }
+html[data-theme="apple"] .events-list li,
+html[data-theme="apple"] .warehouse-list li {
+  background: #f5f5f7;
+  border: 1px solid transparent;
+  border-radius: 14px;
+}
+html[data-theme="apple"] .warehouse-line { color: var(--muted); }
+html[data-theme="apple"] .warehouse-line strong { color: var(--text); }
+
+/* ---------- Смены ---------- */
+html[data-theme="apple"] .shift-panel {
+  background: var(--surface);
+  border: 1px solid rgba(0, 0, 0, .05);
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, .05);
+  padding: 1.25rem 1.5rem;
+}
+html[data-theme="apple"] .shift-panel-open {
+  background: linear-gradient(135deg, #f2fbf4 0%, #ffffff 70%);
+  border-color: rgba(52, 199, 89, .25);
+}
+html[data-theme="apple"] .shift-panel-closed {
+  background: linear-gradient(135deg, #fff9ef 0%, #ffffff 70%);
+  border-color: rgba(255, 159, 10, .25);
+}
+html[data-theme="apple"] .shift-panel-status {
+  font-family: var(--font-sans);
+  font-size: .85rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+html[data-theme="apple"] .shift-panel-open .shift-panel-status { color: var(--ok); }
+html[data-theme="apple"] .shift-panel-closed .shift-panel-status { color: var(--warn); }
+html[data-theme="apple"] .shift-panel-name { letter-spacing: -.025em; font-weight: 700; }
+html[data-theme="apple"] .shift-panel-meta {
+  font-family: var(--font-sans);
+  color: var(--muted);
+}
+html[data-theme="apple"] .topbar-shift {
+  border-color: rgba(52, 199, 89, .3);
+  background: rgba(52, 199, 89, .1);
+}
+html[data-theme="apple"] .topbar-shift-title {
+  font-family: var(--font-sans);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ok);
+}
+html[data-theme="apple"] .topbar-shift-meta { font-family: var(--font-sans); }
+
+/* ---------- Архив, аккордеоны, пагинация ---------- */
+html[data-theme="apple"] .archive-group {
+  background: var(--surface);
+  border: 1px solid rgba(0, 0, 0, .06);
+  border-radius: 14px;
+}
+html[data-theme="apple"] .archive-group > summary {
+  font-family: var(--font-sans);
+  font-size: .95rem;
+  font-weight: 500;
+  color: var(--text);
+}
+html[data-theme="apple"] .archive-group > summary:hover { background: #fafafc; }
+html[data-theme="apple"] .archive-group[open] > summary { border-bottom-color: rgba(0, 0, 0, .06); }
+html[data-theme="apple"] .pagination a,
+html[data-theme="apple"] .pagination span {
+  border: 1px solid rgba(0, 0, 0, .08);
+  border-radius: 999px;
+  color: var(--muted);
+}
+html[data-theme="apple"] .pagination .current {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ---------- Оборудование, цеха, линии, камеры ---------- */
+html[data-theme="apple"] .workshop-card,
+html[data-theme="apple"] .equip-card,
+html[data-theme="apple"] .line-card,
+html[data-theme="apple"] .cam-workshop,
+html[data-theme="apple"] .cam-tile,
+html[data-theme="apple"] .camera-group {
+  background: var(--surface);
+  border: 1px solid rgba(0, 0, 0, .05);
+  border-radius: 16px;
+  box-shadow: 0 3px 16px rgba(0, 0, 0, .04);
+}
+html[data-theme="apple"] .workshop-card-head,
+html[data-theme="apple"] .cam-workshop-head {
+  background: #f5f5f7;
+  border: 1px solid transparent;
+  border-radius: 12px;
+}
+html[data-theme="apple"] .workshop-card-thumb { border-color: rgba(0, 0, 0, .08); background: #f5f5f7; }
+html[data-theme="apple"] .workshop-card-divider {
+  background: linear-gradient(90deg, var(--accent), rgba(0, 113, 227, .18));
+}
+html[data-theme="apple"] .workshop-card-btn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+html[data-theme="apple"] .workshop-card-btn:hover {
+  background: #0077ed;
+  border-color: #0077ed;
+  color: #fff;
+}
+html[data-theme="apple"] .line-card:hover,
+html[data-theme="apple"] .equip-card:hover,
+html[data-theme="apple"] .cam-shop-card:hover {
+  border-color: rgba(0, 0, 0, .12);
+  background: #fff;
+}
+html[data-theme="apple"] .line-card-title,
+html[data-theme="apple"] .equip-card-name { letter-spacing: -.02em; }
+html[data-theme="apple"] .camera-group-title {
+  font-family: var(--font-sans);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+  color: var(--text);
+  border-bottom-color: rgba(0, 0, 0, .08);
+}
+html[data-theme="apple"] .camera-line-title,
+html[data-theme="apple"] .cam-line-label,
+html[data-theme="apple"] .cam-tile-cap { color: var(--muted); }
+html[data-theme="apple"] .cam-tile-cap { font-family: var(--font-sans); }
+html[data-theme="apple"] .cam-ph { color: var(--dim); font-family: var(--font-sans); }
+html[data-theme="apple"] .cam-lightbox-backdrop { background: rgba(0, 0, 0, .55); }
+html[data-theme="apple"] .cam-lightbox-box { background: #fff; border-color: rgba(0, 0, 0, .1); }
+html[data-theme="apple"] .cam-lightbox-box iframe { background: #000; }
+html[data-theme="apple"] .cam-lightbox-close { background: #fff; color: #1d1d1f; box-shadow: 0 2px 10px rgba(0,0,0,.2); }
+html[data-theme="apple"] .fab {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  box-shadow: 0 12px 30px rgba(0, 113, 227, .35);
+}
+html[data-theme="apple"] .fab:hover { background: #0077ed; border-color: #0077ed; color: #fff; }
+
+/* ---------- Чеклисты, склад ---------- */
+html[data-theme="apple"] .preset-panel {
+  background: #f5f5f7;
+  border: 1px dashed rgba(0, 0, 0, .12);
+  border-radius: 14px;
+}
+html[data-theme="apple"] .preset-title {
+  font-family: var(--font-sans);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+html[data-theme="apple"] .markem-input,
+html[data-theme="apple"] .score-input,
+html[data-theme="apple"] .kind-select {
+  background: #f5f5f7;
+  border-color: transparent;
+  border-radius: 10px;
+  color: var(--text);
+}
+html[data-theme="apple"] .markem-input:focus,
+html[data-theme="apple"] .score-input:focus,
+html[data-theme="apple"] .kind-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, .15);
+}
+html[data-theme="apple"] .score-1 { background: #ff3b30; }
+html[data-theme="apple"] .score-2 { background: #ff9f0a; color: #1d1d1f; }
+html[data-theme="apple"] .score-3 { background: #34c759; }
+html[data-theme="apple"] .service-links a { color: var(--accent); }
+
+/* ---------- Журнал ---------- */
+html[data-theme="apple"] .journal-table th { white-space: normal; }
+html[data-theme="apple"] .journal-table td.j-date,
+html[data-theme="apple"] .journal-table td.j-spec {
+  background: #fff8dc;
+  color: #1d1d1f;
+  border-right-color: rgba(0, 0, 0, .08);
+}
+html[data-theme="apple"] .journal-table tr.j-current td.j-date,
+html[data-theme="apple"] .journal-table tr.j-current td.j-spec {
+  background: #d9f7df;
+  color: #0b3d1a;
+}
+html[data-theme="apple"] .journal-table tr.j-current td { background: rgba(52, 199, 89, .07); }
+html[data-theme="apple"] .journal-table tr.j-group-start > td { border-top-color: rgba(0, 0, 0, .14); }
+html[data-theme="apple"] .journal-table td.j-export-cell { background: #f5f5f7; border-right-color: rgba(0, 0, 0, .06); }
+html[data-theme="apple"] .j-shift-closed-tag { color: #8a5a00; }
+
+/* ---------- Preview / misc ---------- */
+html[data-theme="apple"] .preview {
+  background: #f5f5f7;
+  border: 1px dashed rgba(0, 0, 0, .12);
+  border-radius: 14px;
+  color: var(--muted);
+  font-family: var(--font-sans);
+}
+html[data-theme="apple"] .burger {
+  background: var(--surface);
+  border-color: rgba(0, 0, 0, .1);
+  color: var(--text);
+}
+html[data-theme="apple"] .overlay { background: rgba(0, 0, 0, .28); }
+html[data-theme="apple"] .drag-hint,
+html[data-theme="apple"] .drag-handle { color: var(--dim); }
+
+/* Печать: светлая тема не должна менять документ */
+@media print {
+  html[data-theme="apple"] body { background: #fff; }
+  html[data-theme="apple"] .card,
+  html[data-theme="apple"] .stat { box-shadow: none; }
+}

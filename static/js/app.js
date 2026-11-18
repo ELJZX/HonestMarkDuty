@@ -1,6 +1,56 @@
 document.addEventListener("DOMContentLoaded", function () {
   const csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).content || "";
 
+  // Оформление: классика ↔ стиль Apple (выбор запоминается в cookie и localStorage)
+  const root = document.documentElement;
+  const themeButton = document.getElementById("theme-toggle");
+  const themeKey = "hmd_style";
+
+  function currentTheme() {
+    return root.getAttribute("data-theme") === "classic" ? "classic" : "apple";
+  }
+
+  function applyTheme(theme, persist) {
+    root.setAttribute("data-theme", theme);
+    if (persist) {
+      document.cookie =
+        themeKey + "=" + theme + "; path=/; max-age=31536000; SameSite=Lax";
+      try {
+        localStorage.setItem(themeKey, theme);
+      } catch (error) {
+        /* localStorage может быть недоступен */
+      }
+    }
+    if (themeButton) {
+      const nextLabel =
+        theme === "apple"
+          ? "Вернуть классическое оформление"
+          : "Включить оформление в стиле Apple";
+      themeButton.title = nextLabel;
+      themeButton.setAttribute("aria-label", nextLabel);
+      themeButton.setAttribute("aria-pressed", theme === "apple" ? "true" : "false");
+    }
+    window.dispatchEvent(
+      new CustomEvent("hmd-theme-change", { detail: { theme: theme } })
+    );
+  }
+
+  if (themeButton) {
+    applyTheme(currentTheme(), false);
+    themeButton.addEventListener("click", function () {
+      applyTheme(currentTheme() === "apple" ? "classic" : "apple", true);
+    });
+  }
+
+  window.addEventListener("storage", function (event) {
+    if (
+      event.key === themeKey &&
+      (event.newValue === "apple" || event.newValue === "classic")
+    ) {
+      applyTheme(event.newValue, false);
+    }
+  });
+
   // Мобильное меню
   const burger = document.getElementById("burger");
   const sidebar = document.getElementById("sidebar");

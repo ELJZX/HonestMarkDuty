@@ -149,42 +149,77 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script>
   const read = (id) => JSON.parse(document.getElementById(id).textContent);
-  const gridColor = "rgba(255,255,255,0.06)";
-  const tickColor = "#8a8a8a";
-  Chart.defaults.color = tickColor;
-  Chart.defaults.font.family = "ui-monospace, monospace";
+
+  function chartPalette() {
+    const apple = document.documentElement.getAttribute("data-theme") === "apple";
+    return {
+      apple: apple,
+      grid: apple ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.06)",
+      tick: apple ? "#86868b" : "#8a8a8a",
+      line: apple ? "#0071e3" : "#ededed",
+      lineFill: apple ? "rgba(0,113,227,0.10)" : "rgba(237,237,237,0.08)",
+      card: apple ? "#ffffff" : "#101010",
+      bar: apple ? "#0071e3" : "#454545",
+      font: apple
+        ? '"SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+        : "ui-monospace, monospace",
+    };
+  }
+
+  let palette = chartPalette();
+  Chart.defaults.color = palette.tick;
+  Chart.defaults.font.family = palette.font;
   Chart.defaults.font.size = 11;
 
-  new Chart(document.getElementById("journalChart"), {
+  const journalChart = new Chart(document.getElementById("journalChart"), {
     type: "line",
     data: {
       labels: read("journal-labels"),
       datasets: [{
         data: read("journal-values"),
-        borderColor: "#ededed",
-        backgroundColor: "rgba(237,237,237,0.08)",
+        borderColor: palette.line,
+        backgroundColor: palette.lineFill,
         fill: true, tension: 0.35, pointRadius: 2, borderWidth: 1.5
       }]
     },
     options: { responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
-      scales: { x: { grid: { color: gridColor } }, y: { beginAtZero: true, grid: { color: gridColor }, ticks: { precision: 0 } } } }
+      scales: { x: { grid: { color: palette.grid } }, y: { beginAtZero: true, grid: { color: palette.grid }, ticks: { precision: 0 } } } }
   });
 
-  new Chart(document.getElementById("equipmentChart"), {
+  const equipmentChart = new Chart(document.getElementById("equipmentChart"), {
     type: "doughnut",
     data: { labels: read("equipment-labels"),
-      datasets: [{ data: read("equipment-values"), backgroundColor: ["#65d98a","#e3b341","#f07a7a","#6a6a6a"], borderColor: "#101010", borderWidth: 2 }] },
+      datasets: [{ data: read("equipment-values"), backgroundColor: ["#65d98a","#e3b341","#f07a7a","#6a6a6a"], borderColor: palette.card, borderWidth: 2 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { boxWidth: 10 } } } }
   });
 
-  new Chart(document.getElementById("inventoryChart"), {
+  const inventoryChart = new Chart(document.getElementById("inventoryChart"), {
     type: "bar",
     data: { labels: read("inventory-labels"),
-      datasets: [{ data: read("inventory-values"), backgroundColor: "#454545", borderRadius: 3 }] },
+      datasets: [{ data: read("inventory-values"), backgroundColor: palette.bar, borderRadius: 6 }] },
     options: { responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
-      scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: gridColor }, ticks: { precision: 0 } } } }
+      scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: palette.grid }, ticks: { precision: 0 } } } }
+  });
+
+  window.addEventListener("hmd-theme-change", function () {
+    palette = chartPalette();
+    Chart.defaults.color = palette.tick;
+    Chart.defaults.font.family = palette.font;
+
+    journalChart.data.datasets[0].borderColor = palette.line;
+    journalChart.data.datasets[0].backgroundColor = palette.lineFill;
+    journalChart.options.scales.x.grid.color = palette.grid;
+    journalChart.options.scales.y.grid.color = palette.grid;
+    journalChart.update();
+
+    equipmentChart.data.datasets[0].borderColor = palette.card;
+    equipmentChart.update();
+
+    inventoryChart.data.datasets[0].backgroundColor = palette.bar;
+    inventoryChart.options.scales.y.grid.color = palette.grid;
+    inventoryChart.update();
   });
 </script>
 {% endblock %}

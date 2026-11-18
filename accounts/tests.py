@@ -71,6 +71,34 @@ class AuthViewTests(TestCase):
             reverse("accounts:profile")
 
 
+class ThemeToggleTests(TestCase):
+    def test_login_page_uses_theme_init_and_apple_styles(self):
+        response = self.client.get(reverse("accounts:login"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "hmd_style")
+        self.assertContains(response, "css/apple.css")
+
+    def test_toggle_is_between_avatar_and_logout(self):
+        user = User.objects.create_user(username="themer", password="x")
+        self.client.force_login(user)
+        response = self.client.get(reverse("analytics:dashboard"))
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertContains(response, 'id="theme-toggle"')
+        avatar = html.index('class="avatar"')
+        toggle = html.index('id="theme-toggle"')
+        logout = html.index('class="topbar-logout"')
+        self.assertLess(avatar, toggle)
+        self.assertLess(toggle, logout)
+
+    def test_all_roles_can_see_toggle(self):
+        for role in (User.Role.ADMIN, User.Role.SPECIALIST, User.Role.VIEWER):
+            user = User.objects.create_user(username=f"theme-{role}", password="x", role=role)
+            self.client.force_login(user)
+            response = self.client.get(reverse("analytics:dashboard"))
+            self.assertContains(response, 'id="theme-toggle"')
+
+
 class UserAdminViewTests(TestCase):
     def setUp(self):
         self.admin = User.objects.create_user(
