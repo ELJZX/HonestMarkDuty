@@ -3,6 +3,7 @@
 {% block breadcrumb %}Сменная работа / Чеклисты / Markem Image 9450{% endblock %}
 {% block content %}
 {% if form.non_field_errors %}<div class="message error mb-2">{{ form.non_field_errors }}</div>{% endif %}
+<div class="checklist-page">
 <form method="post">
   {% csrf_token %}
   <div class="card">
@@ -20,7 +21,7 @@
       <div class="card-title">Параметры принтеров</div>
       <div class="card-sub">Заполните значения по каждому принтеру</div>
     </div>
-    <div class="table-wrap">
+    <div class="table-wrap markem-wrap">
       <table class="data checklist-matrix markem-matrix">
         <thead>
           <tr>
@@ -52,4 +53,5 @@
     </div>
   </div>
 </form>
+</div>
 {% endblock %}

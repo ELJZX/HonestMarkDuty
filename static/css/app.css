@@ -664,16 +664,29 @@ table.data.journal-table th.th-center { text-align: center; }
 .checklist-catalog { display: flex; flex-direction: column; align-items: flex-start; gap: .56rem; }
 .checklist-catalog .btn { white-space: normal; text-align: left; justify-content: flex-start; max-width: 100%; }
 
+/* Матрица Markem: компактные ячейки, чтобы все принтеры влезали по ширине */
+table.data.markem-matrix { font-size: .8rem; }
+table.data.markem-matrix th,
+table.data.markem-matrix td {
+  text-align: center; padding: .14rem .22rem; line-height: 1.1;
+}
+table.data.markem-matrix thead th {
+  padding: .24rem .2rem; font-size: .6rem; letter-spacing: .03em;
+}
 .markem-matrix .check-col,
-.markem-matrix .check-name { min-width: 15rem; }
+.markem-matrix .check-name { text-align: left; min-width: 10rem; }
+.markem-matrix .check-name { font-size: .78rem; }
+.markem-matrix .machine-col { font-size: .6rem; line-height: 1.1; white-space: normal; }
 .markem-input {
-  width: 100%; min-width: 5.5rem;
-  padding: .3rem .35rem;
+  width: 100%; min-width: 3.6rem; height: 1.45rem;
+  padding: .05rem .2rem; text-align: center;
   background: var(--surface-2); color: var(--text);
-  border: 1px solid var(--border-strong); border-radius: .28rem;
-  font-family: var(--font-mono); font-size: .85rem;
+  border: 1px solid var(--border-strong); border-radius: .22rem;
+  font-family: var(--font-mono); font-size: .82rem;
 }
 .markem-input:focus { border-color: var(--accent); outline: none; }
+.markem-input::-webkit-outer-spin-button,
+.markem-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
 /* Матрица заполняется с клавиатуры: компактные ячейки, чтобы таблица
    целиком помещалась на экране без горизонтальной и вертикальной прокрутки */

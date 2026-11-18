@@ -226,7 +226,7 @@ html[data-theme="apple"] .table-wrap {
   border: 1px solid rgba(0, 0, 0, .06);
   border-radius: 14px;
   background: var(--surface);
-  overflow: hidden;
+  overflow: auto;
 }
 html[data-theme="apple"] table.data th {
   font-family: var(--font-sans);
@@ -248,12 +248,19 @@ html[data-theme="apple"] table.data tbody tr:hover { background: #fafafc; }
 html[data-theme="apple"] table.data .primary { font-weight: 600; }
 
 /* Чеклист оборудования: компактная матрица, чтобы таблица помещалась на экран */
-html[data-theme="apple"] .table-wrap.checklist-wrap { overflow-x: auto; }
 html[data-theme="apple"] table.data.checklist-matrix th,
 html[data-theme="apple"] table.data.checklist-matrix td {
   padding: .14rem .22rem; font-size: .8rem;
 }
 html[data-theme="apple"] table.data.checklist-matrix thead th {
+  padding: .24rem .2rem; font-size: .6rem;
+}
+/* Markem: те же компактные размеры для матрицы принтеров */
+html[data-theme="apple"] table.data.markem-matrix th,
+html[data-theme="apple"] table.data.markem-matrix td {
+  padding: .14rem .22rem; font-size: .8rem;
+}
+html[data-theme="apple"] table.data.markem-matrix thead th {
   padding: .24rem .2rem; font-size: .6rem;
 }
 html[data-theme="apple"] .checklist-page .card-header { margin-bottom: .5rem; }
