@@ -7,6 +7,7 @@ from django.core.files.base import ContentFile
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.properties import PageSetupProperties
 
 from checklists.models import ChecklistCheck, ChecklistGroup
 
@@ -139,6 +140,22 @@ def build_checklist_workbook(checklist) -> Workbook:
         cell.alignment = center
         sheet.cell(legend_row, legend_col + 1, text).alignment = left
         legend_row += 1
+
+    # Печать: альбомная A4 и вписывание всего чеклиста в одну страницу
+    sheet.print_area = f"A1:{get_column_letter(last_col)}{sheet.max_row}"
+    sheet.print_title_rows = "3:4"
+    sheet.page_setup.orientation = "landscape"
+    sheet.page_setup.paperSize = sheet.PAPERSIZE_A4
+    sheet.page_setup.fitToWidth = 1
+    sheet.page_setup.fitToHeight = 1
+    sheet.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True)
+    sheet.print_options.horizontalCentered = True
+    sheet.page_margins.left = 0.25
+    sheet.page_margins.right = 0.25
+    sheet.page_margins.top = 0.5
+    sheet.page_margins.bottom = 0.5
+    sheet.page_margins.header = 0.2
+    sheet.page_margins.footer = 0.2
 
     return workbook
 

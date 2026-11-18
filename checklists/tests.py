@@ -122,6 +122,18 @@ class ChecklistServiceTests(ChecklistBaseTestCase):
         workbook = build_checklist_workbook(self.checklist)
         self.assertIn("Чек лист", workbook.active["A1"].value)
 
+    def test_workbook_fits_one_printed_page(self):
+        workbook = build_checklist_workbook(self.checklist)
+        sheet = workbook.active
+        self.assertEqual(sheet.page_setup.orientation, "landscape")
+        self.assertEqual(sheet.page_setup.paperSize, int(sheet.PAPERSIZE_A4))
+        self.assertTrue(sheet.sheet_properties.pageSetUpPr.fitToPage)
+        self.assertEqual(sheet.page_setup.fitToWidth, 1)
+        self.assertEqual(sheet.page_setup.fitToHeight, 1)
+        self.assertTrue(sheet.print_area)
+        self.assertEqual(sheet.print_title_rows, "$3:$4")
+        self.assertTrue(sheet.print_options.horizontalCentered)
+
     def test_save_checklist_file(self):
         save_checklist_file(self.checklist)
         self.checklist.refresh_from_db()
