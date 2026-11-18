@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from io import BytesIO
 
 from django.core.files.base import ContentFile
@@ -13,6 +14,20 @@ from openpyxl.worksheet.properties import PageSetupProperties
 from checklists.models import MarkemParameter, MarkemPrinter
 
 TITLE = "Чек лист технического осмотра и обслуживания принтеров Markem Image 9450"
+
+ROW_HEIGHT_MIN = 34.95
+ROW_LINE_HEIGHT = 20.25
+NAME_CHARS_PER_LINE = 40
+VALUE_CHARS_PER_LINE = 12
+
+
+def _data_row_height(name: str, values) -> float:
+    """Высота строки под длинный текст: переносим наименование параметра и значения."""
+    lines = max(1, math.ceil(len(name) / NAME_CHARS_PER_LINE))
+    for value in values:
+        if value:
+            lines = max(lines, math.ceil(len(value) / VALUE_CHARS_PER_LINE))
+    return max(ROW_HEIGHT_MIN, round(lines * ROW_LINE_HEIGHT, 2))
 
 
 def _layout():
@@ -90,34 +105,38 @@ def build_markem_workbook(checklist) -> Workbook:
         sheet.cell(row, 1).alignment = center
         sheet.cell(row, 2, parameter.name).font = Font(size=12)
         sheet.cell(row, 2).alignment = left
+        row_values = []
         for index, printer in enumerate(printers, start=3):
-            cell = sheet.cell(row, index, values.get((printer.id, parameter.id)) or None)
+            value = values.get((printer.id, parameter.id)) or None
+            row_values.append(str(value) if value else "")
+            cell = sheet.cell(row, index, value)
             cell.font = Font(size=11)
             cell.alignment = center
         for column in range(1, last_col + 1):
             sheet.cell(row, column).border = border
-        sheet.row_dimensions[row].height = 34.95
+        sheet.row_dimensions[row].height = _data_row_height(parameter.name, row_values)
         row += 1
 
-    # Пустая строка-разделитель и строки подписей — как в чеклисте оборудования
+    # Пустая строка-разделитель и строки подписей — как в эталонном бланке
     sheet.row_dimensions[row].height = 34.95
     row += 1
-    sheet.row_dimensions[row].height = 51
+    sheet.row_dimensions[row].height = 39
     sheet.cell(row, 2, "Выполнил:  Специалист по цифровой маркировке").font = Font(size=14, bold=True)
     row += 1
     sheet.row_dimensions[row].height = 54.6
     row += 1
-    sheet.row_dimensions[row].height = 51
+    sheet.row_dimensions[row].height = 34.8
     sheet.cell(row, 2, "Проверил:  Ведущий инженер по цифровой маркировке").font = Font(size=14, bold=True)
     sheet.row_dimensions[row + 1].height = 34.95
 
-    # Печать: альбомная A4, чеклист вписывается в одну страницу
+    # Печать: альбомная A4, масштаб 61 % — как в эталонном бланке
     sheet.print_area = f"A1:{get_column_letter(last_col)}{sheet.max_row}"
     sheet.print_title_rows = "3:4"
     sheet.page_setup.orientation = "landscape"
     sheet.page_setup.paperSize = sheet.PAPERSIZE_A4
-    sheet.page_setup.fitToWidth = 1
-    sheet.page_setup.fitToHeight = 1
+    sheet.page_setup.scale = 61
+    sheet.page_setup.fitToWidth = None
+    sheet.page_setup.fitToHeight = None
     sheet.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True)
     sheet.page_margins.left = 0.75
     sheet.page_margins.right = 0.75

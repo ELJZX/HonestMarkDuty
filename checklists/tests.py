@@ -500,12 +500,32 @@ class MarkemServiceTests(MarkemBaseTestCase):
         self.assertEqual(sheet.page_setup.orientation, "landscape")
         self.assertEqual(sheet.page_setup.paperSize, int(sheet.PAPERSIZE_A4))
         self.assertTrue(sheet.sheet_properties.pageSetUpPr.fitToPage)
-        self.assertEqual(sheet.page_setup.fitToWidth, 1)
-        self.assertEqual(sheet.page_setup.fitToHeight, 1)
+        self.assertEqual(sheet.page_setup.scale, 61)
+        self.assertIsNone(sheet.page_setup.fitToWidth)
+        self.assertIsNone(sheet.page_setup.fitToHeight)
         self.assertEqual(sheet.page_margins.left, 0.75)
         self.assertTrue(sheet.print_area)
         self.assertEqual(sheet.print_title_rows, "$3:$4")
         self.assertGreaterEqual(last_col, 3)
+
+        # Подписи: высоты строк как в эталонном бланке
+        params = MarkemParameter.objects.count()
+        spacer_row = 5 + params
+        first_signature = spacer_row + 1
+        self.assertEqual(sheet.row_dimensions[first_signature].height, 39)
+        self.assertEqual(sheet.row_dimensions[first_signature + 1].height, 54.6)
+        self.assertEqual(sheet.row_dimensions[first_signature + 2].height, 34.8)
+
+    def test_long_parameter_row_height(self):
+        long_name = (
+            "Значение параметров: " + "давление чернил, частота вращения, " * 4
+        )[:148]
+        long_parameter = MarkemParameter.objects.create(name=long_name, sort_order=1000)
+        workbook = build_markem_workbook(self.checklist)
+        sheet = workbook.active
+        row = 5 + MarkemParameter.objects.filter(sort_order__lt=1000).count()
+        self.assertEqual(sheet.cell(row, 2).value, long_name)
+        self.assertEqual(sheet.row_dimensions[row].height, 81)
 
 
 class MarkemViewTests(MarkemBaseTestCase):
