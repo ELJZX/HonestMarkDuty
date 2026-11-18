@@ -53,38 +53,41 @@ def build_checklist_workbook(checklist) -> Workbook:
 
     sheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=last_col)
     title_cell = sheet.cell(1, 1, TITLE)
-    title_cell.font = Font(size=15, bold=True)
+    title_cell.font = Font(size=22, bold=True)
     title_cell.alignment = center
-    sheet.row_dimensions[1].height = 26
+    sheet.row_dimensions[1].height = 32.4
 
     sheet.merge_cells("A2:B2")
     date_cell = sheet.cell(2, 1, f"Дата: {checklist.date:%d.%m.%Y}")
-    date_cell.font = Font(bold=True)
+    date_cell.font = Font(size=12, bold=True)
     date_cell.alignment = center
+    sheet.row_dimensions[2].height = 30.6
     if last_col >= 3:
         sheet.merge_cells(start_row=2, start_column=3, end_row=2, end_column=last_col)
         head_cell = sheet.cell(2, 3, "Цех / автомат")
-        head_cell.font = Font(bold=True)
+        head_cell.font = Font(size=12, bold=True)
         head_cell.alignment = center
 
     sheet.merge_cells("A3:A4")
-    sheet.cell(3, 1, "№").font = Font(bold=True)
+    sheet.cell(3, 1, "№").font = Font(size=12, bold=True)
     sheet.cell(3, 1).alignment = center
     sheet.merge_cells("B3:B4")
-    sheet.cell(3, 2, "Проводимые работы и проверки").font = Font(bold=True)
+    sheet.cell(3, 2, "Проводимые работы и проверки").font = Font(size=12, bold=True)
     sheet.cell(3, 2).alignment = center
+    sheet.row_dimensions[3].height = 20.4
 
     for name, start, end in spans:
         if end > start:
             sheet.merge_cells(start_row=3, start_column=start, end_row=3, end_column=end)
         cell = sheet.cell(3, start, name)
-        cell.font = Font(bold=True)
+        cell.font = Font(size=12, bold=True)
         cell.alignment = center
 
     for index, machine in enumerate(machines, start=3):
         cell = sheet.cell(4, index, machine.name)
-        cell.font = Font(bold=True, size=9)
+        cell.font = Font(size=12, bold=True)
         cell.alignment = center
+    sheet.row_dimensions[4].height = 37.8
 
     for row in (2, 3, 4):
         for column in range(1, last_col + 1):
@@ -92,14 +95,15 @@ def build_checklist_workbook(checklist) -> Workbook:
 
     sheet.column_dimensions["A"].width = 5
     sheet.column_dimensions["B"].width = 44
-    for column in range(3, last_col + 1):
-        sheet.column_dimensions[get_column_letter(column)].width = 8.5
+    if last_col >= 3:
+        sheet.column_dimensions[get_column_letter(3)].width = 8.44
+        sheet.column_dimensions[get_column_letter(last_col)].width = 9.44
 
     mileage = {item.machine_id: item.value for item in checklist.mileages.all()}
     row = 5
     sheet.merge_cells(start_row=row, start_column=1, end_row=row, end_column=2)
     mileage_label = sheet.cell(row, 1, "Пробег печатающей головки (км)")
-    mileage_label.font = Font(bold=True, size=10)
+    mileage_label.font = Font(size=12, bold=True)
     mileage_label.alignment = left
     for index, machine in enumerate(machines, start=3):
         value = mileage.get(machine.id)
@@ -107,14 +111,17 @@ def build_checklist_workbook(checklist) -> Workbook:
         cell.alignment = center
     for column in range(1, last_col + 1):
         sheet.cell(row, column).border = border
+    sheet.row_dimensions[row].height = 34.95
 
     results = {
         (item.machine_id, item.check_item_id): item.score for item in checklist.results.all()
     }
     row = 6
     for number, check in enumerate(checks, start=1):
-        sheet.cell(row, 1, number).alignment = center
-        sheet.cell(row, 2, check.name).alignment = left
+        sheet.cell(row, 1, number).font = Font(size=12)
+        sheet.cell(row, 1).alignment = center
+        sheet.cell(row, 2, check.name).font = Font(size=12)
+        sheet.cell(row, 2).alignment = left
         for index, machine in enumerate(machines, start=3):
             score = results.get((machine.id, check.id))
             cell = sheet.cell(row, index, score if score else None)
@@ -124,38 +131,57 @@ def build_checklist_workbook(checklist) -> Workbook:
                 cell.font = Font(bold=True, color=SCORE_FONT.get(score, "000000"))
         for column in range(1, last_col + 1):
             sheet.cell(row, column).border = border
+        sheet.row_dimensions[row].height = 34.95
         row += 1
 
+    # Пустая строка-разделитель и строки подписей — как в эталонном бланке
+    sheet.row_dimensions[row].height = 34.95
     row += 1
-    sheet.cell(row, 2, "Выполнил:  Специалист по цифровой маркировке").font = Font(bold=True)
-    row += 2
-    sheet.cell(row, 2, "Проверил:  Ведущий инженер по цифровой маркировке").font = Font(bold=True)
+    first_signature_row = row
+    sheet.row_dimensions[row].height = 51
+    sheet.cell(row, 2, "Выполнил:  Специалист по цифровой маркировке").font = Font(size=14, bold=True)
+    row += 1
+    sheet.row_dimensions[row].height = 54.6
+    row += 1
+    sheet.row_dimensions[row].height = 51
+    sheet.cell(row, 2, "Проверил:  Ведущий инженер по цифровой маркировке").font = Font(size=14, bold=True)
+    sheet.row_dimensions[row + 1].height = 34.95
 
-    legend_col = max(3, last_col - 1)
-    legend_row = row - 3
-    for score, text in LEGEND:
+    # Легенда оценок — справа, напротив строк подписей (S: число, T:V: расшифровка)
+    legend_col = max(3, last_col - 6)
+    legend_text_end = min(last_col, legend_col + 3)
+    for offset, (score, text) in enumerate(LEGEND):
+        legend_row = first_signature_row + offset
         cell = sheet.cell(legend_row, legend_col, score)
         cell.fill = PatternFill("solid", fgColor=SCORE_FILL[score])
-        cell.font = Font(bold=True, color=SCORE_FONT[score])
+        cell.font = Font(size=11, bold=True, color=SCORE_FONT[score])
         cell.alignment = center
-        sheet.cell(legend_row, legend_col + 1, text).alignment = left
-        legend_row += 1
+        if legend_text_end > legend_col:
+            sheet.merge_cells(
+                start_row=legend_row,
+                start_column=legend_col + 1,
+                end_row=legend_row,
+                end_column=legend_text_end,
+            )
+        text_cell = sheet.cell(legend_row, legend_col + 1, text)
+        text_cell.font = Font(size=11)
+        text_cell.alignment = center
 
-    # Печать: альбомная A4 и вписывание всего чеклиста в одну страницу
+    # Печать: как в эталонном бланке — альбомная A4, масштаб 53 %
     sheet.print_area = f"A1:{get_column_letter(last_col)}{sheet.max_row}"
     sheet.print_title_rows = "3:4"
     sheet.page_setup.orientation = "landscape"
     sheet.page_setup.paperSize = sheet.PAPERSIZE_A4
-    sheet.page_setup.fitToWidth = 1
-    sheet.page_setup.fitToHeight = 1
+    sheet.page_setup.scale = 53
+    sheet.page_setup.fitToWidth = None
+    sheet.page_setup.fitToHeight = None
     sheet.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True)
-    sheet.print_options.horizontalCentered = True
-    sheet.page_margins.left = 0.25
-    sheet.page_margins.right = 0.25
-    sheet.page_margins.top = 0.5
-    sheet.page_margins.bottom = 0.5
-    sheet.page_margins.header = 0.2
-    sheet.page_margins.footer = 0.2
+    sheet.page_margins.left = 0.75
+    sheet.page_margins.right = 0.75
+    sheet.page_margins.top = 1.0
+    sheet.page_margins.bottom = 1.0
+    sheet.page_margins.header = 0.5
+    sheet.page_margins.footer = 0.5
 
     return workbook
 

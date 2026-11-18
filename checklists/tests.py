@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+from openpyxl.utils import get_column_letter
 
 from accounts.models import User
 from checklists.exports import _machines_layout, build_checklist_workbook, save_checklist_file
@@ -122,17 +123,57 @@ class ChecklistServiceTests(ChecklistBaseTestCase):
         workbook = build_checklist_workbook(self.checklist)
         self.assertIn("Чек лист", workbook.active["A1"].value)
 
-    def test_workbook_fits_one_printed_page(self):
+    def test_workbook_print_setup_matches_reference(self):
         workbook = build_checklist_workbook(self.checklist)
         sheet = workbook.active
         self.assertEqual(sheet.page_setup.orientation, "landscape")
         self.assertEqual(sheet.page_setup.paperSize, int(sheet.PAPERSIZE_A4))
         self.assertTrue(sheet.sheet_properties.pageSetUpPr.fitToPage)
-        self.assertEqual(sheet.page_setup.fitToWidth, 1)
-        self.assertEqual(sheet.page_setup.fitToHeight, 1)
+        self.assertEqual(sheet.page_setup.scale, 53)
+        self.assertIsNone(sheet.page_setup.fitToWidth)
+        self.assertIsNone(sheet.page_setup.fitToHeight)
+        self.assertEqual(sheet.page_margins.left, 0.75)
+        self.assertEqual(sheet.page_margins.top, 1.0)
         self.assertTrue(sheet.print_area)
         self.assertEqual(sheet.print_title_rows, "$3:$4")
-        self.assertTrue(sheet.print_options.horizontalCentered)
+
+    def test_workbook_cell_sizes_match_reference(self):
+        for index in range(1, 11):
+            ChecklistMachine.objects.create(
+                group=self.group, name=f"Автомат {index}", sort_order=index
+            )
+        for index in range(2, 8):
+            ChecklistCheck.objects.create(name=f"Проверка {index}", sort_order=index)
+        workbook = build_checklist_workbook(self.checklist)
+        sheet = workbook.active
+        last_col = sheet.max_column
+        last_letter = get_column_letter(last_col)
+
+        self.assertEqual(sheet["A1"].font.size, 22)
+        self.assertEqual(sheet.row_dimensions[1].height, 32.4)
+        self.assertEqual(sheet.row_dimensions[4].height, 37.8)
+        self.assertEqual(sheet.row_dimensions[5].height, 34.95)
+        self.assertEqual(sheet.column_dimensions["A"].width, 5)
+        self.assertEqual(sheet.column_dimensions["B"].width, 44)
+        self.assertEqual(sheet.column_dimensions["C"].width, 8.44)
+        self.assertEqual(sheet.column_dimensions[last_letter].width, 9.44)
+
+        self.assertEqual(sheet["C4"].font.size, 12)
+        self.assertTrue(sheet["C4"].font.bold)
+        self.assertEqual(sheet["B6"].font.size, 12)
+        self.assertEqual(sheet["B14"].font.size, 14)
+        self.assertEqual(sheet["B16"].font.size, 14)
+
+        # Легенда: число слева, расшифровка — объединённые ячейки справа
+        score_col = last_col - 6
+        self.assertEqual(sheet.cell(14, score_col).value, 1)
+        self.assertEqual(sheet.cell(15, score_col).value, 2)
+        self.assertEqual(sheet.cell(16, score_col).value, 3)
+        legend_merge = (
+            f"{get_column_letter(score_col + 1)}14:"
+            f"{get_column_letter(last_col - 3)}14"
+        )
+        self.assertIn(legend_merge, {str(m) for m in sheet.merged_cells.ranges})
 
     def test_save_checklist_file(self):
         save_checklist_file(self.checklist)
